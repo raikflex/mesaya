@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reportes · Crepes & Waffles</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;1,400&family=Jost:wght@300;400;500;600;700&display=swap');
+
+    :root {
+      --bg:     #090807;
+      --s1:     #111009;
+      --s2:     #1a1815;
+      --s3:     #222018;
+      --border: #252220;
+      --verde:  #4a7c59;
+      --vl:     #6aad7e;
+      --crema:  #f0e6d2;
+      --crema2: #c8b99a;
+      --muted:  #6b6057;
+      --nuevo:  #d4a017;
+      --azul:   #3b82f6;
+      --danger: #c0392b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Jost', sans-serif;
+      background: var(--bg);
+      color: var(--crema);
+      min-height: 100vh;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .marca {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; font-weight: 600; color: var(--crema);
+    }
+    .marca em { font-style: italic; font-weight: 400; color: var(--crema2); }
+    .topbar-sub { font-size: 11px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; margin-top: 1px; }
+
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .fecha-chip {
+      background: var(--s2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 7px 14px;
+      font-size: 12px; color: var(--crema2);
+    }
+    .btn-refresh {
+      background: var(--verde); border: none; border-radius: 8px;
+      color: var(--crema); font-size: 12px; font-weight: 500;
+      font-family: 'Jost', sans-serif; padding: 7px 16px; cursor: pointer;
+      display: flex; align-items: center; gap: 6px;
+      transition: background .15s;
+    }
+    .btn-refresh:hover { background: var(--vl); }
+    .spin { display: inline-block; }
+    .spin.girando { animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--vl); animation: pulso 2s ease-in-out infinite;
+    }
+    .status-dot.off { background: var(--danger); animation: none; }
+    @keyframes pulso { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    /* ── LAYOUT ── */
+    .contenido {
+      max-width: 1400px; margin: 0 auto;
+      padding: 24px 28px 60px;
+    }
+
+    /* ── KPIs ── */
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px; margin-bottom: 24px;
+    }
+    .kpi {
+      background: var(--s1); border: 1px solid var(--border);
+      border-radius: 14px; padding: 20px 22px;
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .kpi-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .1em; color: var(--muted);
+    }
+    .kpi-valor {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 36px; font-weight: 600; line-height: 1;
+      color: var(--crema);
+    }
+    .kpi-valor.verde { color: var(--vl); }
+    .kpi-valor.amber { color: var(--nuevo); }
+    .kpi-sub { font-size: 11px; color: var(--muted); }
+
+    /* ── GRID PRINCIPAL ── */
+    .grid-main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px; margin-bottom: 16px;
+    }
+    .grid-bottom {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 16px;
+    }
+
+    /* ── PANEL ── */
+    .panel {
+      background: var(--s1); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+    }
+    .panel-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .panel-titulo {
+      font-size: 13px; font-weight: 600; color: var(--crema);
+      letter-spacing: .02em;
+    }
+    .panel-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .panel-body { padding: 20px; }
+
+    /* ── CHART ── */
+    .chart-wrap {
+      position: relative; height: 220px;
+    }
+
+    /* ── TABLA PLATOS ── */
+    .plato-fila {
+      display: flex; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      gap: 12px;
+    }
+    .plato-fila:last-child { border-bottom: none; }
+    .plato-rank {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; color: var(--crema2); min-width: 24px; text-align: center;
+    }
+    .plato-info { flex: 1; min-width: 0; }
+    .plato-nombre {
+      font-size: 13px; font-weight: 500; color: var(--crema);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .plato-barra-bg {
+      height: 3px; background: var(--border); border-radius: 2px; margin-top: 5px;
+    }
+    .plato-barra { height: 100%; border-radius: 2px; background: var(--vl); }
+    .plato-stats { text-align: right; flex-shrink: 0; }
+    .plato-cant { font-size: 14px; font-weight: 700; color: var(--crema); }
+    .plato-total { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── HISTORIAL ── */
+    .historial-fila {
+      display: grid;
+      grid-template-columns: 60px 60px 1fr 90px 80px;
+      align-items: center; gap: 12px;
+      padding: 10px 0; border-bottom: 1px solid var(--border);
+      font-size: 12px;
+    }
+    .historial-fila:last-child { border-bottom: none; }
+    .historial-fila.header {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted);
+      padding-bottom: 8px;
+    }
+    .h-mesa {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px; font-weight: 600; color: var(--crema);
+    }
+    .h-num { color: var(--muted); }
+    .h-items { color: var(--crema2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .h-total { font-weight: 600; color: var(--crema); text-align: right; }
+    .h-estado {
+      text-align: center;
+      padding: 3px 8px; border-radius: 100px; font-size: 10px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    .e-entregado { background: rgba(74,124,89,.15); color: var(--vl); }
+    .e-listo     { background: rgba(59,130,246,.15); color: var(--azul); }
+    .e-preparando{ background: rgba(212,160,23,.15); color: var(--nuevo); }
+    .e-nuevo     { background: rgba(212,160,23,.1);  color: var(--nuevo); }
+
+    /* ── MESAS ── */
+    .mesas-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+      gap: 8px;
+    }
+    .mesa-card {
+      background: var(--s2); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 8px; text-align: center;
+    }
+    .mesa-card.activa { border-color: var(--nuevo); background: rgba(212,160,23,.08); }
+    .mesa-card.lista  { border-color: var(--vl);   background: rgba(74,124,89,.08); }
+    .mesa-num {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 20px; font-weight: 600; color: var(--crema2);
+    }
+    .mesa-card.activa .mesa-num { color: var(--nuevo); }
+    .mesa-card.lista  .mesa-num { color: var(--vl); }
+    .mesa-estado { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+
+    /* ── VACÍO ── */
+    .vacio {
+      text-align: center; padding: 40px 20px; color: var(--muted);
+    }
+    .vacio-t {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; font-style: italic; color: var(--crema2); opacity: .5; margin-bottom: 6px;
+    }
+    .vacio-s { font-size: 12px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 1100px) {
+      .kpis { grid-template-columns: repeat(2,1fr); }
+      .grid-main { grid-template-columns: 1fr; }
+      .grid-bottom { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 600px) {
+      .contenido { padding: 16px; }
+      .topbar { padding: 12px 16px; }
+      .kpis { grid-template-columns: repeat(2,1fr); gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <div class="marca">Crepes <em>&</em> Waffles</div>
+    <div class="topbar-sub">Panel de reportes</div>
+  </div>
+  <div class="topbar-right">
+    <div class="fecha-chip" id="fecha-hoy">—</div>
+    <div class="status-dot" id="dot"></div>
+    <button class="btn-refresh" onclick="cargarDatos()">
+      <span class="spin" id="spin-icon">↻</span> Actualizar
+    </button>
+  </div>
+</div>
+
+<div class="contenido">
+
+  <!-- KPIs -->
+  <div class="kpis">
+    <div class="kpi">
+      <div class="kpi-label">Ventas del día</div>
+      <div class="kpi-valor verde" id="kpi-ventas">$0</div>
+      <div class="kpi-sub" id="kpi-ventas-sub">0 pedidos</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Ticket promedio</div>
+      <div class="kpi-valor" id="kpi-ticket">$0</div>
+      <div class="kpi-sub">por pedido</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Mesas activas</div>
+      <div class="kpi-valor amber" id="kpi-mesas">0</div>
+      <div class="kpi-sub">con pedidos pendientes</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-label">Pedidos entregados</div>
+      <div class="kpi-valor" id="kpi-entregados">0</div>
+      <div class="kpi-sub" id="kpi-entregados-sub">de 0 totales</div>
+    </div>
+  </div>
+
+  <!-- GRÁFICAS -->
+  <div class="grid-main">
+    <!-- Ventas por hora -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-titulo">Ventas por hora</div>
+          <div class="panel-sub">Pedidos del día de hoy</div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="chart-wrap">
+          <canvas id="chart-horas"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platos más pedidos -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-titulo">Platos más pedidos</div>
+          <div class="panel-sub">Top 7 del día</div>
+        </div>
+      </div>
+      <div class="panel-body" id="tabla-platos">
+        <div class="vacio"><div class="vacio-t">Sin datos aún</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORIAL + MESAS -->
+  <div class="grid-bottom">
+    <!-- Historial de pedidos -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-titulo">Historial de pedidos</div>
+          <div class="panel-sub">Todos los pedidos del día, más recientes primero</div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="historial-fila header">
+          <div>Mesa</div>
+          <div>Ref.</div>
+          <div>Items</div>
+          <div style="text-align:right">Total</div>
+          <div style="text-align:center">Estado</div>
+        </div>
+        <div id="historial-lista">
+          <div class="vacio"><div class="vacio-t">Sin pedidos aún</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado de mesas -->
+    <div class="panel">
+      <div class="panel-header">
+        <div>
+          <div class="panel-titulo">Estado de mesas</div>
+          <div class="panel-sub">Vista en tiempo real</div>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="mesas-grid" id="mesas-grid">
+          <div class="vacio" style="grid-column:1/-1">
+            <div class="vacio-t">Sin actividad</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwSSG6saF5SMOeDCTHk4KF9yJL8MSmYPTjBfkafEYak1kqyEZ408QIJU1B-5NIigFqGxQ/exec';
+
+let chartHoras = null;
+
+/* ── FECHA HOY ── */
+document.getElementById('fecha-hoy').textContent =
+  new Date().toLocaleDateString('es-CO', {weekday:'long', day:'numeric', month:'long'})
+    .replace(/^\w/, c => c.toUpperCase());
+
+/* ── CARGAR DATOS ── */
+async function cargarDatos() {
+  const spin = document.getElementById('spin-icon');
+  spin.classList.add('girando');
+  try {
+    const r = await fetch(SCRIPT_URL + '?accion=get_pedidos&t=' + Date.now());
+    if (!r.ok) throw new Error();
+    const pedidos = await r.json();
+    renderTodo(pedidos);
+    setOnline(true);
+  } catch(e) {
+    setOnline(false);
+  } finally {
+    spin.classList.remove('girando');
+  }
+}
+
+function setOnline(ok) {
+  document.getElementById('dot').className = 'status-dot' + (ok ? '' : ' off');
+}
+
+/* ── RENDER COMPLETO ── */
+function renderTodo(pedidos) {
+  if (!pedidos.length) return;
+
+  const entregados = pedidos.filter(p => p.estado === 'entregado' || p.estado === 'listo');
+  const activos    = pedidos.filter(p => p.estado === 'nuevo' || p.estado === 'preparando');
+  const totalVentas = pedidos.reduce((s,p) => s + (Number(p.total)||0), 0);
+  const ticket      = pedidos.length ? Math.round(totalVentas / pedidos.length) : 0;
+
+  /* KPIs */
+  document.getElementById('kpi-ventas').textContent = '$' + totalVentas.toLocaleString('es-CO');
+  document.getElementById('kpi-ventas-sub').textContent = pedidos.length + ' pedido' + (pedidos.length!==1?'s':'');
+  document.getElementById('kpi-ticket').textContent = '$' + ticket.toLocaleString('es-CO');
+  document.getElementById('kpi-mesas').textContent = new Set(activos.map(p=>p.mesa)).size;
+  document.getElementById('kpi-entregados').textContent = entregados.length;
+  document.getElementById('kpi-entregados-sub').textContent = 'de ' + pedidos.length + ' totales';
+
+  /* Gráfica de horas */
+  renderChartHoras(pedidos);
+
+  /* Platos más pedidos */
+  renderPlatos(pedidos);
+
+  /* Historial */
+  renderHistorial(pedidos);
+
+  /* Mesas */
+  renderMesas(pedidos);
+}
+
+/* ── GRÁFICA HORAS ── */
+function parsearHora(horaStr) {
+  if (!horaStr) return -1;
+  const limpio = horaStr.replace(/\./g,'').trim();
+  const esPM = /p\s*m/i.test(limpio);
+  const esAM = /a\s*m/i.test(limpio);
+  const nums = limpio.match(/(\d+):(\d+)/);
+  if (!nums) return -1;
+  let h = parseInt(nums[1]);
+  if (esPM && h !== 12) h += 12;
+  if (esAM && h === 12) h = 0;
+  return h;
+}
+
+function renderChartHoras(pedidos) {
+  const conteo = {};
+  pedidos.forEach(p => {
+    const h = parsearHora(p.hora);
+    if (h >= 0) conteo[h] = (conteo[h] || 0) + 1;
+  });
+
+  const horaMin = Math.min(...Object.keys(conteo).map(Number));
+  const horaMax = Math.max(...Object.keys(conteo).map(Number));
+  const labels  = [];
+  const valores = [];
+  for (let h = (isFinite(horaMin)?horaMin:10); h <= (isFinite(horaMax)?horaMax:22); h++) {
+    labels.push(h + ':00');
+    valores.push(conteo[h] || 0);
+  }
+
+  const ctx = document.getElementById('chart-horas').getContext('2d');
+  if (chartHoras) chartHoras.destroy();
+  chartHoras = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: valores,
+        backgroundColor: 'rgba(74,124,89,.7)',
+        borderColor: 'rgba(106,173,126,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: {
+          ticks: { color: '#6b6057', font: { size: 11, family: 'Jost' } },
+          grid:  { color: 'rgba(255,255,255,.04)' },
+        },
+        y: {
+          ticks: { color: '#6b6057', font: { size: 11, family: 'Jost' }, stepSize: 1 },
+          grid:  { color: 'rgba(255,255,255,.04)' },
+          beginAtZero: true,
+        }
+      }
+    }
+  });
+}
+
+/* ── PLATOS MÁS PEDIDOS ── */
+function renderPlatos(pedidos) {
+  const conteo = {};
+  const ingresos = {};
+  pedidos.forEach(p => {
+    (p.items || '').split(',').forEach(it => {
+      const m = it.trim().match(/^(\d+)x?\s+(.+)$/i);
+      if (!m) return;
+      const cant = parseInt(m[1]);
+      const nombre = m[2].trim();
+      conteo[nombre]  = (conteo[nombre]  || 0) + cant;
+      ingresos[nombre]= (ingresos[nombre]|| 0) + cant * 0;
+    });
+  });
+
+  const top = Object.entries(conteo)
+    .sort((a,b) => b[1]-a[1])
+    .slice(0, 7);
+
+  if (!top.length) {
+    document.getElementById('tabla-platos').innerHTML =
+      '<div class="vacio"><div class="vacio-t">Sin datos</div></div>';
+    return;
+  }
+
+  const maxCant = top[0][1];
+  document.getElementById('tabla-platos').innerHTML = top.map(([nombre, cant], i) => `
+    <div class="plato-fila">
+      <div class="plato-rank">${i+1}</div>
+      <div class="plato-info">
+        <div class="plato-nombre">${nombre}</div>
+        <div class="plato-barra-bg">
+          <div class="plato-barra" style="width:${Math.round(cant/maxCant*100)}%"></div>
+        </div>
+      </div>
+      <div class="plato-stats">
+        <div class="plato-cant">${cant}</div>
+        <div class="plato-total">unidades</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ── HISTORIAL ── */
+function renderHistorial(pedidos) {
+  const ordenados = [...pedidos].reverse();
+  if (!ordenados.length) return;
+
+  document.getElementById('historial-lista').innerHTML = ordenados.map(p => {
+    const claseEstado = {
+      entregado: 'e-entregado', listo: 'e-listo',
+      preparando: 'e-preparando', nuevo: 'e-nuevo'
+    }[p.estado] || 'e-nuevo';
+    const textoEstado = {
+      entregado:'Entregado', listo:'Listo ✓', preparando:'Prep.', nuevo:'Nuevo'
+    }[p.estado] || p.estado;
+    const itemsCortos = (p.items||'').split(',').slice(0,2).join(', ') +
+      (p.items.split(',').length > 2 ? ' +' + (p.items.split(',').length-2) : '');
+
+    return `<div class="historial-fila">
+      <div class="h-mesa">Mesa ${p.mesa}</div>
+      <div class="h-num">#${p.numero}</div>
+      <div class="h-items">${itemsCortos}</div>
+      <div class="h-total">$${(Number(p.total)||0).toLocaleString('es-CO')}</div>
+      <div><span class="h-estado ${claseEstado}">${textoEstado}</span></div>
+    </div>`;
+  }).join('');
+}
+
+/* ── MESAS ── */
+function renderMesas(pedidos) {
+  const estadoPorMesa = {};
+  pedidos.forEach(p => {
+    if (!estadoPorMesa[p.mesa] ||
+        ['nuevo','preparando','listo'].includes(p.estado)) {
+      estadoPorMesa[p.mesa] = p.estado;
+    }
+  });
+
+  const mesas = Object.entries(estadoPorMesa)
+    .sort((a,b) => Number(a[0]) - Number(b[0]));
+
+  if (!mesas.length) return;
+
+  document.getElementById('mesas-grid').innerHTML = mesas.map(([num, estado]) => {
+    const clase = (estado === 'nuevo' || estado === 'preparando') ? 'activa'
+                : (estado === 'listo') ? 'lista' : '';
+    const txt = {entregado:'Libre', listo:'Listo', preparando:'Prep.', nuevo:'Activa'}[estado] || estado;
+    return `<div class="mesa-card ${clase}">
+      <div class="mesa-num">${num}</div>
+      <div class="mesa-estado">${txt}</div>
+    </div>`;
+  }).join('');
+}
+
+/* ── INIT ── */
+cargarDatos();
+setInterval(cargarDatos, 30000);
+</script>
+</body>
+</html>
