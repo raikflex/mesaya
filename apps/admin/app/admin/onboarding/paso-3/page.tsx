@@ -1,31 +1,29 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
-import { BusinessInfoForm } from './business-info-form';
+import { Paso3Form } from './paso-3-form';
 
-export const metadata = { title: 'Paso 1 · Datos del negocio' };
+export const metadata = { title: 'Paso 3 · Horario' };
 
-export default async function Paso1Page() {
+export default async function Paso3Page() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect('/signup');
+  if (!user) redirect('/login');
 
   const { data: perfil } = await supabase
     .from('perfiles')
-    .select('restaurante_id, nombre')
+    .select('restaurante_id')
     .eq('id', user.id)
     .maybeSingle();
 
-  const initial = perfil?.restaurante_id
-    ? (
-        await supabase
-          .from('restaurantes')
-          .select('nombre_publico, nit, direccion, color_marca')
-          .eq('id', perfil.restaurante_id)
-          .single()
-      ).data
-    : null;
+  if (!perfil?.restaurante_id) redirect('/admin/onboarding/paso-1');
+
+  const { data: restaurante } = await supabase
+    .from('restaurantes')
+    .select('horario_apertura, horario_cierre, dias_operacion')
+    .eq('id', perfil.restaurante_id)
+    .single();
 
   return (
     <main className="px-6 sm:px-10 py-10 sm:py-14 max-w-3xl mx-auto">
@@ -34,15 +32,15 @@ export default async function Paso1Page() {
           className="text-xs uppercase tracking-[0.16em] mb-3"
           style={{ color: 'var(--color-muted)' }}
         >
-          Paso 1 de 8
+          Paso 3 de 8
         </p>
         <h1
           className="font-[family-name:var(--font-display)] text-4xl sm:text-5xl tracking-[-0.025em] leading-[1.05]"
           style={{ color: 'var(--color-ink)' }}
         >
-          Cuéntanos del{' '}
+          Tu{' '}
           <em className="not-italic" style={{ fontStyle: 'italic', fontWeight: 400 }}>
-            negocio
+            horario
           </em>
           .
         </h1>
@@ -50,21 +48,25 @@ export default async function Paso1Page() {
           className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Esto es lo que verá tu cliente cuando escanee el QR de la mesa. Lo puedes cambiar
-          después.
+          Cuando un cliente escanee fuera de tu horario, verá una pantalla amable de "estamos
+          cerrados" con tu próximo turno.
         </p>
       </header>
 
-      <BusinessInfoForm
-        initial={
-          initial ?? {
-            nombre_publico: '',
-            nit: null,
-            direccion: null,
-            color_marca: '#c0432e',
-          }
-        }
-        nombreDueno={perfil?.nombre ?? null}
+      <Paso3Form
+        initial={{
+          horario_apertura: (restaurante?.horario_apertura ?? '08:00:00').slice(0, 5),
+          horario_cierre: (restaurante?.horario_cierre ?? '22:00:00').slice(0, 5),
+          dias_operacion: restaurante?.dias_operacion ?? [
+            'lun',
+            'mar',
+            'mie',
+            'jue',
+            'vie',
+            'sab',
+            'dom',
+          ],
+        }}
       />
     </main>
   );

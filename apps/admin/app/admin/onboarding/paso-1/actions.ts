@@ -62,7 +62,8 @@ export async function guardarDatosNegocio(
   } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: 'Tu sesión expiró. Vuelve a iniciar.' };
 
-  // ¿El dueño ya tiene perfil? (caso reentrada al wizard)
+  const datos = parsed.data;
+
   const { data: perfilExistente } = await supabase
     .from('perfiles')
     .select('restaurante_id')
@@ -70,43 +71,40 @@ export async function guardarDatosNegocio(
     .maybeSingle();
 
   if (perfilExistente?.restaurante_id) {
-    // Ya tiene restaurante: actualizamos los datos y seguimos.
     const { error: updateError } = await supabase
       .from('restaurantes')
       .update({
-        nombre_publico: parsed.data.nombre_publico,
-        nit: parsed.data.nit,
-        direccion: parsed.data.direccion,
-        color_marca: parsed.data.color_marca,
+        nombre_publico: datos.nombre_publico,
+        nit: datos.nit,
+        direccion: datos.direccion,
+        color_marca: datos.color_marca,
       })
       .eq('id', perfilExistente.restaurante_id);
 
     if (updateError) {
-      return { ok: false, error: 'No pudimos guardar los cambios. Detalle: ' + updateError.message };
+      return {
+        ok: false,
+        error: 'No pudimos guardar los cambios. Detalle: ' + updateError.message,
+      };
     }
     redirect('/admin/onboarding/paso-2');
   }
 
-  // Primera vez: creamos restaurante Y perfil en este orden.
-  // Usamos service client para que la creación del perfil bypassee RLS
-  // (auth.uid() existe pero el insert podría chocar con políticas).
   const admin = createServiceClient();
 
-  // 1. Crear restaurante. Estado=archivado hasta cerrar el wizard.
-const { data: nuevoRest, error: insertRestError } = await admin
+  const { data: nuevoRest, error: insertRestError } = await admin
     .from('restaurantes')
     .insert({
       dueno_user_id: user.id,
-      nombre_publico: parsed.data.nombre_publico,
-      nit: parsed.data.nit,
-      direccion: parsed.data.direccion,
-      color_marca: parsed.data.color_marca,
+      nombre_publico: datos.nombre_publico,
+      nit: datos.nit,
+      direccion: datos.direccion,
+      color_marca: datos.color_marca,
       estado: 'archivado',
-      // horario_apertura, horario_cierre, dias_operacion, timezone, usa_meseros
-      // tienen defaults sanos en la base. Los confirmamos en el paso 3.
     })
     .select('id')
     .single();
+
   if (insertRestError || !nuevoRest) {
     return {
       ok: false,
@@ -116,11 +114,8 @@ const { data: nuevoRest, error: insertRestError } = await admin
     };
   }
 
-  // 2. Crear perfil del dueño vinculado al restaurante.
-  const nombreUsuario =
-    (user.user_metadata?.nombre as string | undefined) ??
-    user.email?.split('@')[0] ??
-    'Dueño';
+  const meta = user.user_metadata as { nombre?: string } | undefined;
+  const nombreUsuario = meta?.nombre ?? user.email?.split('@')[0] ?? 'Dueño';
 
   const { error: insertPerfilError } = await admin.from('perfiles').insert({
     id: user.id,

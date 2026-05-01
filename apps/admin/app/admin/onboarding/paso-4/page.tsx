@@ -1,31 +1,33 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
-import { BusinessInfoForm } from './business-info-form';
+import type { Tables } from '@mesaya/database/types';
+import { CategoriasManager } from './categorias-manager';
 
-export const metadata = { title: 'Paso 1 · Datos del negocio' };
+export const metadata = { title: 'Paso 4 · Categorías' };
 
-export default async function Paso1Page() {
+type CategoriaItem = Pick<Tables<'categorias'>, 'id' | 'nombre' | 'orden' | 'activa'>;
+
+export default async function Paso4Page() {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) redirect('/signup');
+  if (!user) redirect('/login');
 
   const { data: perfil } = await supabase
     .from('perfiles')
-    .select('restaurante_id, nombre')
+    .select('restaurante_id')
     .eq('id', user.id)
     .maybeSingle();
 
-  const initial = perfil?.restaurante_id
-    ? (
-        await supabase
-          .from('restaurantes')
-          .select('nombre_publico, nit, direccion, color_marca')
-          .eq('id', perfil.restaurante_id)
-          .single()
-      ).data
-    : null;
+  if (!perfil?.restaurante_id) redirect('/admin/onboarding/paso-1');
+
+  const { data: categorias } = await supabase
+    .from('categorias')
+    .select('id, nombre, orden, activa')
+    .eq('restaurante_id', perfil.restaurante_id)
+    .eq('activa', true)
+    .order('orden', { ascending: true });
 
   return (
     <main className="px-6 sm:px-10 py-10 sm:py-14 max-w-3xl mx-auto">
@@ -34,15 +36,15 @@ export default async function Paso1Page() {
           className="text-xs uppercase tracking-[0.16em] mb-3"
           style={{ color: 'var(--color-muted)' }}
         >
-          Paso 1 de 8
+          Paso 4 de 8
         </p>
         <h1
           className="font-[family-name:var(--font-display)] text-4xl sm:text-5xl tracking-[-0.025em] leading-[1.05]"
           style={{ color: 'var(--color-ink)' }}
         >
-          Cuéntanos del{' '}
+          Tus{' '}
           <em className="not-italic" style={{ fontStyle: 'italic', fontWeight: 400 }}>
-            negocio
+            categorías
           </em>
           .
         </h1>
@@ -50,22 +52,12 @@ export default async function Paso1Page() {
           className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Esto es lo que verá tu cliente cuando escanee el QR de la mesa. Lo puedes cambiar
-          después.
+          Las grandes secciones de tu menú: <em>Entradas, Platos fuertes, Postres, Bebidas…</em>{' '}
+          Mantenlas cortas. El cliente las ve como pestañas en su menú.
         </p>
       </header>
 
-      <BusinessInfoForm
-        initial={
-          initial ?? {
-            nombre_publico: '',
-            nit: null,
-            direccion: null,
-            color_marca: '#c0432e',
-          }
-        }
-        nombreDueno={perfil?.nombre ?? null}
-      />
+      <CategoriasManager categorias={(categorias ?? []) as CategoriaItem[]} />
     </main>
   );
 }

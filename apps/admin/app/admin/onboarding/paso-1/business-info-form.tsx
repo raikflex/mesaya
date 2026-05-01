@@ -13,14 +13,6 @@ interface InitialValues {
 
 const initialState: Paso1State = { ok: false };
 
-/**
- * Paleta curada para que el dueño no tenga que pensar en hex codes.
- * Si quiere algo específico, hay un campo de texto al lado.
- *
- * Decisión de diseño: estos colores son los que renderizan bien en
- * fondo paper y en fondo blanco. Todos pasan AA contra el texto blanco
- * que va encima (botón principal del cliente).
- */
 const PALETTE = [
   { hex: '#c0432e', nombre: 'Terracota' },
   { hex: '#1a1814', nombre: 'Tinta' },
@@ -40,14 +32,11 @@ export function BusinessInfoForm({
   nombreDueno: string | null;
 }) {
   const [state, formAction, pending] = useActionState(guardarDatosNegocio, initialState);
-
-  // Estado local solo para el preview en vivo. La fuente de verdad es el form.
   const [nombre, setNombre] = useState(initial.nombre_publico);
   const [color, setColor] = useState(initial.color_marca);
 
   return (
     <form action={formAction} className="grid gap-10 lg:grid-cols-[1fr_320px]">
-      {/* Columna principal: campos */}
       <div className="space-y-6">
         <Field
           id="nombre_publico"
@@ -103,7 +92,11 @@ export function BusinessInfoForm({
           </Field>
         </div>
 
-        <ColorMarcaPicker value={color} onChange={setColor} error={state.fieldErrors?.color_marca} />
+        <ColorMarcaPicker
+          value={color}
+          onChange={setColor}
+          error={state.fieldErrors?.color_marca}
+        />
 
         {state.error ? (
           <div
@@ -130,15 +123,12 @@ export function BusinessInfoForm({
         </div>
       </div>
 
-      {/* Columna derecha: preview en vivo de cómo se ve la app del cliente. */}
       <aside className="lg:sticky lg:top-6 self-start">
         <ClientPreview nombre={nombre || 'Tu restaurante'} color={color} dueno={nombreDueno} />
       </aside>
     </form>
   );
 }
-
-/* ---------- ColorMarcaPicker ---------- */
 
 function ColorMarcaPicker({
   value,
@@ -165,7 +155,6 @@ function ColorMarcaPicker({
         Es el acento que verá el cliente: el botón de pedir, los detalles. Mira el preview.
       </p>
 
-      {/* Hidden input que va al form con el valor actual */}
       <input type="hidden" name="color_marca" value={value} />
 
       <div className="flex flex-wrap gap-2 pt-1">
@@ -255,8 +244,6 @@ function ColorMarcaPicker({
   );
 }
 
-/* ---------- ClientPreview ---------- */
-
 function ClientPreview({
   nombre,
   color,
@@ -269,10 +256,7 @@ function ClientPreview({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <p
-          className="text-xs uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
           Vista del cliente
         </p>
         <span
@@ -283,7 +267,6 @@ function ClientPreview({
         </span>
       </div>
 
-      {/* Marco de "celular" minimalista — no quiero que se sienta cliché iPhone mockup. */}
       <div
         className="rounded-[28px] border p-2 shadow-[var(--shadow-md)]"
         style={{ borderColor: 'var(--color-border-strong)', background: 'var(--color-paper)' }}
@@ -292,11 +275,8 @@ function ClientPreview({
           className="rounded-[20px] aspect-[9/16] overflow-hidden flex flex-col"
           style={{ background: '#fff' }}
         >
-          {/* Header del cliente: nombre del restaurante en serif gigante */}
           <div className="px-5 pt-7 pb-4 border-b" style={{ borderColor: '#0001' }}>
-            <p className="text-[0.65rem] uppercase tracking-[0.14em] text-stone-500">
-              Mesa 4
-            </p>
+            <p className="text-[0.65rem] uppercase tracking-[0.14em] text-stone-500">Mesa 4</p>
             <h2
               className="font-[family-name:var(--font-display)] text-[1.6rem] tracking-[-0.02em] leading-[1.05] mt-0.5 text-stone-900"
               style={{ wordBreak: 'break-word' }}
@@ -305,7 +285,6 @@ function ClientPreview({
             </h2>
           </div>
 
-          {/* "Menú" simulado — lo importante es que el acento se vea en uso real */}
           <div className="px-5 py-4 flex-1 space-y-3">
             <div className="flex items-baseline justify-between">
               <span className="text-sm text-stone-700">Bandeja paisa</span>
@@ -321,7 +300,6 @@ function ClientPreview({
             </div>
           </div>
 
-          {/* Botón principal con el color elegido */}
           <div className="px-5 pb-5">
             <div
               className="h-12 rounded-xl text-white text-sm font-medium grid place-items-center transition-colors"

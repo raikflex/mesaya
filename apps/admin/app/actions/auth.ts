@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { createClient } from '@mesaya/database/server';
 
+/* ============ SIGNUP ============ */
+
 const signupSchema = z.object({
   email: z.string().trim().toLowerCase().email('Correo inválido'),
   password: z.string().min(8, 'Mínimo 8 caracteres').max(72, 'Máximo 72 caracteres'),
@@ -38,18 +40,13 @@ export async function signupOwner(
   }
 
   const supabase = await createClient();
+  const datos = parsed.data;
 
-  // Solo creamos auth.users. El perfil se crea en paso-1 del onboarding,
-  // junto con el restaurante, porque perfiles.restaurante_id es NOT NULL.
-  // Guardamos el nombre y el rol en user_metadata para usarlos después.
   const { data, error } = await supabase.auth.signUp({
-    email: parsed.data.email,
-    password: parsed.data.password,
+    email: datos.email,
+    password: datos.password,
     options: {
-      data: {
-        nombre: parsed.data.nombre,
-        rol_intencion: 'dueno',
-      },
+      data: { nombre: datos.nombre, rol_intencion: 'dueno' },
     },
   });
 
@@ -64,4 +61,63 @@ export async function signupOwner(
   }
 
   redirect('/admin/onboarding/paso-1');
+}
+
+/* ============ LOGIN ============ */
+
+const loginSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Correo inválido'),
+  password: z.string().min(1, 'Escribe tu contraseña'),
+});
+
+export type LoginState = {
+  ok: boolean;
+  error?: string;
+  fieldErrors?: Partial<Record<'email' | 'password', string>>;
+};
+
+export async function loginOwner(
+  _prev: LoginState,
+  formData: FormData,
+): Promise<LoginState> {
+  const parsed = loginSchema.safeParse({
+    email: formData.get('email'),
+    password: formData.get('password'),
+  });
+
+  if (!parsed.success) {
+    const fieldErrors: LoginState['fieldErrors'] = {};
+    for (const issue of parsed.error.issues) {
+      const key = issue.path[0];
+      if (key === 'email' || key === 'password') {
+        fieldErrors[key] = issue.message;
+      }
+    }
+    return { ok: false, fieldErrors };
+  }
+
+  const supabase = await createClient();
+  const datos = parsed.data;
+
+  const { error } = await supabase.auth.signInWithPassword({
+    email: datos.email,
+    password: datos.password,
+  });
+
+  if (error) {
+    if (error.message.toLowerCase().includes('invalid')) {
+      return { ok: false, error: 'Correo o contraseña incorrectos.' };
+    }
+    return { ok: false, error: error.message };
+  }
+
+  redirect('/');
+}
+
+/* ============ LOGOUT ============ */
+
+export async function logout() {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  redirect('/login');
 }
