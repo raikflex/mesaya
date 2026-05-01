@@ -1,0 +1,14 @@
+@import 'tailwindcss';
+@import '../../../packages/config/tailwind/tokens.css';
+
+@source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+html,
+body {
+  background: #fff;
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  /* PWA: bloquear pull-to-refresh accidental dentro del flujo de pedido */
+  overscroll-behavior-y: contain;
+}

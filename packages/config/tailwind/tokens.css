@@ -1,0 +1,53 @@
+/* MesaYA — Design tokens compartidos entre apps.
+ * Filosofía: papel cálido + tinta + un único acento sangrado.
+ * No es purple/blue gradient SaaS. Se siente editorial, restaurantero, de Bogotá.
+ *
+ * Importar en cada app desde su globals.css:
+ *   @import "@mesaya/config/tailwind/tokens.css";
+ *
+ * Si un restaurante quiere personalizar color de marca (--accent), lo hacemos
+ * con CSS vars sobreescritas en runtime en la app cliente con un <style> inline
+ * a partir de restaurantes.color_marca.
+ */
+
+@theme {
+  /* Tipografía. Fraunces (display, variable serif con personalidad) +
+   * Geist Sans (UI). Cargadas en cada app con next/font.
+   */
+  --font-display: 'Fraunces', ui-serif, Georgia, serif;
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, monospace;
+
+  /* Paleta. Papel cálido / tinta cálida / terracota como acento.
+   * Probado contra blanco puro: el #FAF6F1 reduce la fatiga visual y
+   * separa la app de la estética SaaS genérica.
+   */
+  --color-paper: #faf6f1;
+  --color-paper-deep: #f2ebde;
+  --color-ink: #1a1814;
+  --color-ink-soft: #3d3933;
+  --color-muted: #8c857a;
+  --color-border: #e8e1d6;
+  --color-border-strong: #c9bfb0;
+
+  /* Acento de marca. Terracota Bogotá, no naranja-Mailchimp. */
+  --color-accent: #c0432e;
+  --color-accent-hover: #a53924;
+  --color-accent-soft: #f3d9d2;
+
+  /* Estados */
+  --color-success: #3a7a4f;
+  --color-warning: #c08a2e;
+  --color-danger: #a53924;
+
+  /* Radii */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+
+  /* Sombras. Cálidas, no grises corporativos. */
+  --shadow-sm: 0 1px 2px 0 rgb(26 24 20 / 0.04);
+  --shadow-md: 0 4px 12px -2px rgb(26 24 20 / 0.08), 0 2px 4px -1px rgb(26 24 20 / 0.04);
+  --shadow-lg: 0 12px 32px -8px rgb(26 24 20 / 0.12), 0 4px 8px -2px rgb(26 24 20 / 0.06);
+}
