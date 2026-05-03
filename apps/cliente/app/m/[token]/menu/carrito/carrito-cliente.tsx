@@ -13,10 +13,12 @@ import {
   vaciarCarrito,
   type ItemCarrito,
 } from '../../../../../lib/carrito';
-import { leerSesionCliente } from '../../../../../lib/cliente-session';
+import {
+  guardarAuthUserId,
+  leerSesionCliente,
+} from '../../../../../lib/cliente-session';
 import { enviarComanda } from './actions';
 
-const PORCENTAJE_PROPINA = 0.1;
 const SEGUNDOS_GRACIA = 30;
 
 type EstadoEnvio =
@@ -39,10 +41,12 @@ export function CarritoCliente({
   const router = useRouter();
   const [items, setItems] = useState<ItemCarrito[]>([]);
   const [nombre, setNombre] = useState<string | null>(null);
-  const [conPropina, setConPropina] = useState(false);
   const [cargando, setCargando] = useState(true);
   const [envio, setEnvio] = useState<EstadoEnvio>({ fase: 'idle' });
-  const cancelarRef = useRef<{ cancelado: boolean }>({ cancelado: false });
+  const cancelarRef = useRef<{ cancelado: boolean; saltarEspera: boolean }>({
+    cancelado: false,
+    saltarEspera: false,
+  });
 
   useEffect(() => {
     const sesion = leerSesionCliente(qrToken);
@@ -55,7 +59,6 @@ export function CarritoCliente({
     setCargando(false);
   }, [qrToken, router]);
 
-  // Si el cliente cierra la pestaña durante la cuenta regresiva, cancelamos.
   useEffect(() => {
     if (envio.fase !== 'cuenta-regresiva') return;
     const handler = () => {
@@ -75,18 +78,37 @@ export function CarritoCliente({
     setItems(actualizado);
   }
 
+  async function obtenerAuthUserId(): Promise<string | null> {
+    const supabase = createClient();
+
+    const { data: { user: existente } } = await supabase.auth.getUser();
+    if (existente) {
+      guardarAuthUserId(qrToken, existente.id);
+      return existente.id;
+    }
+
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error || !data.user) return null;
+
+    guardarAuthUserId(qrToken, data.user.id);
+    return data.user.id;
+  }
+
   async function iniciarEnvio() {
     if (items.length === 0 || !nombre) return;
 
     cancelarRef.current.cancelado = false;
+    cancelarRef.current.saltarEspera = false;
     setEnvio({ fase: 'cuenta-regresiva', segundosRestantes: SEGUNDOS_GRACIA });
 
-    // Cuenta regresiva visual.
     for (let s = SEGUNDOS_GRACIA; s > 0; s--) {
       await sleep(1000);
       if (cancelarRef.current.cancelado) {
         setEnvio({ fase: 'idle' });
         return;
+      }
+      if (cancelarRef.current.saltarEspera) {
+        break;
       }
       setEnvio({ fase: 'cuenta-regresiva', segundosRestantes: s - 1 });
     }
@@ -96,15 +118,12 @@ export function CarritoCliente({
       return;
     }
 
-    // Pasamos a enviando.
     setEnvio({ fase: 'enviando' });
 
     try {
-      // 1) Auth anónima del cliente para tener auth.uid() válido.
-      const supabase = createClient();
-      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+      const authUserId = await obtenerAuthUserId();
 
-      if (authError || !authData.user) {
+      if (!authUserId) {
         setEnvio({
           fase: 'error',
           mensaje: 'No pudimos iniciar tu sesión. Intenta de nuevo.',
@@ -112,10 +131,9 @@ export function CarritoCliente({
         return;
       }
 
-      // 2) Enviar al server action.
       const resultado = await enviarComanda({
         qrToken,
-        authUserId: authData.user.id,
+        authUserId,
         nombreCliente: nombre,
         items: items.map((i) => ({
           productoId: i.productoId,
@@ -129,7 +147,6 @@ export function CarritoCliente({
         return;
       }
 
-      // 3) Vaciar carrito y redirigir a confirmación.
       vaciarCarrito(qrToken);
       router.push(`/m/${qrToken}/menu/enviada/${resultado.comandaId}`);
     } catch (err) {
@@ -144,6 +161,10 @@ export function CarritoCliente({
   function cancelarEnvio() {
     cancelarRef.current.cancelado = true;
     setEnvio({ fase: 'idle' });
+  }
+
+  function saltarEspera() {
+    cancelarRef.current.saltarEspera = true;
   }
 
   function reintentar() {
@@ -163,12 +184,9 @@ export function CarritoCliente({
     );
   }
 
-  const subtotal = calcularTotal(items);
-  const propina = conPropina ? Math.round(subtotal * PORCENTAJE_PROPINA) : 0;
-  const total = subtotal + propina;
+  const total = calcularTotal(items);
   const unidades = totalUnidades(items);
 
-  // Pantalla de cuenta regresiva.
   if (envio.fase === 'cuenta-regresiva') {
     return (
       <PantallaCuentaRegresiva
@@ -176,25 +194,25 @@ export function CarritoCliente({
         total={total}
         colorMarca={colorMarca}
         onCancelar={cancelarEnvio}
+        onSaltarEspera={saltarEspera}
       />
     );
   }
 
-  // Pantalla de enviando.
   if (envio.fase === 'enviando') {
-    return (
-      <PantallaEnviando colorMarca={colorMarca} />
-    );
+    return <PantallaEnviando colorMarca={colorMarca} />;
   }
 
-  // Pantalla de error.
   if (envio.fase === 'error') {
     return (
-      <PantallaError mensaje={envio.mensaje} onReintentar={reintentar} qrToken={qrToken} />
+      <PantallaError
+        mensaje={envio.mensaje}
+        onReintentar={reintentar}
+        qrToken={qrToken}
+      />
     );
   }
 
-  // Pantalla normal del carrito.
   return (
     <main
       className="min-h-screen flex flex-col"
@@ -269,98 +287,27 @@ export function CarritoCliente({
               className="rounded-[var(--radius-lg)] border bg-white p-5 mb-5"
               style={{ borderColor: 'var(--color-border)' }}
             >
-              <h2
-                className="text-xs uppercase tracking-[0.14em] mb-3"
-                style={{ color: 'var(--color-muted)' }}
-              >
-                Resumen
-              </h2>
-
-              <div className="space-y-2 text-sm">
-                <div className="flex items-center justify-between">
-                  <span style={{ color: 'var(--color-ink-soft)' }}>
-                    Subtotal · {unidades} producto{unidades === 1 ? '' : 's'}
-                  </span>
-                  <span
-                    className="font-[family-name:var(--font-mono)]"
-                    style={{ color: 'var(--color-ink)' }}
+              <div className="flex items-center justify-between">
+                <div>
+                  <p
+                    className="text-xs uppercase tracking-[0.14em]"
+                    style={{ color: 'var(--color-muted)' }}
                   >
-                    ${subtotal.toLocaleString('es-CO')}
-                  </span>
+                    Total de este pedido
+                  </p>
+                  <p
+                    className="text-[0.7rem] mt-0.5"
+                    style={{ color: 'var(--color-muted)' }}
+                  >
+                    {unidades} producto{unidades === 1 ? '' : 's'}
+                  </p>
                 </div>
-
-                <label
-                  className="flex items-center justify-between gap-3 py-2 cursor-pointer select-none"
-                  htmlFor="toggle-propina"
+                <span
+                  className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]"
+                  style={{ color: 'var(--color-ink)' }}
                 >
-                  <div className="flex-1 min-w-0">
-                    <span
-                      className="text-sm block"
-                      style={{ color: 'var(--color-ink-soft)' }}
-                    >
-                      Propina sugerida (10%)
-                    </span>
-                    <span
-                      className="text-[0.7rem]"
-                      style={{ color: 'var(--color-muted)' }}
-                    >
-                      Voluntaria. Decides tú.
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    {conPropina ? (
-                      <span
-                        className="text-sm font-[family-name:var(--font-mono)]"
-                        style={{ color: 'var(--color-ink)' }}
-                      >
-                        ${propina.toLocaleString('es-CO')}
-                      </span>
-                    ) : null}
-                    <button
-                      id="toggle-propina"
-                      type="button"
-                      role="switch"
-                      aria-checked={conPropina}
-                      onClick={() => setConPropina((v) => !v)}
-                      className="relative h-6 w-11 rounded-full transition-colors"
-                      style={{
-                        background: conPropina
-                          ? colorMarca
-                          : 'var(--color-paper-deep)',
-                        border: `1px solid ${
-                          conPropina ? colorMarca : 'var(--color-border-strong)'
-                        }`,
-                      }}
-                    >
-                      <span
-                        className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform"
-                        style={{
-                          transform: conPropina
-                            ? 'translateX(20px)'
-                            : 'translateX(0)',
-                        }}
-                      />
-                    </button>
-                  </div>
-                </label>
-
-                <div
-                  className="border-t pt-3 mt-2 flex items-center justify-between"
-                  style={{ borderColor: 'var(--color-border)' }}
-                >
-                  <span
-                    className="text-base font-medium"
-                    style={{ color: 'var(--color-ink)' }}
-                  >
-                    Total
-                  </span>
-                  <span
-                    className="font-[family-name:var(--font-display)] text-2xl"
-                    style={{ color: 'var(--color-ink)' }}
-                  >
-                    ${total.toLocaleString('es-CO')}
-                  </span>
-                </div>
+                  ${total.toLocaleString('es-CO')}
+                </span>
               </div>
             </section>
 
@@ -368,8 +315,8 @@ export function CarritoCliente({
               className="text-[0.7rem] text-center px-2 leading-relaxed"
               style={{ color: 'var(--color-muted)' }}
             >
-              El pago se realiza directamente con el mesero al terminar.
-              Cuando confirmes, tu pedido se envía a la cocina.
+              La propina y el pago final se gestionan al pedir la cuenta.
+              Por ahora, este pedido pasa a la cocina.
             </p>
           </>
         )}
@@ -404,18 +351,20 @@ export function CarritoCliente({
   );
 }
 
-/* ============ Pantalla cuenta regresiva ============ */
+/* ============ Pantallas auxiliares ============ */
 
 function PantallaCuentaRegresiva({
   segundosRestantes,
   total,
   colorMarca,
   onCancelar,
+  onSaltarEspera,
 }: {
   segundosRestantes: number;
   total: number;
   colorMarca: string;
   onCancelar: () => void;
+  onSaltarEspera: () => void;
 }) {
   const progreso = ((SEGUNDOS_GRACIA - segundosRestantes) / SEGUNDOS_GRACIA) * 100;
 
@@ -448,7 +397,6 @@ function PantallaCuentaRegresiva({
           {segundosRestantes === 1 ? '' : 's'} pasa a la cocina.
         </p>
 
-        {/* Barra de progreso */}
         <div
           className="h-2 rounded-full mb-6 overflow-hidden"
           style={{ background: 'var(--color-paper-deep)' }}
@@ -469,24 +417,35 @@ function PantallaCuentaRegresiva({
           Total: ${total.toLocaleString('es-CO')}
         </p>
 
-        <button
-          type="button"
-          onClick={onCancelar}
-          className="w-full h-12 rounded-[var(--radius-md)] text-base font-medium border"
-          style={{
-            background: 'white',
-            color: 'var(--color-ink)',
-            borderColor: 'var(--color-border-strong)',
-          }}
-        >
-          Cancelar
-        </button>
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={onSaltarEspera}
+            className="w-full h-12 rounded-[var(--radius-md)] text-base font-medium"
+            style={{
+              background: colorMarca,
+              color: 'white',
+            }}
+          >
+            Enviar ya
+          </button>
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="w-full h-12 rounded-[var(--radius-md)] text-base font-medium border"
+            style={{
+              background: 'white',
+              color: 'var(--color-ink)',
+              borderColor: 'var(--color-border-strong)',
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
       </div>
     </main>
   );
 }
-
-/* ============ Pantalla enviando ============ */
 
 function PantallaEnviando({ colorMarca }: { colorMarca: string }) {
   return (
@@ -518,8 +477,6 @@ function PantallaEnviando({ colorMarca }: { colorMarca: string }) {
     </main>
   );
 }
-
-/* ============ Pantalla error ============ */
 
 function PantallaError({
   mensaje,
@@ -586,8 +543,6 @@ function PantallaError({
     </main>
   );
 }
-
-/* ============ Item fila ============ */
 
 function ItemFila({
   item,
