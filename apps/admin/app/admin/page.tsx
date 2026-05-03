@@ -173,8 +173,12 @@ function Resumen({
         className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 rounded-[var(--radius-lg)] sm:rounded-none sm:border-0 sm:bg-transparent border bg-[var(--color-paper)] sm:gap-4"
         style={{ borderColor: 'var(--color-border)' }}
       >
-        <Stat label="Categorías" valor={categorias} />
-        <Stat label="Productos" valor={productos} />
+        <Link href={{ pathname: '/admin/menu', query: { tab: 'categorias' } }} className="contents">
+          <Stat label="Categorías" valor={categorias} />
+        </Link>
+        <Link href="/admin/menu" className="contents">
+          <Stat label="Productos" valor={productos} />
+        </Link>
         <Link href="/admin/mesas" className="contents">
           <Stat label="Mesas" valor={mesas} />
         </Link>
