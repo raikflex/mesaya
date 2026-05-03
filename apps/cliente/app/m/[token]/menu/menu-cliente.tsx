@@ -1,11 +1,17 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   borrarSesionCliente,
   leerSesionCliente,
 } from '../../../../lib/cliente-session';
+import {
+  calcularTotal,
+  leerCarrito,
+  totalUnidades,
+  type ItemCarrito,
+} from '../../../../lib/carrito';
 
 type Producto = {
   id: string;
@@ -38,12 +44,16 @@ export function MenuCliente({
   totalProductos: number;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [nombre, setNombre] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
+  const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
+  const [toast, setToast] = useState<string | null>(null);
   const seccionesRef = useRef<Record<string, HTMLElement | null>>({});
   const tabsRef = useRef<HTMLDivElement | null>(null);
 
+  // Init: leer sesión y carrito.
   useEffect(() => {
     const sesion = leerSesionCliente(qrToken);
     if (!sesion) {
@@ -51,22 +61,40 @@ export function MenuCliente({
       return;
     }
     setNombre(sesion.nombre);
+    setCarrito(leerCarrito(qrToken));
     setCargando(false);
   }, [qrToken, router]);
 
-  // Inicializar la primera categoría como activa.
+  // Detectar query param ?agregado=... y mostrar toast.
+  useEffect(() => {
+    const agregado = searchParams.get('agregado');
+    if (!agregado) return;
+
+    setToast(decodeURIComponent(agregado));
+    // Refrescar carrito desde sessionStorage.
+    setCarrito(leerCarrito(qrToken));
+
+    // Limpiar query param sin recargar.
+    const url = new URL(window.location.href);
+    url.searchParams.delete('agregado');
+    window.history.replaceState(null, '', url.toString());
+
+    const t = setTimeout(() => setToast(null), 2800);
+    return () => clearTimeout(t);
+  }, [searchParams, qrToken]);
+
+  // Inicializar primera categoría como activa.
   useEffect(() => {
     if (!categoriaActiva && grupos.length > 0 && grupos[0]) {
       setCategoriaActiva(grupos[0].id);
     }
   }, [grupos, categoriaActiva]);
 
-  // Observador de scroll para resaltar la categoría visible.
+  // Scroll-spy.
   useEffect(() => {
     if (cargando || grupos.length === 0) return;
     const observer = new IntersectionObserver(
       (entries) => {
-        // Tomar la sección más visible.
         const visibles = entries
           .filter((e) => e.isIntersecting)
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
@@ -76,7 +104,6 @@ export function MenuCliente({
         }
       },
       {
-        // Margen para que la categoría se considere "activa" cuando está cerca del top.
         rootMargin: '-100px 0px -60% 0px',
         threshold: [0, 0.1, 0.5, 1],
       },
@@ -89,7 +116,7 @@ export function MenuCliente({
     return () => observer.disconnect();
   }, [cargando, grupos]);
 
-  // Auto-scroll de los tabs para que la activa esté visible.
+  // Auto-scroll de tabs.
   useEffect(() => {
     if (!categoriaActiva || !tabsRef.current) return;
     const activa = tabsRef.current.querySelector<HTMLElement>(
@@ -117,6 +144,10 @@ export function MenuCliente({
     router.push(`/m/${qrToken}/menu/${productoId}`);
   }
 
+  function irAlCarrito() {
+    router.push(`/m/${qrToken}/menu/carrito`);
+  }
+
   if (cargando) {
     return (
       <main
@@ -130,12 +161,18 @@ export function MenuCliente({
     );
   }
 
+  const totalCarrito = calcularTotal(carrito);
+  const unidadesCarrito = totalUnidades(carrito);
+
   return (
     <main
-      className="min-h-screen flex flex-col pb-24"
-      style={{ background: 'var(--color-paper)' }}
+      className="min-h-screen flex flex-col"
+      style={{
+        background: 'var(--color-paper)',
+        paddingBottom: carrito.length > 0 ? '5.5rem' : '1rem',
+      }}
     >
-      {/* Header sticky con nombre del negocio + identificación + tabs */}
+      {/* Header sticky */}
       <header
         className="sticky top-0 z-20 border-b backdrop-blur-sm"
         style={{
@@ -170,7 +207,6 @@ export function MenuCliente({
           </div>
         </div>
 
-        {/* Tabs de categorías */}
         {grupos.length > 0 ? (
           <div
             ref={tabsRef}
@@ -186,9 +222,7 @@ export function MenuCliente({
                 className="px-3.5 h-8 rounded-full text-xs whitespace-nowrap transition-all shrink-0"
                 style={{
                   background:
-                    categoriaActiva === g.id
-                      ? 'var(--color-ink)'
-                      : 'transparent',
+                    categoriaActiva === g.id ? 'var(--color-ink)' : 'transparent',
                   color:
                     categoriaActiva === g.id
                       ? 'var(--color-paper)'
@@ -205,6 +239,31 @@ export function MenuCliente({
           </div>
         ) : null}
       </header>
+
+      {/* Toast "Producto agregado" */}
+      {toast ? (
+        <div
+          className="fixed top-24 left-1/2 -translate-x-1/2 z-30 px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium"
+          style={{
+            background: 'var(--color-ink)',
+            color: 'var(--color-paper)',
+            animation: 'fadeIn 0.2s ease-out',
+          }}
+          role="status"
+          aria-live="polite"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <polyline
+              points="5 12 10 17 19 8"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          {toast} agregado
+        </div>
+      ) : null}
 
       {/* Contenido */}
       <div className="flex-1 px-5 pt-4">
@@ -252,15 +311,52 @@ export function MenuCliente({
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="py-6 text-center mt-4">
-        <p
-          className="text-[0.7rem] uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
+      {/* FAB carrito */}
+      {carrito.length > 0 ? (
+        <button
+          type="button"
+          onClick={irAlCarrito}
+          className="fixed bottom-4 left-4 right-4 z-30 h-14 rounded-full shadow-xl flex items-center justify-between px-5 max-w-md mx-auto"
+          style={{
+            background: colorMarca,
+            color: 'white',
+          }}
         >
-          Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
-        </p>
-      </footer>
+          <span className="flex items-center gap-2.5">
+            <span
+              className="size-7 rounded-full grid place-items-center text-xs font-medium"
+              style={{ background: 'rgba(255,255,255,0.25)' }}
+            >
+              {unidadesCarrito}
+            </span>
+            <span className="text-sm font-medium">
+              Ver mi pedido
+            </span>
+          </span>
+          <span className="font-[family-name:var(--font-mono)] text-sm">
+            ${totalCarrito.toLocaleString('es-CO')}
+          </span>
+        </button>
+      ) : null}
+
+      {/* Footer */}
+      {carrito.length === 0 ? (
+        <footer className="py-6 text-center mt-4">
+          <p
+            className="text-[0.7rem] uppercase tracking-[0.14em]"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
+          </p>
+        </footer>
+      ) : null}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translate(-50%, -8px); }
+          to { opacity: 1; transform: translate(-50%, 0); }
+        }
+      `}</style>
     </main>
   );
 }
