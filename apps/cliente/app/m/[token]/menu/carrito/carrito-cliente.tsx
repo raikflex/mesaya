@@ -2,18 +2,28 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { createClient } from '@mesaya/database/client';
 import {
   actualizarCantidad,
   calcularTotal,
   eliminarItem,
   leerCarrito,
   totalUnidades,
+  vaciarCarrito,
   type ItemCarrito,
 } from '../../../../../lib/carrito';
 import { leerSesionCliente } from '../../../../../lib/cliente-session';
+import { enviarComanda } from './actions';
 
 const PORCENTAJE_PROPINA = 0.1;
+const SEGUNDOS_GRACIA = 30;
+
+type EstadoEnvio =
+  | { fase: 'idle' }
+  | { fase: 'cuenta-regresiva'; segundosRestantes: number }
+  | { fase: 'enviando' }
+  | { fase: 'error'; mensaje: string };
 
 export function CarritoCliente({
   qrToken,
@@ -31,7 +41,8 @@ export function CarritoCliente({
   const [nombre, setNombre] = useState<string | null>(null);
   const [conPropina, setConPropina] = useState(false);
   const [cargando, setCargando] = useState(true);
-  const [enviando, setEnviando] = useState(false);
+  const [envio, setEnvio] = useState<EstadoEnvio>({ fase: 'idle' });
+  const cancelarRef = useRef<{ cancelado: boolean }>({ cancelado: false });
 
   useEffect(() => {
     const sesion = leerSesionCliente(qrToken);
@@ -44,6 +55,16 @@ export function CarritoCliente({
     setCargando(false);
   }, [qrToken, router]);
 
+  // Si el cliente cierra la pestaña durante la cuenta regresiva, cancelamos.
+  useEffect(() => {
+    if (envio.fase !== 'cuenta-regresiva') return;
+    const handler = () => {
+      cancelarRef.current.cancelado = true;
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [envio.fase]);
+
   function cambiarCantidad(productoId: string, nuevaCantidad: number) {
     const actualizado = actualizarCantidad(qrToken, productoId, nuevaCantidad);
     setItems(actualizado);
@@ -54,15 +75,79 @@ export function CarritoCliente({
     setItems(actualizado);
   }
 
-  function enviarACocina() {
-    setEnviando(true);
-    // TODO: Bloque 5 — server action real.
-    setTimeout(() => {
-      alert(
-        'El envío a cocina se construye en el siguiente bloque. Por ahora el carrito sigue intacto.',
-      );
-      setEnviando(false);
-    }, 600);
+  async function iniciarEnvio() {
+    if (items.length === 0 || !nombre) return;
+
+    cancelarRef.current.cancelado = false;
+    setEnvio({ fase: 'cuenta-regresiva', segundosRestantes: SEGUNDOS_GRACIA });
+
+    // Cuenta regresiva visual.
+    for (let s = SEGUNDOS_GRACIA; s > 0; s--) {
+      await sleep(1000);
+      if (cancelarRef.current.cancelado) {
+        setEnvio({ fase: 'idle' });
+        return;
+      }
+      setEnvio({ fase: 'cuenta-regresiva', segundosRestantes: s - 1 });
+    }
+
+    if (cancelarRef.current.cancelado) {
+      setEnvio({ fase: 'idle' });
+      return;
+    }
+
+    // Pasamos a enviando.
+    setEnvio({ fase: 'enviando' });
+
+    try {
+      // 1) Auth anónima del cliente para tener auth.uid() válido.
+      const supabase = createClient();
+      const { data: authData, error: authError } = await supabase.auth.signInAnonymously();
+
+      if (authError || !authData.user) {
+        setEnvio({
+          fase: 'error',
+          mensaje: 'No pudimos iniciar tu sesión. Intenta de nuevo.',
+        });
+        return;
+      }
+
+      // 2) Enviar al server action.
+      const resultado = await enviarComanda({
+        qrToken,
+        authUserId: authData.user.id,
+        nombreCliente: nombre,
+        items: items.map((i) => ({
+          productoId: i.productoId,
+          cantidad: i.cantidad,
+          notas: i.notas,
+        })),
+      });
+
+      if (!resultado.ok) {
+        setEnvio({ fase: 'error', mensaje: resultado.error });
+        return;
+      }
+
+      // 3) Vaciar carrito y redirigir a confirmación.
+      vaciarCarrito(qrToken);
+      router.push(`/m/${qrToken}/menu/enviada/${resultado.comandaId}`);
+    } catch (err) {
+      console.error('[enviarComanda]', err);
+      setEnvio({
+        fase: 'error',
+        mensaje: 'Algo falló. Por favor intenta de nuevo.',
+      });
+    }
+  }
+
+  function cancelarEnvio() {
+    cancelarRef.current.cancelado = true;
+    setEnvio({ fase: 'idle' });
+  }
+
+  function reintentar() {
+    setEnvio({ fase: 'idle' });
   }
 
   if (cargando) {
@@ -83,6 +168,33 @@ export function CarritoCliente({
   const total = subtotal + propina;
   const unidades = totalUnidades(items);
 
+  // Pantalla de cuenta regresiva.
+  if (envio.fase === 'cuenta-regresiva') {
+    return (
+      <PantallaCuentaRegresiva
+        segundosRestantes={envio.segundosRestantes}
+        total={total}
+        colorMarca={colorMarca}
+        onCancelar={cancelarEnvio}
+      />
+    );
+  }
+
+  // Pantalla de enviando.
+  if (envio.fase === 'enviando') {
+    return (
+      <PantallaEnviando colorMarca={colorMarca} />
+    );
+  }
+
+  // Pantalla de error.
+  if (envio.fase === 'error') {
+    return (
+      <PantallaError mensaje={envio.mensaje} onReintentar={reintentar} qrToken={qrToken} />
+    );
+  }
+
+  // Pantalla normal del carrito.
   return (
     <main
       className="min-h-screen flex flex-col"
@@ -91,7 +203,6 @@ export function CarritoCliente({
         paddingBottom: items.length > 0 ? '6rem' : '1rem',
       }}
     >
-      {/* Header */}
       <header
         className="sticky top-0 z-10 px-5 py-3 border-b backdrop-blur-sm"
         style={{
@@ -118,7 +229,6 @@ export function CarritoCliente({
       </header>
 
       <div className="flex-1 px-5 py-6 max-w-md mx-auto w-full">
-        {/* Encabezado */}
         <div className="mb-6">
           <p
             className="text-[0.65rem] uppercase tracking-[0.14em] mb-1"
@@ -132,10 +242,7 @@ export function CarritoCliente({
           >
             Tu pedido
           </h1>
-          <p
-            className="text-xs mt-1"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <p className="text-xs mt-1" style={{ color: 'var(--color-ink-soft)' }}>
             {nombreNegocio}
           </p>
         </div>
@@ -144,7 +251,6 @@ export function CarritoCliente({
           <EstadoVacio qrToken={qrToken} colorMarca={colorMarca} />
         ) : (
           <>
-            {/* Items */}
             <ul
               className="rounded-[var(--radius-lg)] border bg-white divide-y mb-5"
               style={{ borderColor: 'var(--color-border)' }}
@@ -159,7 +265,6 @@ export function CarritoCliente({
               ))}
             </ul>
 
-            {/* Resumen */}
             <section
               className="rounded-[var(--radius-lg)] border bg-white p-5 mb-5"
               style={{ borderColor: 'var(--color-border)' }}
@@ -184,7 +289,6 @@ export function CarritoCliente({
                   </span>
                 </div>
 
-                {/* Toggle propina */}
                 <label
                   className="flex items-center justify-between gap-3 py-2 cursor-pointer select-none"
                   htmlFor="toggle-propina"
@@ -260,7 +364,6 @@ export function CarritoCliente({
               </div>
             </section>
 
-            {/* Aviso pago en mesa */}
             <p
               className="text-[0.7rem] text-center px-2 leading-relaxed"
               style={{ color: 'var(--color-muted)' }}
@@ -272,7 +375,6 @@ export function CarritoCliente({
         )}
       </div>
 
-      {/* Footer fijo con enviar */}
       {items.length > 0 ? (
         <div
           className="sticky bottom-0 left-0 right-0 px-5 py-4 border-t"
@@ -284,15 +386,14 @@ export function CarritoCliente({
         >
           <button
             type="button"
-            onClick={enviarACocina}
-            disabled={enviando}
-            className="w-full max-w-md mx-auto h-12 rounded-[var(--radius-md)] text-base font-medium flex items-center justify-between px-5 transition-opacity disabled:opacity-60"
+            onClick={iniciarEnvio}
+            className="w-full max-w-md mx-auto h-12 rounded-[var(--radius-md)] text-base font-medium flex items-center justify-between px-5"
             style={{
               background: colorMarca,
               color: 'white',
             }}
           >
-            <span>{enviando ? 'Enviando…' : 'Enviar a cocina'}</span>
+            <span>Enviar a cocina</span>
             <span className="font-[family-name:var(--font-mono)]">
               ${total.toLocaleString('es-CO')}
             </span>
@@ -302,6 +403,191 @@ export function CarritoCliente({
     </main>
   );
 }
+
+/* ============ Pantalla cuenta regresiva ============ */
+
+function PantallaCuentaRegresiva({
+  segundosRestantes,
+  total,
+  colorMarca,
+  onCancelar,
+}: {
+  segundosRestantes: number;
+  total: number;
+  colorMarca: string;
+  onCancelar: () => void;
+}) {
+  const progreso = ((SEGUNDOS_GRACIA - segundosRestantes) / SEGUNDOS_GRACIA) * 100;
+
+  return (
+    <main
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center"
+      style={{ background: 'var(--color-paper)' }}
+    >
+      <div className="w-full max-w-sm">
+        <div
+          className="size-20 rounded-full grid place-items-center mx-auto mb-6 relative"
+          style={{ background: colorMarca, color: 'white' }}
+        >
+          <span className="font-[family-name:var(--font-display)] text-3xl tabular-nums">
+            {segundosRestantes}
+          </span>
+        </div>
+
+        <h2
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          Enviando tu pedido…
+        </h2>
+        <p
+          className="text-sm leading-relaxed mb-6"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Si quieres cambiar algo, cancela ahora. En {segundosRestantes} segundo
+          {segundosRestantes === 1 ? '' : 's'} pasa a la cocina.
+        </p>
+
+        {/* Barra de progreso */}
+        <div
+          className="h-2 rounded-full mb-6 overflow-hidden"
+          style={{ background: 'var(--color-paper-deep)' }}
+        >
+          <div
+            className="h-full transition-all duration-1000 ease-linear"
+            style={{
+              width: `${progreso}%`,
+              background: colorMarca,
+            }}
+          />
+        </div>
+
+        <p
+          className="font-[family-name:var(--font-mono)] text-base mb-8"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Total: ${total.toLocaleString('es-CO')}
+        </p>
+
+        <button
+          type="button"
+          onClick={onCancelar}
+          className="w-full h-12 rounded-[var(--radius-md)] text-base font-medium border"
+          style={{
+            background: 'white',
+            color: 'var(--color-ink)',
+            borderColor: 'var(--color-border-strong)',
+          }}
+        >
+          Cancelar
+        </button>
+      </div>
+    </main>
+  );
+}
+
+/* ============ Pantalla enviando ============ */
+
+function PantallaEnviando({ colorMarca }: { colorMarca: string }) {
+  return (
+    <main
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center"
+      style={{ background: 'var(--color-paper)' }}
+    >
+      <div className="w-full max-w-sm">
+        <div
+          className="size-16 rounded-full mx-auto mb-6 animate-spin"
+          style={{
+            border: `4px solid var(--color-paper-deep)`,
+            borderTopColor: colorMarca,
+          }}
+        />
+        <h2
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          Enviando a cocina…
+        </h2>
+        <p
+          className="text-sm leading-relaxed"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Un momento, estamos avisando.
+        </p>
+      </div>
+    </main>
+  );
+}
+
+/* ============ Pantalla error ============ */
+
+function PantallaError({
+  mensaje,
+  onReintentar,
+  qrToken,
+}: {
+  mensaje: string;
+  onReintentar: () => void;
+  qrToken: string;
+}) {
+  return (
+    <main
+      className="min-h-screen flex flex-col items-center justify-center px-6 py-12 text-center"
+      style={{ background: 'var(--color-paper)' }}
+    >
+      <div className="w-full max-w-sm">
+        <div
+          className="size-14 rounded-full grid place-items-center mx-auto mb-5"
+          style={{ background: 'var(--color-danger)', color: 'white' }}
+        >
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <h2
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          No pudimos enviar tu pedido.
+        </h2>
+        <p
+          className="text-sm leading-relaxed mb-8"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          {mensaje}
+        </p>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={onReintentar}
+            className="w-full h-12 rounded-[var(--radius-md)] text-base font-medium"
+            style={{
+              background: 'var(--color-ink)',
+              color: 'var(--color-paper)',
+            }}
+          >
+            Volver a intentar
+          </button>
+          <Link
+            href={`/m/${qrToken}/menu`}
+            className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-sm"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            Volver al menú
+          </Link>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+/* ============ Item fila ============ */
 
 function ItemFila({
   item,
@@ -359,7 +645,6 @@ function ItemFila({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        {/* Selector cantidad */}
         <div className="flex items-center gap-1">
           <button
             type="button"
@@ -453,8 +738,7 @@ function EstadoVacio({
         className="text-sm leading-relaxed mb-6 max-w-xs mx-auto"
         style={{ color: 'var(--color-ink-soft)' }}
       >
-        Vuelve al menú y agrega lo que quieras pedir. Tus selecciones aparecen
-        aquí.
+        Vuelve al menú y agrega lo que quieras pedir.
       </p>
       <Link
         href={`/m/${qrToken}/menu`}
@@ -468,4 +752,8 @@ function EstadoVacio({
       </Link>
     </div>
   );
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
