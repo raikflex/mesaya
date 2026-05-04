@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { cerrarSesion } from './actions';
+import { useEffect, useRef, useState, useTransition } from 'react';
+import { createClient } from '@mesaya/database/client';
+import { cambiarEstadoComanda, cerrarSesion } from './actions';
 
 export type ItemComanda = {
   id: string;
@@ -34,14 +35,142 @@ export function TableroCocina({
   comandasIniciales: ComandaCocina[];
   restauranteId: string;
 }) {
-  const [comandas] = useState<ComandaCocina[]>(comandasIniciales);
+  const [comandas, setComandas] = useState<ComandaCocina[]>(comandasIniciales);
+  const idsRef = useRef<Set<string>>(new Set(comandasIniciales.map((c) => c.id)));
 
-  // TODO Bloque 3: realtime subscription a `comandas` y `comanda_items`.
-  // TODO Bloque 4: server actions para cambiar estado.
+  useEffect(() => {
+    setComandas(comandasIniciales);
+    idsRef.current = new Set(comandasIniciales.map((c) => c.id));
+  }, [comandasIniciales]);
 
-  const pendientes = comandas.filter((c) => c.estado === 'pendiente');
-  const enPreparacion = comandas.filter((c) => c.estado === 'en_preparacion');
-  const listas = comandas.filter((c) => c.estado === 'lista');
+  /**
+   * Realtime con Supabase.
+   *
+   * Lecciones aprendidas en S6 Bloque 4 sobre por qué el WebSocket conectaba
+   * (101 Switching Protocols) pero no llegaban eventos:
+   *
+   * 1. El cliente browser NO propaga el JWT al canal de realtime
+   *    automáticamente. Hay que llamar `realtime.setAuth(token)` con el
+   *    access_token de la sesión actual ANTES de subscribe.
+   *
+   * 2. Filtros server-side como `restaurante_id=eq.X` requieren que la
+   *    config de la tabla en Supabase tenga "Realtime: enabled" + un anexo.
+   *    Es más confiable filtrar client-side. Las RLS ya nos protegen igual.
+   */
+  useEffect(() => {
+    const supabase = createClient();
+    let canalActual: ReturnType<typeof supabase.channel> | null = null;
+
+    async function setupRealtime() {
+      // 1) Pasar el JWT del user al canal de realtime.
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+
+      // 2) Crear canal SIN filtro server-side. Filtramos client-side.
+      const canal = supabase
+        .channel(`cocina-realtime`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'comandas' },
+          async (payload) => {
+            console.log('[realtime] comandas event:', payload.eventType, payload);
+
+            if (payload.eventType === 'INSERT') {
+              const nueva = payload.new as { id: string; estado: string; restaurante_id: string };
+              if (nueva.restaurante_id !== restauranteId) return;
+              if (idsRef.current.has(nueva.id)) return;
+              if (!['pendiente', 'en_preparacion', 'lista'].includes(nueva.estado)) return;
+
+              const enriquecida = await traerComandaCompleta(nueva.id);
+              if (enriquecida) {
+                idsRef.current.add(enriquecida.id);
+                setComandas((cs) => [...cs, enriquecida]);
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              const actualizada = payload.new as {
+                id: string;
+                estado: string;
+                total: number;
+                restaurante_id: string;
+              };
+              if (actualizada.restaurante_id !== restauranteId) return;
+
+              if (
+                actualizada.estado === 'entregada' ||
+                actualizada.estado === 'cancelada'
+              ) {
+                idsRef.current.delete(actualizada.id);
+                setComandas((cs) => cs.filter((c) => c.id !== actualizada.id));
+              } else {
+                setComandas((cs) =>
+                  cs.map((c) =>
+                    c.id === actualizada.id
+                      ? {
+                          ...c,
+                          estado: actualizada.estado as ComandaCocina['estado'],
+                          total: actualizada.total,
+                        }
+                      : c,
+                  ),
+                );
+              }
+            } else if (payload.eventType === 'DELETE') {
+              const eliminada = payload.old as { id: string };
+              idsRef.current.delete(eliminada.id);
+              setComandas((cs) => cs.filter((c) => c.id !== eliminada.id));
+            }
+          },
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'comanda_items' },
+          async (payload) => {
+            const comandaId =
+              payload.eventType === 'DELETE'
+                ? (payload.old as { comanda_id: string }).comanda_id
+                : (payload.new as { comanda_id: string }).comanda_id;
+
+            if (!idsRef.current.has(comandaId)) return;
+
+            const items = await traerItemsDeComanda(comandaId);
+            setComandas((cs) =>
+              cs.map((c) => (c.id === comandaId ? { ...c, items } : c)),
+            );
+          },
+        )
+        .subscribe((status) => {
+          console.log('[realtime] subscription status:', status);
+        });
+
+      canalActual = canal;
+    }
+
+    setupRealtime();
+
+    return () => {
+      if (canalActual) {
+        supabase.removeChannel(canalActual);
+      }
+    };
+  }, [restauranteId]);
+
+  function moverComanda(comandaId: string, nuevoEstado: 'en_preparacion' | 'lista') {
+    setComandas((cs) =>
+      cs.map((c) => (c.id === comandaId ? { ...c, estado: nuevoEstado } : c)),
+    );
+  }
+
+  const pendientes = comandas
+    .filter((c) => c.estado === 'pendiente')
+    .sort((a, b) => a.creadaEn.localeCompare(b.creadaEn));
+  const enPreparacion = comandas
+    .filter((c) => c.estado === 'en_preparacion')
+    .sort((a, b) => a.creadaEn.localeCompare(b.creadaEn));
+  const listas = comandas
+    .filter((c) => c.estado === 'lista')
+    .sort((a, b) => a.creadaEn.localeCompare(b.creadaEn));
 
   return (
     <main
@@ -66,6 +195,7 @@ export function TableroCocina({
               comandas={pendientes}
               colorMarca={colorMarca}
               tono="pending"
+              onMover={moverComanda}
             />
             <Seccion
               titulo="Preparando"
@@ -73,6 +203,7 @@ export function TableroCocina({
               comandas={enPreparacion}
               colorMarca={colorMarca}
               tono="progress"
+              onMover={moverComanda}
             />
             <Seccion
               titulo="Listas"
@@ -80,12 +211,65 @@ export function TableroCocina({
               comandas={listas}
               colorMarca={colorMarca}
               tono="done"
+              onMover={moverComanda}
             />
           </div>
         )}
       </div>
     </main>
   );
+}
+
+async function traerComandaCompleta(comandaId: string): Promise<ComandaCocina | null> {
+  const supabase = createClient();
+  const { data: comanda } = await supabase
+    .from('comandas')
+    .select(
+      `
+      id, numero_diario, estado, total, creada_en,
+      sesion_clientes (nombre),
+      sesiones (mesas (numero))
+    `,
+    )
+    .eq('id', comandaId)
+    .maybeSingle();
+
+  if (!comanda) return null;
+
+  const sc = Array.isArray(comanda.sesion_clientes)
+    ? comanda.sesion_clientes[0]
+    : comanda.sesion_clientes;
+  const sesion = Array.isArray(comanda.sesiones) ? comanda.sesiones[0] : comanda.sesiones;
+  const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
+
+  const items = await traerItemsDeComanda(comandaId);
+
+  return {
+    id: comanda.id as string,
+    numeroDiario: comanda.numero_diario as number,
+    estado: comanda.estado as ComandaCocina['estado'],
+    total: comanda.total as number,
+    creadaEn: comanda.creada_en as string,
+    clienteNombre: (sc as { nombre: string } | null)?.nombre ?? 'Cliente',
+    mesaNumero: (mesa as { numero: string } | null)?.numero ?? '?',
+    items,
+  };
+}
+
+async function traerItemsDeComanda(comandaId: string): Promise<ItemComanda[]> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from('comanda_items')
+    .select('id, nombre_snapshot, cantidad, nota')
+    .eq('comanda_id', comandaId)
+    .order('id', { ascending: true });
+
+  return (data ?? []).map((it) => ({
+    id: it.id as string,
+    nombre: it.nombre_snapshot as string,
+    cantidad: it.cantidad as number,
+    nota: (it.nota as string) ?? null,
+  }));
 }
 
 function Header({
@@ -176,12 +360,14 @@ function Seccion({
   comandas,
   colorMarca,
   tono,
+  onMover,
 }: {
   titulo: string;
   descripcion: string;
   comandas: ComandaCocina[];
   colorMarca: string;
   tono: 'pending' | 'progress' | 'done';
+  onMover: (id: string, nuevoEstado: 'en_preparacion' | 'lista') => void;
 }) {
   const colores: Record<typeof tono, { bg: string; fg: string; border: string }> = {
     pending: {
@@ -189,16 +375,8 @@ function Seccion({
       fg: 'var(--color-ink-soft)',
       border: 'var(--color-border)',
     },
-    progress: {
-      bg: '#fef3c7',
-      fg: '#92400e',
-      border: '#fde68a',
-    },
-    done: {
-      bg: '#dcfce7',
-      fg: '#166534',
-      border: '#bbf7d0',
-    },
+    progress: { bg: '#fef3c7', fg: '#92400e', border: '#fde68a' },
+    done: { bg: '#dcfce7', fg: '#166534', border: '#bbf7d0' },
   };
   const c = colores[tono];
 
@@ -240,7 +418,12 @@ function Seccion({
         <ul className="space-y-3">
           {comandas.map((comanda) => (
             <li key={comanda.id}>
-              <CardComanda comanda={comanda} colorMarca={colorMarca} tono={tono} />
+              <CardComanda
+                comanda={comanda}
+                colorMarca={colorMarca}
+                tono={tono}
+                onMover={onMover}
+              />
             </li>
           ))}
         </ul>
@@ -253,14 +436,37 @@ function CardComanda({
   comanda,
   colorMarca,
   tono,
+  onMover,
 }: {
   comanda: ComandaCocina;
   colorMarca: string;
   tono: 'pending' | 'progress' | 'done';
+  onMover: (id: string, nuevoEstado: 'en_preparacion' | 'lista') => void;
 }) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function avanzar() {
+    setError(null);
+    const nuevoEstado: 'en_preparacion' | 'lista' =
+      tono === 'pending' ? 'en_preparacion' : 'lista';
+
+    onMover(comanda.id, nuevoEstado);
+
+    startTransition(async () => {
+      const resultado = await cambiarEstadoComanda({
+        comandaId: comanda.id,
+        nuevoEstado,
+      });
+      if (!resultado.ok) {
+        setError(resultado.error);
+      }
+    });
+  }
+
   return (
     <article
-      className="rounded-[var(--radius-lg)] border bg-white overflow-hidden"
+      className="rounded-[var(--radius-lg)] border bg-white overflow-hidden transition-shadow"
       style={{
         borderColor:
           tono === 'progress'
@@ -269,6 +475,7 @@ function CardComanda({
               ? '#bbf7d0'
               : 'var(--color-border)',
         borderWidth: tono === 'pending' ? 1 : 1.5,
+        opacity: pending ? 0.6 : 1,
       }}
     >
       <header
@@ -331,9 +538,18 @@ function CardComanda({
             </li>
           ))}
         </ul>
+
+        {error ? (
+          <p
+            role="alert"
+            className="mt-3 text-[0.7rem] text-center"
+            style={{ color: 'var(--color-danger)' }}
+          >
+            {error}
+          </p>
+        ) : null}
       </div>
 
-      {/* Footer con acciones — Bloque 4 las hace funcionales. */}
       <footer
         className="px-4 py-2.5 border-t flex items-center justify-between gap-3"
         style={{
@@ -347,16 +563,28 @@ function CardComanda({
         >
           Total ${comanda.total.toLocaleString('es-CO')}
         </span>
-        <button
-          type="button"
-          disabled
-          className="text-xs font-medium opacity-40 cursor-not-allowed"
-          style={{ color: colorMarca }}
-        >
-          {tono === 'pending' && 'Empezar a preparar →'}
-          {tono === 'progress' && 'Marcar como lista →'}
-          {tono === 'done' && 'Esperando al mesero'}
-        </button>
+        {tono === 'done' ? (
+          <span
+            className="text-xs italic"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Esperando al mesero
+          </span>
+        ) : (
+          <button
+            type="button"
+            onClick={avanzar}
+            disabled={pending}
+            className="text-xs font-medium transition-opacity disabled:opacity-40"
+            style={{ color: colorMarca }}
+          >
+            {pending
+              ? 'Actualizando…'
+              : tono === 'pending'
+                ? 'Empezar a preparar →'
+                : 'Marcar como lista →'}
+          </button>
+        )}
       </footer>
     </article>
   );
@@ -368,7 +596,7 @@ function TiempoTranscurrido({ creadaEn }: { creadaEn: string }) {
   useEffect(() => {
     const interval = setInterval(() => {
       setTexto(formatearTiempo(creadaEn));
-    }, 30_000); // refresca cada 30 segundos
+    }, 30_000);
     return () => clearInterval(interval);
   }, [creadaEn]);
 
