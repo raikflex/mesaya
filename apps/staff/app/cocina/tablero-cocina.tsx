@@ -3,6 +3,13 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { cambiarEstadoComanda, cerrarSesion } from './actions';
+import {
+  alternarSonido,
+  desbloquearAudio,
+  estaSonidoActivo,
+  inicializarAudio,
+  reproducirDing,
+} from '../../lib/sonido-cocina';
 
 export type ItemComanda = {
   id: string;
@@ -43,40 +50,36 @@ export function TableroCocina({
     idsRef.current = new Set(comandasIniciales.map((c) => c.id));
   }, [comandasIniciales]);
 
+  // Inicializar AudioContext una sola vez en mount.
+  useEffect(() => {
+    inicializarAudio();
+  }, []);
+
   /**
-   * Realtime con Supabase.
-   *
-   * Lecciones aprendidas en S6 Bloque 4 sobre por qué el WebSocket conectaba
-   * (101 Switching Protocols) pero no llegaban eventos:
-   *
-   * 1. El cliente browser NO propaga el JWT al canal de realtime
-   *    automáticamente. Hay que llamar `realtime.setAuth(token)` con el
-   *    access_token de la sesión actual ANTES de subscribe.
-   *
-   * 2. Filtros server-side como `restaurante_id=eq.X` requieren que la
-   *    config de la tabla en Supabase tenga "Realtime: enabled" + un anexo.
-   *    Es más confiable filtrar client-side. Las RLS ya nos protegen igual.
+   * Realtime con Supabase. Lecciones aprendidas en S6 Bloque 4:
+   *   - El cliente browser NO propaga el JWT al canal de realtime
+   *     automáticamente. Hay que llamar `realtime.setAuth(token)` con el
+   *     access_token de la sesión actual ANTES de subscribe, o las RLS
+   *     bloquean los eventos silenciosamente.
+   *   - Filtros server-side (`restaurante_id=eq.X`) son frágiles. Filtramos
+   *     client-side; las RLS igual nos protegen.
    */
   useEffect(() => {
     const supabase = createClient();
     let canalActual: ReturnType<typeof supabase.channel> | null = null;
 
     async function setupRealtime() {
-      // 1) Pasar el JWT del user al canal de realtime.
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.access_token) {
         supabase.realtime.setAuth(session.access_token);
       }
 
-      // 2) Crear canal SIN filtro server-side. Filtramos client-side.
       const canal = supabase
         .channel(`cocina-realtime`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'comandas' },
           async (payload) => {
-            console.log('[realtime] comandas event:', payload.eventType, payload);
-
             if (payload.eventType === 'INSERT') {
               const nueva = payload.new as { id: string; estado: string; restaurante_id: string };
               if (nueva.restaurante_id !== restauranteId) return;
@@ -87,6 +90,11 @@ export function TableroCocina({
               if (enriquecida) {
                 idsRef.current.add(enriquecida.id);
                 setComandas((cs) => [...cs, enriquecida]);
+                // Solo sonar si la nueva comanda llegó como 'pendiente'.
+                // Evita ruido si por alguna razón llega ya en 'lista' (caso raro).
+                if (enriquecida.estado === 'pendiente') {
+                  reproducirDing();
+                }
               }
             } else if (payload.eventType === 'UPDATE') {
               const actualizada = payload.new as {
@@ -140,9 +148,7 @@ export function TableroCocina({
             );
           },
         )
-        .subscribe((status) => {
-          console.log('[realtime] subscription status:', status);
-        });
+        .subscribe();
 
       canalActual = canal;
     }
@@ -283,6 +289,23 @@ function Header({
   colorMarca: string;
   totalComandas: number;
 }) {
+  const [sonidoOn, setSonidoOn] = useState<boolean | null>(null);
+
+  // Inicializar el estado del toggle desde localStorage en mount.
+  useEffect(() => {
+    setSonidoOn(estaSonidoActivo());
+  }, []);
+
+  function toggleSonido() {
+    desbloquearAudio();
+    const nuevo = alternarSonido();
+    setSonidoOn(nuevo);
+    if (nuevo) {
+      // Reproducir un ding como confirmación al activar.
+      reproducirDing();
+    }
+  }
+
   return (
     <header
       className="sticky top-0 z-20 px-5 lg:px-8 py-3 border-b backdrop-blur-sm"
@@ -339,6 +362,22 @@ function Header({
             </span>
           </div>
 
+          {sonidoOn !== null ? (
+            <button
+              type="button"
+              onClick={toggleSonido}
+              aria-label={sonidoOn ? 'Apagar sonido' : 'Activar sonido'}
+              title={sonidoOn ? 'Sonido activo. Click para apagar.' : 'Sonido apagado. Click para activar.'}
+              className="size-9 rounded-full grid place-items-center transition-colors hover:opacity-80"
+              style={{
+                background: sonidoOn ? colorMarca : 'var(--color-paper-deep)',
+                color: sonidoOn ? 'white' : 'var(--color-muted)',
+              }}
+            >
+              {sonidoOn ? <IconCampana /> : <IconCampanaTachada />}
+            </button>
+          ) : null}
+
           <form action={cerrarSesion}>
             <button
               type="submit"
@@ -351,6 +390,34 @@ function Header({
         </div>
       </div>
     </header>
+  );
+}
+
+function IconCampana() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function IconCampanaTachada() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M13.73 21a2 2 0 0 1-3.46 0M18.63 13A17.89 17.89 0 0 1 18 8M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14M18 8a6 6 0 0 0-9.33-5M1 1l22 22"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }
 
@@ -448,6 +515,7 @@ function CardComanda({
 
   function avanzar() {
     setError(null);
+    desbloquearAudio(); // Aprovechamos el click para desbloquear audio.
     const nuevoEstado: 'en_preparacion' | 'lista' =
       tono === 'pending' ? 'en_preparacion' : 'lista';
 
