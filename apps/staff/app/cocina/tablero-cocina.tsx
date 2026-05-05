@@ -50,32 +50,39 @@ export function TableroCocina({
     idsRef.current = new Set(comandasIniciales.map((c) => c.id));
   }, [comandasIniciales]);
 
-  // Inicializar AudioContext una sola vez en mount.
   useEffect(() => {
     inicializarAudio();
   }, []);
 
   /**
-   * Realtime con Supabase. Lecciones aprendidas en S6 Bloque 4:
+   * Realtime con Supabase. Lecciones aprendidas:
    *   - El cliente browser NO propaga el JWT al canal de realtime
    *     automáticamente. Hay que llamar `realtime.setAuth(token)` con el
-   *     access_token de la sesión actual ANTES de subscribe, o las RLS
-   *     bloquean los eventos silenciosamente.
-   *   - Filtros server-side (`restaurante_id=eq.X`) son frágiles. Filtramos
-   *     client-side; las RLS igual nos protegen.
+   *     access_token de la sesión actual ANTES de subscribe.
+   *   - React Strict Mode (en dev) monta el componente dos veces. Eso
+   *     causaba que el segundo mount intentara `.on()` sobre un canal ya
+   *     subscribed → error "cannot add postgres_changes after subscribe()".
+   *     Fix: nombre de canal único por mount con `useRef` y cleanup
+   *     defensivo que `removeChannel` antes de cualquier otro paso.
    */
   useEffect(() => {
     const supabase = createClient();
+    const canalNombre = `cocina-realtime-${Date.now()}-${Math.random().toString(36).slice(2)}`;
     let canalActual: ReturnType<typeof supabase.channel> | null = null;
+    let cancelado = false;
 
     async function setupRealtime() {
       const { data: { session } } = await supabase.auth.getSession();
+      if (cancelado) return;
+
       if (session?.access_token) {
         supabase.realtime.setAuth(session.access_token);
       }
 
+      if (cancelado) return;
+
       const canal = supabase
-        .channel(`cocina-realtime`)
+        .channel(canalNombre)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'comandas' },
@@ -90,8 +97,6 @@ export function TableroCocina({
               if (enriquecida) {
                 idsRef.current.add(enriquecida.id);
                 setComandas((cs) => [...cs, enriquecida]);
-                // Solo sonar si la nueva comanda llegó como 'pendiente'.
-                // Evita ruido si por alguna razón llega ya en 'lista' (caso raro).
                 if (enriquecida.estado === 'pendiente') {
                   reproducirDing();
                 }
@@ -147,17 +152,24 @@ export function TableroCocina({
               cs.map((c) => (c.id === comandaId ? { ...c, items } : c)),
             );
           },
-        )
-        .subscribe();
+        );
+
+      if (cancelado) {
+        supabase.removeChannel(canal);
+        return;
+      }
 
       canalActual = canal;
+      canal.subscribe();
     }
 
     setupRealtime();
 
     return () => {
+      cancelado = true;
       if (canalActual) {
         supabase.removeChannel(canalActual);
+        canalActual = null;
       }
     };
   }, [restauranteId]);
@@ -291,7 +303,6 @@ function Header({
 }) {
   const [sonidoOn, setSonidoOn] = useState<boolean | null>(null);
 
-  // Inicializar el estado del toggle desde localStorage en mount.
   useEffect(() => {
     setSonidoOn(estaSonidoActivo());
   }, []);
@@ -301,7 +312,6 @@ function Header({
     const nuevo = alternarSonido();
     setSonidoOn(nuevo);
     if (nuevo) {
-      // Reproducir un ding como confirmación al activar.
       reproducirDing();
     }
   }
@@ -515,7 +525,7 @@ function CardComanda({
 
   function avanzar() {
     setError(null);
-    desbloquearAudio(); // Aprovechamos el click para desbloquear audio.
+    desbloquearAudio();
     const nuevoEstado: 'en_preparacion' | 'lista' =
       tono === 'pending' ? 'en_preparacion' : 'lista';
 

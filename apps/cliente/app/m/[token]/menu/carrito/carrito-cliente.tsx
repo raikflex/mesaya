@@ -232,22 +232,7 @@ export function CarritoCliente({
           background: 'rgba(250, 246, 241, 0.92)',
         }}
       >
-        <Link
-          href={`/m/${qrToken}/menu`}
-          className="inline-flex items-center gap-2 text-sm"
-          style={{ color: 'var(--color-ink)' }}
-        >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-            <path
-              d="M19 12H5M11 18l-6-6 6-6"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-          Volver al menú
-        </Link>
+          <BotonVolverCarrito qrToken={qrToken} />
       </header>
 
       <div className="flex-1 px-5 py-6 max-w-md mx-auto w-full">
@@ -700,4 +685,36 @@ function EstadoVacio({
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+function BotonVolverCarrito({ qrToken }: { qrToken: string }) {
+  const [ultimaComandaId, setUltimaComandaId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const sesion = leerSesionCliente(qrToken);
+    setUltimaComandaId(sesion?.ultimaComandaId ?? null);
+  }, [qrToken]);
+
+  const href = ultimaComandaId
+    ? `/m/${qrToken}/menu/enviada/${ultimaComandaId}`
+    : `/m/${qrToken}/menu`;
+  const texto = ultimaComandaId ? 'Volver al pedido' : 'Volver al menú';
+
+  return (
+    <Link
+      href={href}
+      className="inline-flex items-center gap-2 text-sm"
+      style={{ color: 'var(--color-ink)' }}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path
+          d="M19 12H5M11 18l-6-6 6-6"
+          stroke="currentColor"
+          strokeWidth="1.75"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+      {texto}
+    </Link>
+  );
 }
