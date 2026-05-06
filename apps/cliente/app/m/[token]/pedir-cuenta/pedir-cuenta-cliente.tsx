@@ -10,7 +10,7 @@ import {
   calcularSegundosRestantes,
 } from '../../../../lib/timer-llamado';
 import { cancelarLlamado } from '../llamar-mesero/actions';
-import { pedirCuenta, type FormaPago } from './actions';
+import { pedirCuenta, type FormaPago, type TipoDoc } from './actions';
 
 const PORCENTAJE_PROPINA = 0.1;
 
@@ -62,6 +62,13 @@ export function PedirCuentaCliente({
   const router = useRouter();
   const [conPropina, setConPropina] = useState(false);
   const [formaPago, setFormaPago] = useState<FormaPago>('efectivo');
+  // Factura opcional: la mayoría de clientes no pide. Si abre el toggle,
+  // aparecen los 3 campos. Sin esto el INSERT a llamados_mesero deja
+  // doc_* en null y el mesero no ve sección de factura.
+  const [quiereFactura, setQuiereFactura] = useState(false);
+  const [tipoDoc, setTipoDoc] = useState<TipoDoc>('CC');
+  const [numeroDoc, setNumeroDoc] = useState('');
+  const [nombreDoc, setNombreDoc] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [urlVolver, setUrlVolver] = useState<string>(`/m/${qrToken}/menu`);
@@ -198,11 +205,33 @@ export function PedirCuentaCliente({
 
   function pedir() {
     setError(null);
+
+    // Validación local de factura antes de enviar
+    if (quiereFactura) {
+      const num = numeroDoc.trim();
+      const nom = nombreDoc.trim();
+      if (num.length < 3) {
+        setError('Ingresa el número de documento.');
+        return;
+      }
+      if (nom.length < 3) {
+        setError('Ingresa el nombre o razón social.');
+        return;
+      }
+    }
+
     startTransition(async () => {
       const resultado = await pedirCuenta({
         qrToken,
         conPropina,
         formaPago,
+        factura: quiereFactura
+          ? {
+              tipoDoc,
+              numero: numeroDoc.trim(),
+              nombre: nombreDoc.trim(),
+            }
+          : null,
       });
       if (!resultado.ok) {
         setError(resultado.error);
@@ -490,6 +519,161 @@ export function PedirCuentaCliente({
               </label>
             ))}
           </div>
+        </section>
+
+        <section className="mb-5">
+          <button
+            type="button"
+            onClick={() => setQuiereFactura((v) => !v)}
+            aria-expanded={quiereFactura}
+            className="w-full flex items-center justify-between px-3.5 py-3 rounded-[var(--radius-md)] border bg-white"
+            style={{
+              borderColor: quiereFactura
+                ? colorMarca
+                : 'var(--color-border-strong)',
+              borderWidth: quiereFactura ? 1.5 : 1,
+            }}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span
+                className="size-5 rounded border-2 grid place-items-center shrink-0"
+                style={{
+                  borderColor: quiereFactura
+                    ? colorMarca
+                    : 'var(--color-border-strong)',
+                  background: quiereFactura ? colorMarca : 'transparent',
+                }}
+              >
+                {quiereFactura ? (
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    aria-hidden
+                  >
+                    <polyline
+                      points="5 12 10 17 19 8"
+                      stroke="white"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                ) : null}
+              </span>
+              <div className="text-left min-w-0">
+                <p
+                  className="text-sm font-medium"
+                  style={{ color: 'var(--color-ink)' }}
+                >
+                  ¿Necesitas factura?
+                </p>
+                <p
+                  className="text-[0.7rem] mt-0.5"
+                  style={{ color: 'var(--color-ink-soft)' }}
+                >
+                  Si lo activas, agrega tu documento.
+                </p>
+              </div>
+            </div>
+          </button>
+
+          {quiereFactura ? (
+            <div
+              className="mt-3 space-y-3 rounded-[var(--radius-md)] border bg-white p-4"
+              style={{ borderColor: 'var(--color-border)' }}
+            >
+              <div>
+                <label
+                  className="block text-[0.7rem] uppercase tracking-[0.12em] mb-1.5"
+                  style={{ color: 'var(--color-muted)' }}
+                >
+                  Tipo de documento
+                </label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['CC', 'NIT', 'CE', 'PA'] as TipoDoc[]).map((t) => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setTipoDoc(t)}
+                      aria-pressed={tipoDoc === t}
+                      className="h-10 rounded-[var(--radius-md)] border text-sm font-medium transition-colors"
+                      style={{
+                        borderColor:
+                          tipoDoc === t ? colorMarca : 'var(--color-border-strong)',
+                        background:
+                          tipoDoc === t ? colorMarca : 'white',
+                        color: tipoDoc === t ? 'white' : 'var(--color-ink)',
+                        borderWidth: tipoDoc === t ? 1.5 : 1,
+                      }}
+                    >
+                      {t}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label
+                  htmlFor="numeroDoc"
+                  className="block text-[0.7rem] uppercase tracking-[0.12em] mb-1.5"
+                  style={{ color: 'var(--color-muted)' }}
+                >
+                  Número
+                </label>
+                <input
+                  id="numeroDoc"
+                  type="text"
+                  inputMode="numeric"
+                  value={numeroDoc}
+                  onChange={(e) => {
+                    setNumeroDoc(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  placeholder={tipoDoc === 'NIT' ? '900123456-7' : '1020304050'}
+                  maxLength={30}
+                  className="w-full h-11 px-3 rounded-[var(--radius-md)] border text-base"
+                  style={{
+                    borderColor: 'var(--color-border-strong)',
+                    color: 'var(--color-ink)',
+                    background: 'var(--color-paper)',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="nombreDoc"
+                  className="block text-[0.7rem] uppercase tracking-[0.12em] mb-1.5"
+                  style={{ color: 'var(--color-muted)' }}
+                >
+                  {tipoDoc === 'NIT' ? 'Razón social' : 'Nombre completo'}
+                </label>
+                <input
+                  id="nombreDoc"
+                  type="text"
+                  value={nombreDoc}
+                  onChange={(e) => {
+                    setNombreDoc(e.target.value);
+                    if (error) setError(null);
+                  }}
+                  placeholder={
+                    tipoDoc === 'NIT'
+                      ? 'Empresa SAS'
+                      : 'Como aparece en tu documento'
+                  }
+                  maxLength={120}
+                  className="w-full h-11 px-3 rounded-[var(--radius-md)] border text-base"
+                  style={{
+                    borderColor: 'var(--color-border-strong)',
+                    color: 'var(--color-ink)',
+                    background: 'var(--color-paper)',
+                  }}
+                />
+              </div>
+            </div>
+          ) : null}
         </section>
 
         <p

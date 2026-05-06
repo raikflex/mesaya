@@ -50,6 +50,12 @@ export type PagoMesero = {
   meseroAtendiendoId: string | null;
   totalAcumulado: number;
   cantidadComandas: number;
+  // Datos de factura opcionales — el cliente los puede haber pasado al pedir
+  // cuenta. Si están, el mesero los ve en el modal de cobrar para reportarlos
+  // al sistema contable. Se denormalizan a `pagos` al confirmar.
+  docTipo: string | null;
+  docNumero: string | null;
+  docNombre: string | null;
 };
 
 export type ColaMesero = {
@@ -75,7 +81,6 @@ export function TableroMesero({
 }) {
   const [cola, setCola] = useState<ColaMesero>(colaInicial);
 
-  // Sets para detectar items nuevos en realtime y disparar sonidos.
   const llamadoIdsRef = useRef<Set<string>>(
     new Set(colaInicial.llamados.map((l) => l.id)),
   );
@@ -97,11 +102,6 @@ export function TableroMesero({
     inicializarAudio();
   }, []);
 
-  /**
-   * Realtime mesero: suscripción a `llamados_mesero` y `comandas`.
-   * Aplicamos la lección de S6: setAuth con JWT antes de subscribe, canal con
-   * nombre único por mount, flag cancelado para cleanup defensivo.
-   */
   useEffect(() => {
     const supabase = createClient();
     const canalNombre = `mesero-realtime-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -122,7 +122,6 @@ export function TableroMesero({
           'postgres_changes',
           { event: '*', schema: 'public', table: 'llamados_mesero' },
           async (payload) => {
-            // INSERT: nuevo llamado pendiente.
             if (payload.eventType === 'INSERT') {
               const fila = payload.new as {
                 id: string;
@@ -156,7 +155,6 @@ export function TableroMesero({
               return;
             }
 
-            // UPDATE: cambio de estado o mesero_atendiendo.
             if (payload.eventType === 'UPDATE') {
               const actualizada = payload.new as {
                 id: string;
@@ -167,7 +165,6 @@ export function TableroMesero({
               };
               if (actualizada.restaurante_id !== restauranteId) return;
 
-              // Si pasó a atendido/cancelado, sacar del tablero.
               if (
                 actualizada.estado === 'atendido' ||
                 actualizada.estado === 'cancelado'
@@ -182,7 +179,6 @@ export function TableroMesero({
                 return;
               }
 
-              // Sigue pendiente: actualizar mesero_atendiendo_id.
               setCola((c) => ({
                 ...c,
                 llamados: c.llamados.map((l) =>
@@ -199,7 +195,6 @@ export function TableroMesero({
               return;
             }
 
-            // DELETE: caso raro pero defensivo.
             if (payload.eventType === 'DELETE') {
               const fila = payload.old as { id: string };
               llamadoIdsRef.current.delete(fila.id);
@@ -216,7 +211,6 @@ export function TableroMesero({
           'postgres_changes',
           { event: '*', schema: 'public', table: 'comandas' },
           async (payload) => {
-            // Solo nos interesan comandas en estado 'lista' o que cambiaron a 'entregada'.
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
               const fila = payload.new as {
                 id: string;
@@ -226,10 +220,8 @@ export function TableroMesero({
               };
               if (fila.restaurante_id !== restauranteId) return;
 
-              // Si llegó a 'lista', agregar al tablero.
               if (fila.estado === 'lista') {
                 if (comandaIdsRef.current.has(fila.id)) {
-                  // Ya estaba: actualizar mesero_atendiendo.
                   setCola((c) => ({
                     ...c,
                     comandasListas: c.comandasListas.map((cm) =>
@@ -252,7 +244,6 @@ export function TableroMesero({
                 return;
               }
 
-              // Si pasó a 'entregada' o 'cancelada', sacar.
               if (fila.estado === 'entregada' || fila.estado === 'cancelada') {
                 comandaIdsRef.current.delete(fila.id);
                 setCola((c) => ({
@@ -354,11 +345,15 @@ async function traerLlamadoCompleto(llamadoId: string): Promise<LlamadoMesero | 
 
 async function traerPagoCompleto(llamadoId: string): Promise<PagoMesero | null> {
   const supabase = createClient();
+  // Leer también doc_tipo, doc_numero, doc_nombre (datos de facturación
+  // opcionales que el cliente pasó al pedir cuenta) para mostrarlos en el
+  // modal de cobrar.
   const { data: llamado } = await supabase
     .from('llamados_mesero')
     .select(
       `
       id, creado_en, mesero_atendiendo_id, sesion_id,
+      doc_tipo, doc_numero, doc_nombre,
       sesiones (mesas (numero))
     `,
     )
@@ -389,6 +384,9 @@ async function traerPagoCompleto(llamadoId: string): Promise<PagoMesero | null> 
     meseroAtendiendoId: (llamado.mesero_atendiendo_id as string | null) ?? null,
     totalAcumulado,
     cantidadComandas: (comandas ?? []).length,
+    docTipo: (llamado.doc_tipo as string | null) ?? null,
+    docNumero: (llamado.doc_numero as string | null) ?? null,
+    docNombre: (llamado.doc_nombre as string | null) ?? null,
   };
 }
 
@@ -888,6 +886,8 @@ function CardPago({
     setModalAbierto(true);
   }
 
+  const tieneFactura = !!pago.docNumero;
+
   return (
     <>
       <CardBase esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending}>
@@ -899,6 +899,14 @@ function CardPago({
             <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
               {pago.cantidadComandas} pedido{pago.cantidadComandas === 1 ? '' : 's'}
             </span>
+            {tieneFactura ? (
+              <span
+                className="text-[0.65rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded font-medium"
+                style={{ background: '#dbeafe', color: '#1e40af' }}
+              >
+                Pide factura
+              </span>
+            ) : null}
           </div>
           <TiempoTranscurrido fecha={pago.creadoEn} />
         </header>
@@ -966,6 +974,8 @@ function ModalCobrar({
   const propina = conPropina ? Math.round(pago.totalAcumulado * 0.1) : 0;
   const total = pago.totalAcumulado + propina;
 
+  const tieneFactura = !!pago.docNumero;
+
   function confirmar() {
     setError(null);
     startTransition(async () => {
@@ -1003,6 +1013,64 @@ function ModalCobrar({
         </header>
 
         <div className="px-5 py-4 space-y-4">
+          {tieneFactura ? (
+            <div
+              className="rounded-[var(--radius-md)] border p-4"
+              style={{
+                borderColor: '#3b82f6',
+                background: '#eff6ff',
+              }}
+            >
+              <p
+                className="text-[0.65rem] uppercase tracking-[0.14em] mb-2"
+                style={{ color: '#1e40af' }}
+              >
+                ⚠️ El cliente pidió factura
+              </p>
+              <dl className="space-y-1 text-sm">
+                <div className="flex items-baseline gap-2">
+                  <dt
+                    className="text-[0.7rem] uppercase tracking-[0.1em] w-20 shrink-0"
+                    style={{ color: '#1e40af' }}
+                  >
+                    Tipo
+                  </dt>
+                  <dd className="font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>
+                    {pago.docTipo}
+                  </dd>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <dt
+                    className="text-[0.7rem] uppercase tracking-[0.1em] w-20 shrink-0"
+                    style={{ color: '#1e40af' }}
+                  >
+                    Número
+                  </dt>
+                  <dd className="font-[family-name:var(--font-mono)] select-all" style={{ color: 'var(--color-ink)' }}>
+                    {pago.docNumero}
+                  </dd>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <dt
+                    className="text-[0.7rem] uppercase tracking-[0.1em] w-20 shrink-0"
+                    style={{ color: '#1e40af' }}
+                  >
+                    Nombre
+                  </dt>
+                  <dd className="select-all" style={{ color: 'var(--color-ink)' }}>
+                    {pago.docNombre}
+                  </dd>
+                </div>
+              </dl>
+              <p
+                className="text-[0.65rem] mt-2 leading-relaxed"
+                style={{ color: '#1e40af' }}
+              >
+                Estos datos quedan guardados con el pago para la facturación.
+              </p>
+            </div>
+          ) : null}
+
           <div className="rounded-[var(--radius-md)] border p-4" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
             <div className="flex items-center justify-between text-sm">
               <span style={{ color: 'var(--color-ink-soft)' }}>Subtotal</span>
@@ -1298,7 +1366,7 @@ function EstadoVacio({ colorMarca }: { colorMarca: string }) {
         style={{ color: 'var(--color-ink-soft)' }}
       >
         Sin llamados, comandas listas, o pagos pendientes. Cuando llegue algo,
-        aparecerá aquí automáticamente.
+        sonará un aviso y aparecerá aquí.
       </p>
     </div>
   );

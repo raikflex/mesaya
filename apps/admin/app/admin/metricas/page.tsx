@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { SesionesLive, type SesionActiva } from './sesiones-live';
+import { ComandasActivasLive, type ComandaActiva } from './comandas-activas-live';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +48,7 @@ export default async function MetricasPage() {
     pagosHoyResp,
     comandasHoyResp,
     sesionesActivasResp,
+    comandasActivasResp,
     ultimaSesionResp,
     pagosUltimosResp,
   ] = await Promise.all([
@@ -64,13 +66,13 @@ export default async function MetricasPage() {
       .eq('restaurante_id', restauranteId)
       .neq('estado', 'cancelada')
       .gte('creada_en', inicioHoyIso),
-    // Sesiones abiertas ahora con detalle (mesa, comandas, iniciada)
+    // Sesiones abiertas ahora con detalle (mesa, comandas, abierta)
     supabase
       .from('sesiones')
       .select(
         `
         id,
-        iniciada_en,
+        abierta_en,
         mesa_id,
         mesas(numero),
         comandas(id, total, estado)
@@ -79,6 +81,24 @@ export default async function MetricasPage() {
       )
       .eq('restaurante_id', restauranteId)
       .eq('estado', 'abierta'),
+    // Comandas activas (cocina trabajando ahora): pendientes/preparando/listas
+    supabase
+      .from('comandas')
+      .select(
+        `
+        id,
+        numero_diario,
+        estado,
+        total,
+        creada_en,
+        mesero_atendiendo_nombre,
+        sesiones!inner(mesa_id, mesas(numero)),
+        sesion_clientes(nombre)
+      `,
+      )
+      .eq('restaurante_id', restauranteId)
+      .in('estado', ['pendiente', 'en_preparacion', 'lista'])
+      .order('creada_en', { ascending: true }),
     // Última sesión cerrada (para "última visita hace X")
     supabase
       .from('sesiones')
@@ -136,7 +156,7 @@ export default async function MetricasPage() {
 
   const sesionesActivas: SesionActiva[] = ((sesionesActivasResp.data ?? []) as Array<{
     id: string;
-    iniciada_en: string;
+    abierta_en: string;
     mesa_id: string;
     mesas: { numero: string } | { numero: string }[] | null;
     comandas: { total: number; estado: string }[] | null;
@@ -153,8 +173,40 @@ export default async function MetricasPage() {
       id: s.id,
       mesaNumero: m?.numero ?? '?',
       totalAcumulado: total,
-      iniciadaEn: s.iniciada_en,
+      abiertaEn: s.abierta_en,
       comandasCount: comandasNoCanceladas.length,
+    };
+  });
+
+  // Comandas activas (cocina/mesero trabajando ahora)
+  const comandasActivas: ComandaActiva[] = ((comandasActivasResp.data ?? []) as Array<{
+    id: string;
+    numero_diario: number;
+    estado: string;
+    total: number;
+    creada_en: string;
+    mesero_atendiendo_nombre: string | null;
+    sesiones: { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null } | { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null }[] | null;
+    sesion_clientes: { nombre: string } | { nombre: string }[] | null;
+  }>).map((c) => {
+    const ses = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
+    const mesa = ses?.mesas
+      ? Array.isArray(ses.mesas)
+        ? ses.mesas[0]
+        : ses.mesas
+      : null;
+    const sc = Array.isArray(c.sesion_clientes)
+      ? c.sesion_clientes[0]
+      : c.sesion_clientes;
+    return {
+      id: c.id,
+      numeroDiario: c.numero_diario,
+      estado: c.estado as 'pendiente' | 'en_preparacion' | 'lista',
+      total: c.total,
+      creadaEn: c.creada_en,
+      meseroAtendiendoNombre: c.mesero_atendiendo_nombre,
+      mesaNumero: mesa?.numero ?? '?',
+      clienteNombre: sc?.nombre ?? 'Cliente',
     };
   });
 
@@ -248,6 +300,13 @@ export default async function MetricasPage() {
         {/* Sesiones en vivo (realtime) */}
         <SesionesLive
           sesionesIniciales={sesionesActivas}
+          restauranteId={restauranteId}
+          colorMarca={colorMarca}
+        />
+
+        {/* Comandas activas en cocina (realtime) */}
+        <ComandasActivasLive
+          comandasIniciales={comandasActivas}
           restauranteId={restauranteId}
           colorMarca={colorMarca}
         />

@@ -7,7 +7,7 @@ export type SesionActiva = {
   id: string;
   mesaNumero: string;
   totalAcumulado: number;
-  iniciadaEn: string;
+  abiertaEn: string;
   comandasCount: number;
 };
 
@@ -23,17 +23,11 @@ export function SesionesLive({
   const [sesiones, setSesiones] = useState<SesionActiva[]>(sesionesIniciales);
   const [tick, setTick] = useState(0);
 
-  // Refrescar timers cada 30s para que "hace 5min" se actualice.
   useEffect(() => {
     const i = setInterval(() => setTick((t) => t + 1), 30000);
     return () => clearInterval(i);
   }, []);
 
-  /**
-   * Realtime: cuando una sesión nueva se abre o una existente se cierra,
-   * actualizar la lista. También cuando llega una comanda nueva, refetch
-   * el total para esa sesión.
-   */
   useEffect(() => {
     const supabase = createClient();
     const canalNombre = `admin-sesiones-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -56,7 +50,7 @@ export function SesionesLive({
           .select(
             `
             id,
-            iniciada_en,
+            abierta_en,
             mesa_id,
             mesas (numero),
             comandas (id, total, estado)
@@ -67,7 +61,7 @@ export function SesionesLive({
 
         const lista: SesionActiva[] = ((data ?? []) as Array<{
           id: string;
-          iniciada_en: string;
+          abierta_en: string;
           mesa_id: string;
           mesas: { numero: string } | { numero: string }[] | null;
           comandas: { total: number; estado: string }[] | null;
@@ -84,7 +78,7 @@ export function SesionesLive({
             id: s.id,
             mesaNumero: mesa?.numero ?? '?',
             totalAcumulado: total,
-            iniciadaEn: s.iniciada_en,
+            abiertaEn: s.abierta_en,
             comandasCount: comandasNoCanceladas.length,
           };
         });
@@ -151,10 +145,7 @@ export function SesionesLive({
         >
           Mesas en vivo
         </h2>
-        <p
-          className="text-sm"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
           No hay mesas abiertas en este momento.
         </p>
       </section>
@@ -192,7 +183,7 @@ export function SesionesLive({
           {sesiones.map((s) => {
             const minutos = Math.max(
               0,
-              Math.floor((Date.now() - new Date(s.iniciadaEn).getTime()) / 60000),
+              Math.floor((Date.now() - new Date(s.abiertaEn).getTime()) / 60000),
             );
             const tiempoFmt =
               minutos < 1
@@ -201,7 +192,6 @@ export function SesionesLive({
                   ? `hace ${minutos}m`
                   : `hace ${Math.floor(minutos / 60)}h ${minutos % 60}m`;
 
-            // 'tick' fuerza re-render cada 30s para actualizar "hace X min"
             void tick;
 
             return (
@@ -214,15 +204,10 @@ export function SesionesLive({
                     className="size-9 rounded-full grid place-items-center shrink-0"
                     style={{ background: colorMarca, color: 'white' }}
                   >
-                    <span className="text-sm font-medium">
-                      {s.mesaNumero}
-                    </span>
+                    <span className="text-sm font-medium">{s.mesaNumero}</span>
                   </div>
                   <div className="min-w-0">
-                    <p
-                      className="text-sm"
-                      style={{ color: 'var(--color-ink)' }}
-                    >
+                    <p className="text-sm" style={{ color: 'var(--color-ink)' }}>
                       Mesa {s.mesaNumero}
                     </p>
                     <p

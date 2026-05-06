@@ -10,12 +10,6 @@ export async function cerrarSesion() {
   redirect('/login');
 }
 
-/**
- * Helper: valida que el user logueado es mesero (o dueño) y devuelve su perfil
- * incluyendo el nombre — necesario para denormalizar mesero_atendiendo_nombre
- * en comandas y llamados, lo que permite al cliente ver "Maria viene a tu mesa"
- * sin tener acceso RLS a la tabla `perfiles`.
- */
 async function validarStaffMesero(): Promise<
   | { ok: true; perfilId: string; perfilNombre: string; restauranteId: string; rol: string }
   | { ok: false; error: string }
@@ -338,9 +332,13 @@ export async function confirmarPago(input: {
 
   const supabase = await createClient();
 
+  // Leer también doc_tipo, doc_numero, doc_nombre del llamado (datos de
+  // facturación que el cliente pasó al pedir cuenta) para denormalizar a `pagos`.
   const { data: llamado } = await supabase
     .from('llamados_mesero')
-    .select('id, restaurante_id, sesion_id, estado, mesero_atendiendo_id')
+    .select(
+      'id, restaurante_id, sesion_id, estado, mesero_atendiendo_id, doc_tipo, doc_numero, doc_nombre',
+    )
     .eq('id', input.llamadoId)
     .maybeSingle();
 
@@ -382,6 +380,10 @@ export async function confirmarPago(input: {
     estado: 'confirmado',
     confirmado_por_id: validacion.perfilId,
     confirmado_en: new Date().toISOString(),
+    // Denormalizar datos de facturación si el cliente los pidió
+    doc_tipo: llamado.doc_tipo as string | null,
+    doc_numero: llamado.doc_numero as string | null,
+    doc_nombre: llamado.doc_nombre as string | null,
   });
 
   if (errorPago) {

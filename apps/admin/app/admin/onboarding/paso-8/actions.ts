@@ -36,7 +36,6 @@ export type CrearCuentaState = {
   ok: boolean;
   error?: string;
   fieldErrors?: Partial<Record<'nombre' | 'email' | 'rol', string>>;
-  /** Cuando ok: las credenciales generadas para mostrarle al dueño. */
   credenciales?: {
     nombre: string;
     email: string;
@@ -45,11 +44,6 @@ export type CrearCuentaState = {
   };
 };
 
-/**
- * Genera un password temporal legible para que el dueño lo comparta con su equipo.
- * 10 caracteres: 4 letras minúsculas + 4 dígitos + 2 letras minúsculas.
- * Sin caracteres ambiguos (l, 1, 0, o).
- */
 function generarPassword(): string {
   const letras = 'abcdefghijkmnpqrstuvwxyz';
   const digitos = '23456789';
@@ -86,7 +80,6 @@ export async function crearCuentaEquipo(
   const password = generarPassword();
   const admin = createServiceClient();
 
-  // Crear el usuario en Supabase Auth con email confirmado (sin verificación por correo).
   const { data: createdUser, error: createUserError } = await admin.auth.admin.createUser({
     email: datos.email,
     password,
@@ -105,7 +98,6 @@ export async function crearCuentaEquipo(
     return { ok: false, error: 'No se pudo crear la cuenta. Detalle: ' + msg };
   }
 
-  // Crear el perfil con el rol y el restaurante.
   const { error: perfilError } = await admin.from('perfiles').insert({
     id: createdUser.user.id,
     restaurante_id: restauranteId,
@@ -115,7 +107,6 @@ export async function crearCuentaEquipo(
   });
 
   if (perfilError) {
-    // Rollback: borrar el usuario auth si el perfil falló.
     await admin.auth.admin.deleteUser(createdUser.user.id);
     return {
       ok: false,
@@ -123,7 +114,10 @@ export async function crearCuentaEquipo(
     };
   }
 
+  // Revalidar AMBAS rutas: la del wizard onboarding y la del CRUD post-onboarding.
+  // Esto permite reusar el mismo action desde /admin/equipo sin duplicar lógica.
   revalidatePath('/admin/onboarding/paso-8');
+  revalidatePath('/admin/equipo');
 
   return {
     ok: true,
@@ -147,7 +141,6 @@ export async function eliminarCuentaEquipo(formData: FormData) {
 
   const admin = createServiceClient();
 
-  // Verificar que el perfil sea de este restaurante (defensa en profundidad).
   const { data: perfil } = await admin
     .from('perfiles')
     .select('id, rol')
@@ -160,19 +153,14 @@ export async function eliminarCuentaEquipo(formData: FormData) {
   // No permitir eliminar al dueño.
   if (perfil.rol === 'dueno') return;
 
-  // Borrar el usuario auth — el perfil se borra en cascade vía FK.
   await admin.auth.admin.deleteUser(id);
 
   revalidatePath('/admin/onboarding/paso-8');
+  revalidatePath('/admin/equipo');
 }
 
 /* ============ CERRAR ONBOARDING ============ */
 
-/**
- * No activa el restaurante. El dueño explora /admin con el restaurante en
- * estado='archivado'. Cuando esté listo, hace checkpoint "Empezar trial"
- * desde el panel (a construir en S3).
- */
 export async function cerrarOnboarding() {
   const { restauranteId } = await getRestauranteId();
   if (!restauranteId) redirect('/login');

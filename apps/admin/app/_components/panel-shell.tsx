@@ -4,17 +4,24 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { logout } from '../actions/auth';
 
-type CurrentPage = 'inicio' | 'menu' | 'mesas' | 'reviews' | 'metricas';
+type CurrentPage = 'inicio' | 'menu' | 'mesas' | 'equipo' | 'reviews' | 'metricas';
 
 const ITEMS: {
   id: CurrentPage;
   label: string;
-  href: '/admin' | '/admin/menu' | '/admin/mesas' | '/admin/reviews' | '/admin/metricas';
+  href:
+    | '/admin'
+    | '/admin/menu'
+    | '/admin/mesas'
+    | '/admin/equipo'
+    | '/admin/reviews'
+    | '/admin/metricas';
   icon: string;
 }[] = [
   { id: 'inicio', label: 'Inicio', href: '/admin', icon: 'home' },
   { id: 'menu', label: 'Menú', href: '/admin/menu', icon: 'menu' },
   { id: 'mesas', label: 'Mesas', href: '/admin/mesas', icon: 'mesas' },
+  { id: 'equipo', label: 'Equipo', href: '/admin/equipo', icon: 'team' },
   { id: 'reviews', label: 'Reseñas', href: '/admin/reviews', icon: 'star' },
   { id: 'metricas', label: 'Métricas', href: '/admin/metricas', icon: 'chart' },
 ];
@@ -32,7 +39,6 @@ export function PanelShell({
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--color-paper)' }}>
-      {/* Backdrop mobile */}
       {mobileOpen ? (
         <button
           type="button"
@@ -42,7 +48,6 @@ export function PanelShell({
         />
       ) : null}
 
-      {/* Sidebar */}
       <aside
         className={`fixed lg:sticky top-0 left-0 z-40 h-screen w-60 shrink-0 border-r flex flex-col transition-transform lg:translate-x-0 ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full'
@@ -52,7 +57,6 @@ export function PanelShell({
           background: 'white',
         }}
       >
-        {/* Logo */}
         <div
           className="px-5 py-4 border-b"
           style={{ borderColor: 'var(--color-border)' }}
@@ -85,7 +89,6 @@ export function PanelShell({
           </p>
         </div>
 
-        {/* Items */}
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {ITEMS.map((item) => {
             const activo = item.id === currentPage;
@@ -108,7 +111,6 @@ export function PanelShell({
           })}
         </nav>
 
-        {/* Logout */}
         <div
           className="p-3 border-t"
           style={{ borderColor: 'var(--color-border)' }}
@@ -140,9 +142,7 @@ export function PanelShell({
         </div>
       </aside>
 
-      {/* Main */}
       <div className="flex-1 min-w-0 flex flex-col">
-        {/* Mobile header con burger */}
         <header
           className="lg:hidden sticky top-0 z-20 px-4 h-12 border-b flex items-center"
           style={{
@@ -217,6 +217,15 @@ function ItemIcon({ name }: { name: string }) {
         <svg {...props}>
           <rect x="3" y="6" width="18" height="12" rx="1" {...stroke} />
           <path d="M3 10h18M9 6v12M15 6v12" {...stroke} />
+        </svg>
+      );
+    case 'team':
+      return (
+        <svg {...props}>
+          <circle cx="9" cy="8" r="3" {...stroke} />
+          <path d="M3 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" {...stroke} />
+          <circle cx="17" cy="9" r="2.5" {...stroke} />
+          <path d="M21 20v-1a3 3 0 0 0-3-3" {...stroke} />
         </svg>
       );
     case 'star':

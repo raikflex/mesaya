@@ -11,7 +11,9 @@ export const dynamic = 'force-dynamic';
  *   1. Llamados activos (campana/otro/pago) en estado 'pendiente'.
  *   2. Comandas con estado='lista' (cocina ya las terminó, falta entregar).
  *   3. Pagos: derivados de los llamados motivo='pago' pendientes, enriquecidos
- *      con el detalle de comandas + total de la sesión.
+ *      con el detalle de comandas + total de la sesión + datos opcionales de
+ *      facturación (doc_tipo, doc_numero, doc_nombre) que el cliente pasó al
+ *      pedir cuenta.
  *
  * Modelo "free pickup": cualquier mesero puede tomar cualquier item via
  * `mesero_atendiendo_id`. Lock optimista en el server action (Bloque B.2).
@@ -21,6 +23,8 @@ export default async function MeseroPage() {
   const supabase = await createClient();
 
   // --- Llamados activos (excluyendo motivo='pago' que va a sección de pagos) ---
+  // Traemos también doc_tipo, doc_numero, doc_nombre — solo se usan para los
+  // llamados de pago, pero leerlos en todos no tiene costo (son columnas).
   const { data: llamadosRaw } = await supabase
     .from('llamados_mesero')
     .select(
@@ -31,6 +35,9 @@ export default async function MeseroPage() {
       creado_en,
       mesero_atendiendo_id,
       sesion_id,
+      doc_tipo,
+      doc_numero,
+      doc_nombre,
       sesiones (
         mesas (numero)
       )
@@ -47,6 +54,9 @@ export default async function MeseroPage() {
     creado_en: string;
     mesero_atendiendo_id: string | null;
     sesion_id: string;
+    doc_tipo: string | null;
+    doc_numero: string | null;
+    doc_nombre: string | null;
     sesiones: { mesas: { numero: string } | { numero: string }[] | null } | { mesas: { numero: string } | { numero: string }[] | null }[] | null;
   }[];
 
@@ -89,7 +99,6 @@ export default async function MeseroPage() {
     sesiones: { mesas: { numero: string } | { numero: string }[] | null } | { mesas: { numero: string } | { numero: string }[] | null }[] | null;
   }[];
 
-  // Traer items para todas las comandas listas en una sola query.
   const idsComandasListas = comandasListasArr.map((c) => c.id);
   const itemsComandasListas =
     idsComandasListas.length > 0
@@ -118,7 +127,6 @@ export default async function MeseroPage() {
     }
   }
 
-  // --- Pagos pendientes: por cada llamado motivo='pago', traer comandas de esa sesión ---
   const sesionesPago = llamadosPago.map((l) => l.sesion_id);
   const comandasDeSesionesPago =
     sesionesPago.length > 0
@@ -139,7 +147,6 @@ export default async function MeseroPage() {
     countPorSesion.set(sid, (countPorSesion.get(sid) ?? 0) + 1);
   }
 
-  // --- Construir cola unificada ---
   const cola: ColaMesero = {
     llamados: llamadosNoPago.map((l) => {
       const sesion = Array.isArray(l.sesiones) ? l.sesiones[0] : l.sesiones;
@@ -178,6 +185,11 @@ export default async function MeseroPage() {
         meseroAtendiendoId: l.mesero_atendiendo_id,
         totalAcumulado: totalPorSesion.get(l.sesion_id) ?? 0,
         cantidadComandas: countPorSesion.get(l.sesion_id) ?? 0,
+        // Datos de factura opcionales (NIT/cédula del cliente). Si null, el
+        // modal de cobrar no muestra la sección "El cliente pidió factura".
+        docTipo: l.doc_tipo,
+        docNumero: l.doc_numero,
+        docNombre: l.doc_nombre,
       };
     }),
   };

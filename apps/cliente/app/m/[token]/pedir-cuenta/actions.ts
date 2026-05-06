@@ -3,8 +3,8 @@
 import { createServiceClient } from '@mesaya/database/service';
 
 /**
- * Pedir la cuenta. Crea un llamado con motivo='pago' y guarda en la nota
- * la propina y la forma de pago preferida.
+ * Pedir la cuenta. Crea un llamado con motivo='pago' y, si el cliente lo
+ * pidió, guarda los datos de facturación (tipo doc, número, nombre).
  *
  * Si ya hay un llamado de pago pendiente, devuelve ese mismo (no duplica).
  *
@@ -14,12 +14,19 @@ import { createServiceClient } from '@mesaya/database/service';
  */
 
 export type FormaPago = 'efectivo' | 'tarjeta' | 'transferencia' | 'no_seguro';
+export type TipoDoc = 'CC' | 'NIT' | 'CE' | 'PA';
 
 const ETIQUETAS_FORMA_PAGO: Record<FormaPago, string> = {
   efectivo: 'Efectivo',
   tarjeta: 'Tarjeta',
   transferencia: 'Transferencia/PSE',
   no_seguro: 'Aún no decido',
+};
+
+export type DatosFactura = {
+  tipoDoc: TipoDoc;
+  numero: string;
+  nombre: string;
 };
 
 export type PedirCuentaResultado =
@@ -30,6 +37,7 @@ export async function pedirCuenta(input: {
   qrToken: string;
   conPropina: boolean;
   formaPago: FormaPago;
+  factura?: DatosFactura | null;
 }): Promise<PedirCuentaResultado> {
   const admin = createServiceClient();
 
@@ -64,8 +72,7 @@ export async function pedirCuenta(input: {
   if (!sesion) {
     return {
       ok: false,
-      error:
-        'No tienes una cuenta abierta. Pide algo del menú primero.',
+      error: 'No tienes una cuenta abierta. Pide algo del menú primero.',
     };
   }
 
@@ -88,11 +95,40 @@ export async function pedirCuenta(input: {
     };
   }
 
-  // La nota encapsula propina + forma de pago para que el mesero la vea.
+  // Validar datos de factura si vienen
+  const factura = input.factura;
+  if (factura) {
+    const num = factura.numero.trim();
+    const nom = factura.nombre.trim();
+    if (num.length < 3 || num.length > 30) {
+      return {
+        ok: false,
+        error: 'El número de documento es inválido.',
+      };
+    }
+    if (nom.length < 3 || nom.length > 120) {
+      return {
+        ok: false,
+        error: 'El nombre o razón social es inválido.',
+      };
+    }
+    if (!['CC', 'NIT', 'CE', 'PA'].includes(factura.tipoDoc)) {
+      return {
+        ok: false,
+        error: 'Tipo de documento inválido.',
+      };
+    }
+  }
+
+  // Para que el mesero vea estos datos al cobrar, los guardamos en el llamado.
+  // Cuando se confirma el pago, se denormalizan a la tabla `pagos`.
   const lineas = [
     `Propina: ${input.conPropina ? 'Sí (10%)' : 'No'}`,
     `Forma de pago preferida: ${ETIQUETAS_FORMA_PAGO[input.formaPago]}`,
   ];
+  if (factura) {
+    lineas.push(`Factura: ${factura.tipoDoc} ${factura.numero} · ${factura.nombre}`);
+  }
 
   const { data: nuevo, error } = await admin
     .from('llamados_mesero')
@@ -102,6 +138,9 @@ export async function pedirCuenta(input: {
       mesa_id: mesa.id as string,
       motivo: 'pago',
       estado: 'pendiente',
+      doc_tipo: factura?.tipoDoc ?? null,
+      doc_numero: factura?.numero.trim() ?? null,
+      doc_nombre: factura?.nombre.trim() ?? null,
     })
     .select('id')
     .single();
@@ -113,12 +152,6 @@ export async function pedirCuenta(input: {
     };
   }
 
-  // Notas: el schema de llamados_mesero NO tiene campo nota, así que la
-  // info de propina y forma de pago la guardamos como columna calculable
-  // en post-MVP. Por ahora va solo en logs server-side.
-  // TODO post-MVP: agregar columna `nota text` a llamados_mesero o tabla
-  // separada de detalles_pago para que el mesero vea propina/forma_pago
-  // en su app.
   console.log('[pedirCuenta] llamado creado:', {
     llamadoId: nuevo.id,
     detalles: lineas.join(' · '),
