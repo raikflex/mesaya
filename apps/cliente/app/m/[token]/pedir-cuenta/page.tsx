@@ -56,9 +56,6 @@ export default async function PedirCuentaPage({ params }: PageProps) {
     notFound();
   }
 
-  // Sesión abierta de la mesa (modelo "cuenta por mesa").
-  // TODO post-MVP modo grupo: si el cliente eligió pagar individualmente,
-  // filtrar por sesion_cliente_id en lugar de mostrar toda la mesa.
   const { data: sesion } = await supabase
     .from('sesiones')
     .select('id')
@@ -67,7 +64,9 @@ export default async function PedirCuentaPage({ params }: PageProps) {
     .maybeSingle();
 
   let comandas: ComandaPorCliente[] = [];
-  let llamadoPagoPendiente: { id: string; creado_en: string } | null = null;
+  let llamadoPagoPendiente:
+    | { id: string; creado_en: string; mesero_atendiendo_nombre: string | null }
+    | null = null;
 
   if (sesion) {
     const sesionId = sesion.id as string;
@@ -138,10 +137,10 @@ export default async function PedirCuentaPage({ params }: PageProps) {
       });
     }
 
-    // Llamado de pago pendiente.
+    // Llamado de pago pendiente con nombre del mesero atendiendo (denormalizado).
     const { data: llamado } = await supabase
       .from('llamados_mesero')
-      .select('id, creado_en')
+      .select('id, creado_en, mesero_atendiendo_nombre')
       .eq('sesion_id', sesionId)
       .eq('motivo', 'pago')
       .eq('estado', 'pendiente')
@@ -151,6 +150,8 @@ export default async function PedirCuentaPage({ params }: PageProps) {
       llamadoPagoPendiente = {
         id: llamado.id as string,
         creado_en: llamado.creado_en as string,
+        mesero_atendiendo_nombre:
+          (llamado.mesero_atendiendo_nombre as string) ?? null,
       };
     }
   }
@@ -164,6 +165,7 @@ export default async function PedirCuentaPage({ params }: PageProps) {
       tieneSesionAbierta={Boolean(sesion)}
       comandas={comandas}
       llamadoPagoPendiente={llamadoPagoPendiente}
+      sesionId={(sesion?.id as string) ?? null}
     />
   );
 }

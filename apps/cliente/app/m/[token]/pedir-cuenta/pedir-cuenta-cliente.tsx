@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
+import { createClient } from '@mesaya/database/client';
 import { leerSesionCliente } from '../../../../lib/cliente-session';
 import {
   borrarTimerLlamado,
@@ -45,6 +46,7 @@ export function PedirCuentaCliente({
   tieneSesionAbierta,
   comandas,
   llamadoPagoPendiente,
+  sesionId,
 }: {
   qrToken: string;
   numeroMesa: string;
@@ -52,7 +54,10 @@ export function PedirCuentaCliente({
   colorMarca: string;
   tieneSesionAbierta: boolean;
   comandas: ComandaPorCliente[];
-  llamadoPagoPendiente: { id: string; creado_en: string } | null;
+  llamadoPagoPendiente:
+    | { id: string; creado_en: string; mesero_atendiendo_nombre?: string | null }
+    | null;
+  sesionId: string | null;
 }) {
   const router = useRouter();
   const [conPropina, setConPropina] = useState(false);
@@ -60,6 +65,11 @@ export function PedirCuentaCliente({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [urlVolver, setUrlVolver] = useState<string>(`/m/${qrToken}/menu`);
+  const [llamadoActivo, setLlamadoActivo] = useState(llamadoPagoPendiente);
+
+  useEffect(() => {
+    setLlamadoActivo(llamadoPagoPendiente);
+  }, [llamadoPagoPendiente]);
 
   useEffect(() => {
     const sesion = leerSesionCliente(qrToken);
@@ -67,6 +77,88 @@ export function PedirCuentaCliente({
       setUrlVolver(`/m/${qrToken}/menu/enviada/${sesion.ultimaComandaId}`);
     }
   }, [qrToken]);
+
+  /**
+   * Realtime: escuchar cambios en el llamado de pago + INSERT en `pagos` para
+   * redirigir a la pantalla de gracias cuando el mesero confirma el cobro.
+   */
+  useEffect(() => {
+    if (!sesionId) return;
+
+    const supabase = createClient();
+    const canalNombre = `cliente-pago-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    let canalActual: ReturnType<typeof supabase.channel> | null = null;
+    let cancelado = false;
+
+    async function setup() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelado) return;
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+      if (cancelado) return;
+
+      const canal = supabase
+        .channel(canalNombre)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'llamados_mesero' },
+          (payload) => {
+            if (payload.eventType === 'UPDATE') {
+              const fila = payload.new as {
+                id: string;
+                sesion_id: string;
+                motivo: string;
+                estado: string;
+                mesero_atendiendo_nombre: string | null;
+              };
+              if (fila.sesion_id !== sesionId) return;
+              if (fila.motivo !== 'pago') return;
+
+              setLlamadoActivo((actual) => {
+                if (!actual || actual.id !== fila.id) return actual;
+                return {
+                  ...actual,
+                  mesero_atendiendo_nombre: fila.mesero_atendiendo_nombre,
+                };
+              });
+            }
+          },
+        )
+        .on(
+          'postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'pagos' },
+          (payload) => {
+            const fila = payload.new as {
+              sesion_id: string;
+              estado: string;
+            };
+            if (fila.sesion_id !== sesionId) return;
+            if (fila.estado === 'confirmado') {
+              router.push(`/m/${qrToken}/gracias?sesion=${sesionId}`);
+            }
+          },
+        );
+
+      if (cancelado) {
+        supabase.removeChannel(canal);
+        return;
+      }
+
+      canalActual = canal;
+      canal.subscribe();
+    }
+
+    setup();
+
+    return () => {
+      cancelado = true;
+      if (canalActual) {
+        supabase.removeChannel(canalActual);
+        canalActual = null;
+      }
+    };
+  }, [qrToken, sesionId, router]);
 
   if (!tieneSesionAbierta || comandas.length === 0) {
     return (
@@ -120,7 +212,7 @@ export function PedirCuentaCliente({
     });
   }
 
-  if (llamadoPagoPendiente) {
+  if (llamadoActivo) {
     return (
       <PantallaCuentaPedida
         qrToken={qrToken}
@@ -128,7 +220,7 @@ export function PedirCuentaCliente({
         nombreNegocio={nombreNegocio}
         colorMarca={colorMarca}
         totalFinal={totalFinal}
-        llamado={llamadoPagoPendiente}
+        llamado={llamadoActivo}
         urlVolver={urlVolver}
         conPropina={conPropina}
         formaPago={formaPago}
@@ -460,7 +552,7 @@ function PantallaCuentaPedida({
   nombreNegocio: string;
   colorMarca: string;
   totalFinal: number;
-  llamado: { id: string; creado_en: string };
+  llamado: { id: string; creado_en: string; mesero_atendiendo_nombre?: string | null };
   urlVolver: string;
   conPropina: boolean;
   formaPago: FormaPago;
@@ -499,6 +591,7 @@ function PantallaCuentaPedida({
   const puedeReLlamar = segundosRestantes !== null && segundosRestantes <= 0;
   const minutos = segundosRestantes !== null ? Math.floor(segundosRestantes / 60) : 0;
   const segs = segundosRestantes !== null ? segundosRestantes % 60 : 0;
+  const tieneAsignado = !!llamado.mesero_atendiendo_nombre;
 
   return (
     <main
@@ -524,7 +617,9 @@ function PantallaCuentaPedida({
           className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
           style={{ color: 'var(--color-ink)' }}
         >
-          El mesero viene con la cuenta.
+          {tieneAsignado
+            ? `${llamado.mesero_atendiendo_nombre} viene con la cuenta`
+            : 'El mesero viene con la cuenta'}
         </h1>
         <p
           className="text-sm leading-relaxed mb-2"

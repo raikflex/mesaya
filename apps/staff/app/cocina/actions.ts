@@ -15,8 +15,10 @@ export async function cerrarSesion() {
  * dueño de la comanda puede hacerlo.
  *
  * Transiciones válidas:
- *   pendiente → en_preparacion
+ *   pendiente → en_preparacion (flujo normal)
+ *   pendiente → lista (bypass para cocinas chicas que no usan "preparando")
  *   en_preparacion → lista
+ *   * → cancelada
  *
  * Después de 'lista' la comanda queda esperando al mesero.
  */
@@ -54,49 +56,34 @@ export async function cambiarEstadoComanda(input: {
   comandaId: string;
   nuevoEstado: EstadoComanda;
 }): Promise<CambiarEstadoResultado> {
-  console.log('[cocina action] cambiarEstadoComanda input:', input);
-
   const supabase = await createClient();
 
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  console.log('[cocina action] auth user:', user?.id, user?.email);
-
   if (!user) {
     return { ok: false, error: 'No tienes sesión activa.' };
   }
 
-  const { data: perfil, error: errorPerfil } = await supabase
+  const { data: perfil } = await supabase
     .from('perfiles')
-    .select('rol, restaurante_id, activo')
+    .select('rol, restaurante_id')
     .eq('id', user.id)
     .maybeSingle();
-
-  console.log('[cocina action] perfil:', perfil, 'error:', errorPerfil);
-
   if (!perfil) {
     return { ok: false, error: 'No encontramos tu perfil.' };
   }
 
   const rol = String(perfil.rol).toLowerCase().trim();
-  console.log('[cocina action] rol normalizado:', JSON.stringify(rol), 'es valido:', ROLES_COCINA.has(rol));
-
   if (!ROLES_COCINA.has(rol)) {
-    return {
-      ok: false,
-      error: `Rol "${perfil.rol}" no autorizado. Roles válidos: ${[...ROLES_COCINA].join(', ')}`,
-    };
+    return { ok: false, error: 'No tienes permiso para cambiar estados.' };
   }
 
-  const { data: comanda, error: errorComanda } = await supabase
+  const { data: comanda } = await supabase
     .from('comandas')
     .select('id, estado, restaurante_id')
     .eq('id', input.comandaId)
     .maybeSingle();
-
-  console.log('[cocina action] comanda:', comanda, 'error:', errorComanda);
-
   if (!comanda) {
     return { ok: false, error: 'No encontramos esa comanda.' };
   }
@@ -106,9 +93,6 @@ export async function cambiarEstadoComanda(input: {
 
   const estadoActual = comanda.estado as EstadoComanda;
   const transicionesPermitidas = TRANSICIONES_VALIDAS[estadoActual] ?? [];
-
-  console.log('[cocina action] transición:', estadoActual, '→', input.nuevoEstado, 'permitida:', transicionesPermitidas.includes(input.nuevoEstado));
-
   if (!transicionesPermitidas.includes(input.nuevoEstado)) {
     return {
       ok: false,
@@ -120,9 +104,7 @@ export async function cambiarEstadoComanda(input: {
     .from('comandas')
     .update({ estado: input.nuevoEstado })
     .eq('id', input.comandaId)
-    .select('id, estado');
-
-  console.log('[cocina action] UPDATE result:', updateData, 'error:', errorUpdate);
+    .select('id');
 
   if (errorUpdate) {
     return {
@@ -132,14 +114,12 @@ export async function cambiarEstadoComanda(input: {
   }
 
   if (!updateData || updateData.length === 0) {
-    console.log('[cocina action] UPDATE no afectó filas. RLS bloqueando?');
     return {
       ok: false,
-      error: 'El cambio no se aplicó. Posible problema de permisos (RLS).',
+      error: 'El cambio no se aplicó. Posible problema de permisos.',
     };
   }
 
-  console.log('[cocina action] ✓ UPDATE exitoso');
   revalidatePath('/cocina');
   return { ok: true };
 }

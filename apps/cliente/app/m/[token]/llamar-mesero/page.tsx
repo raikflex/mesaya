@@ -47,20 +47,26 @@ export default async function LlamarMeseroPage({ params }: PageProps) {
     .eq('estado', 'abierta')
     .maybeSingle();
 
-  // Si hay sesión, ver si ya hay llamados pendientes.
-  let llamadosActivos: { id: string; motivo: string; creado_en: string }[] = [];
+  // Si hay sesión, ver si ya hay llamados pendientes (incluyendo nombre del
+  // mesero que los tomó, denormalizado para que el cliente lo vea).
+  let llamadosActivos: {
+    id: string;
+    motivo: string;
+    creado_en: string;
+    mesero_atendiendo_nombre: string | null;
+  }[] = [];
   if (sesion) {
     const { data } = await supabase
       .from('llamados_mesero')
-      .select('id, motivo, creado_en')
+      .select('id, motivo, creado_en, mesero_atendiendo_nombre')
       .eq('sesion_id', sesion.id as string)
       .eq('estado', 'pendiente')
       .order('creado_en', { ascending: false });
-
     llamadosActivos = (data ?? []).map((l) => ({
       id: l.id as string,
       motivo: l.motivo as string,
       creado_en: l.creado_en as string,
+      mesero_atendiendo_nombre: (l.mesero_atendiendo_nombre as string) ?? null,
     }));
   }
 
@@ -72,6 +78,7 @@ export default async function LlamarMeseroPage({ params }: PageProps) {
       colorMarca={restaurante.color_marca}
       tieneSesionAbierta={Boolean(sesion)}
       llamadosActivos={llamadosActivos}
+      sesionId={(sesion?.id as string) ?? null}
     />
   );
 }

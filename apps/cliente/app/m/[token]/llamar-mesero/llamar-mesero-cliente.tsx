@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
+import { createClient } from '@mesaya/database/client';
 import { leerSesionCliente } from '../../../../lib/cliente-session';
 import {
   borrarTimerLlamado,
@@ -14,6 +15,7 @@ type LlamadoActivo = {
   id: string;
   motivo: string;
   creado_en: string;
+  mesero_atendiendo_nombre?: string | null;
 };
 
 type Motivo = 'campana' | 'otro';
@@ -31,6 +33,7 @@ export function LlamarMeseroCliente({
   colorMarca,
   tieneSesionAbierta,
   llamadosActivos,
+  sesionId,
 }: {
   qrToken: string;
   numeroMesa: string;
@@ -38,6 +41,7 @@ export function LlamarMeseroCliente({
   colorMarca: string;
   tieneSesionAbierta: boolean;
   llamadosActivos: LlamadoActivo[];
+  sesionId: string | null;
 }) {
   const router = useRouter();
   const [motivo, setMotivo] = useState<Motivo>('campana');
@@ -45,6 +49,14 @@ export function LlamarMeseroCliente({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [urlVolver, setUrlVolver] = useState<string>(`/m/${qrToken}/menu`);
+  const [llamados, setLlamados] = useState<LlamadoActivo[]>(llamadosActivos);
+  const [llamadoResuelto, setLlamadoResuelto] = useState<{
+    nombreMesero: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    setLlamados(llamadosActivos);
+  }, [llamadosActivos]);
 
   useEffect(() => {
     const sesion = leerSesionCliente(qrToken);
@@ -53,7 +65,117 @@ export function LlamarMeseroCliente({
     }
   }, [qrToken]);
 
-  const llamadosNoPago = llamadosActivos.filter((l) => l.motivo !== 'pago');
+  /**
+   * Realtime: escuchar cambios en llamados_mesero de esta sesión. Cuando alguien
+   * los toma, mostrar el nombre del mesero. Cuando se atienden, mostrar pantalla
+   * de "atendido" durante un par de segundos antes de volver a la normalidad.
+   */
+  useEffect(() => {
+    if (!sesionId) return;
+
+    const supabase = createClient();
+    const canalNombre = `cliente-llamados-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    let canalActual: ReturnType<typeof supabase.channel> | null = null;
+    let cancelado = false;
+
+    async function setup() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelado) return;
+      if (session?.access_token) {
+        supabase.realtime.setAuth(session.access_token);
+      }
+      if (cancelado) return;
+
+      const canal = supabase
+        .channel(canalNombre)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'llamados_mesero' },
+          (payload) => {
+            if (payload.eventType === 'INSERT') {
+              const fila = payload.new as LlamadoActivo & {
+                sesion_id: string;
+                estado: string;
+                motivo: string;
+              };
+              if (fila.sesion_id !== sesionId) return;
+              if (fila.estado !== 'pendiente') return;
+              if (fila.motivo === 'pago') return;
+              setLlamados((ls) =>
+                ls.some((l) => l.id === fila.id)
+                  ? ls
+                  : [
+                      ...ls,
+                      {
+                        id: fila.id,
+                        motivo: fila.motivo,
+                        creado_en: fila.creado_en,
+                        mesero_atendiendo_nombre: fila.mesero_atendiendo_nombre ?? null,
+                      },
+                    ],
+              );
+            } else if (payload.eventType === 'UPDATE') {
+              const fila = payload.new as {
+                id: string;
+                sesion_id: string;
+                estado: string;
+                motivo: string;
+                mesero_atendiendo_nombre: string | null;
+              };
+              if (fila.sesion_id !== sesionId) return;
+              if (fila.motivo === 'pago') return;
+
+              if (fila.estado === 'atendido') {
+                // Mostramos un flash "atendido" y limpiamos la card.
+                setLlamados((ls) => ls.filter((l) => l.id !== fila.id));
+                setLlamadoResuelto({
+                  nombreMesero: fila.mesero_atendiendo_nombre,
+                });
+                borrarTimerLlamado(fila.id);
+                setTimeout(() => setLlamadoResuelto(null), 4000);
+                return;
+              }
+
+              if (fila.estado === 'cancelado') {
+                setLlamados((ls) => ls.filter((l) => l.id !== fila.id));
+                return;
+              }
+
+              setLlamados((ls) =>
+                ls.map((l) =>
+                  l.id === fila.id
+                    ? {
+                        ...l,
+                        mesero_atendiendo_nombre: fila.mesero_atendiendo_nombre,
+                      }
+                    : l,
+                ),
+              );
+            }
+          },
+        );
+
+      if (cancelado) {
+        supabase.removeChannel(canal);
+        return;
+      }
+
+      canalActual = canal;
+      canal.subscribe();
+    }
+
+    setup();
+
+    return () => {
+      cancelado = true;
+      if (canalActual) {
+        supabase.removeChannel(canalActual);
+        canalActual = null;
+      }
+    };
+  }, [sesionId]);
+
+  const llamadosNoPago = llamados.filter((l) => l.motivo !== 'pago');
 
   function llamar() {
     setError(null);
@@ -183,6 +305,48 @@ export function LlamarMeseroCliente({
           Llamar al mesero
         </h1>
 
+        {llamadoResuelto ? (
+          <section
+            className="rounded-[var(--radius-lg)] border bg-white p-5 mb-6 text-center"
+            style={{ borderColor: '#bbf7d0', borderWidth: 1.5 }}
+          >
+            <div
+              className="size-12 rounded-full mx-auto mb-3 grid place-items-center"
+              style={{ background: '#dcfce7', color: '#166534' }}
+            >
+              <svg
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <polyline
+                  points="5 12 10 17 19 8"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <p
+              className="text-sm font-medium"
+              style={{ color: 'var(--color-ink)' }}
+            >
+              Llamado atendido
+            </p>
+            {llamadoResuelto.nombreMesero ? (
+              <p
+                className="text-[0.7rem] mt-1"
+                style={{ color: 'var(--color-ink-soft)' }}
+              >
+                {llamadoResuelto.nombreMesero} pasó por tu mesa
+              </p>
+            ) : null}
+          </section>
+        ) : null}
+
         {llamadosNoPago.length > 0 ? (
           <section className="mb-6 space-y-3">
             {llamadosNoPago.map((l) => (
@@ -303,7 +467,6 @@ function LlamadoActivoCard({
   onCancelar: () => void;
   onVolverALlamar: () => void;
 }) {
-  // Inicializamos a null y calculamos en useEffect para evitar mismatch SSR/client.
   const [segundosRestantes, setSegundosRestantes] = useState<number | null>(null);
 
   useEffect(() => {
@@ -319,6 +482,7 @@ function LlamadoActivoCard({
   const puedeReLlamar = segundosRestantes <= 0;
   const minutos = Math.floor(segundosRestantes / 60);
   const segs = segundosRestantes % 60;
+  const tieneAsignado = !!llamado.mesero_atendiendo_nombre;
 
   return (
     <div
@@ -350,9 +514,11 @@ function LlamadoActivoCard({
             </p>
             <p
               className="text-[0.7rem]"
-              style={{ color: 'var(--color-muted)' }}
+              style={{ color: tieneAsignado ? colorMarca : 'var(--color-muted)' }}
             >
-              El mesero está en camino
+              {tieneAsignado
+                ? `${llamado.mesero_atendiendo_nombre} viene en camino`
+                : 'En espera de un mesero'}
             </p>
           </div>
         </div>

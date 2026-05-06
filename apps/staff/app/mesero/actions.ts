@@ -11,10 +11,13 @@ export async function cerrarSesion() {
 }
 
 /**
- * Helper: valida que el user logueado es mesero (o dueño) y devuelve su perfil.
+ * Helper: valida que el user logueado es mesero (o dueño) y devuelve su perfil
+ * incluyendo el nombre — necesario para denormalizar mesero_atendiendo_nombre
+ * en comandas y llamados, lo que permite al cliente ver "Maria viene a tu mesa"
+ * sin tener acceso RLS a la tabla `perfiles`.
  */
 async function validarStaffMesero(): Promise<
-  | { ok: true; perfilId: string; restauranteId: string; rol: string }
+  | { ok: true; perfilId: string; perfilNombre: string; restauranteId: string; rol: string }
   | { ok: false; error: string }
 > {
   const supabase = await createClient();
@@ -25,33 +28,33 @@ async function validarStaffMesero(): Promise<
 
   const { data: perfil } = await supabase
     .from('perfiles')
-    .select('id, rol, restaurante_id')
+    .select('id, nombre, rol, restaurante_id')
     .eq('id', user.id)
     .maybeSingle();
 
   if (!perfil) return { ok: false, error: 'No encontramos tu perfil.' };
 
-  const rol = perfil.rol as string;
-  if (rol !== 'mesero' && rol !== 'dueno') {
+  const rol = String(perfil.rol).toLowerCase().trim();
+  if (rol !== 'mesero' && rol !== 'dueno' && rol !== 'dueño') {
     return { ok: false, error: 'No tienes permisos de mesero.' };
   }
 
   return {
     ok: true,
     perfilId: perfil.id as string,
+    perfilNombre: (perfil.nombre as string) ?? 'Mesero',
     restauranteId: perfil.restaurante_id as string,
     rol,
   };
 }
 
-/**
- * Tomar un item con lock optimista. Solo afecta filas que NO tengan
- * mesero_atendiendo_id (es decir, nadie las ha tomado todavía). Si el UPDATE
- * no devuelve fila, alguien más ganó la carrera.
- */
 export type TomarResultado =
   | { ok: true }
   | { ok: false; error: string };
+
+// =========================================================================
+// Llamados (campana / otro)
+// =========================================================================
 
 export async function tomarLlamado(input: {
   llamadoId: string;
@@ -61,7 +64,6 @@ export async function tomarLlamado(input: {
 
   const supabase = await createClient();
 
-  // Verificar que el llamado pertenece a mi restaurante.
   const { data: llamado } = await supabase
     .from('llamados_mesero')
     .select('id, restaurante_id, estado, mesero_atendiendo_id')
@@ -76,10 +78,12 @@ export async function tomarLlamado(input: {
     return { ok: false, error: 'El llamado ya fue atendido.' };
   }
 
-  // Lock optimista: solo actualizar si nadie lo ha tomado.
   const { data: actualizado, error } = await supabase
     .from('llamados_mesero')
-    .update({ mesero_atendiendo_id: validacion.perfilId })
+    .update({
+      mesero_atendiendo_id: validacion.perfilId,
+      mesero_atendiendo_nombre: validacion.perfilNombre,
+    })
     .eq('id', input.llamadoId)
     .is('mesero_atendiendo_id', null)
     .select('id')
@@ -120,7 +124,10 @@ export async function liberarLlamado(input: {
 
   const { error } = await supabase
     .from('llamados_mesero')
-    .update({ mesero_atendiendo_id: null })
+    .update({
+      mesero_atendiendo_id: null,
+      mesero_atendiendo_nombre: null,
+    })
     .eq('id', input.llamadoId);
 
   if (error) {
@@ -141,7 +148,7 @@ export async function atenderLlamado(input: {
 
   const { data: llamado } = await supabase
     .from('llamados_mesero')
-    .select('id, restaurante_id, estado, mesero_atendiendo_id')
+    .select('id, restaurante_id, estado')
     .eq('id', input.llamadoId)
     .maybeSingle();
 
@@ -170,9 +177,10 @@ export async function atenderLlamado(input: {
   return { ok: true };
 }
 
-/**
- * Tomar / liberar comandas listas para entregar.
- */
+// =========================================================================
+// Comandas listas
+// =========================================================================
+
 export async function tomarComanda(input: {
   comandaId: string;
 }): Promise<TomarResultado> {
@@ -197,7 +205,10 @@ export async function tomarComanda(input: {
 
   const { data: actualizado, error } = await supabase
     .from('comandas')
-    .update({ mesero_atendiendo_id: validacion.perfilId })
+    .update({
+      mesero_atendiendo_id: validacion.perfilId,
+      mesero_atendiendo_nombre: validacion.perfilNombre,
+    })
     .eq('id', input.comandaId)
     .is('mesero_atendiendo_id', null)
     .select('id')
@@ -207,10 +218,7 @@ export async function tomarComanda(input: {
     return { ok: false, error: 'No pudimos tomar la comanda. ' + error.message };
   }
   if (!actualizado) {
-    return {
-      ok: false,
-      error: 'Otro mesero ya tomó esta comanda.',
-    };
+    return { ok: false, error: 'Otro mesero ya tomó esta comanda.' };
   }
 
   revalidatePath('/mesero');
@@ -238,7 +246,10 @@ export async function liberarComanda(input: {
 
   const { error } = await supabase
     .from('comandas')
-    .update({ mesero_atendiendo_id: null })
+    .update({
+      mesero_atendiendo_id: null,
+      mesero_atendiendo_nombre: null,
+    })
     .eq('id', input.comandaId);
 
   if (error) {
@@ -249,12 +260,6 @@ export async function liberarComanda(input: {
   return { ok: true };
 }
 
-/**
- * Marca la comanda como entregada. La card desaparece del tablero del mesero
- * y de la columna "Listas" de cocina (vía realtime).
- *
- * Solo el mesero que la tomó puede marcarla como entregada.
- */
 export async function entregarComanda(input: {
   comandaId: string;
 }): Promise<TomarResultado> {
@@ -297,9 +302,10 @@ export async function entregarComanda(input: {
   return { ok: true };
 }
 
-/**
- * Tomar / liberar pago. Funciona sobre el llamado_mesero motivo='pago'.
- */
+// =========================================================================
+// Pagos
+// =========================================================================
+
 export async function tomarPago(input: {
   llamadoId: string;
 }): Promise<TomarResultado> {
@@ -312,17 +318,6 @@ export async function liberarPago(input: {
   return liberarLlamado(input);
 }
 
-/**
- * Confirma el pago: registra en tabla `pagos`, marca el llamado como atendido,
- * marca la sesión como cerrada, y todas las comandas pendientes/listas como
- * entregadas (caso edge: si quedó algo en cocina cuando el cliente pidió cuenta).
- *
- * Operación crítica: si algo falla a mitad, las consecuencias son malas (mesa
- * cerrada con comandas vivas, etc). Lo hago secuencial con validaciones.
- *
- * TODO post-MVP: hacer esto en una transacción real de Postgres con
- * supabase.rpc() y una función SECURITY DEFINER.
- */
 export type ConfirmarPagoResultado =
   | { ok: true }
   | { ok: false; error: string };
@@ -343,7 +338,6 @@ export async function confirmarPago(input: {
 
   const supabase = await createClient();
 
-  // 1) Validar el llamado.
   const { data: llamado } = await supabase
     .from('llamados_mesero')
     .select('id, restaurante_id, sesion_id, estado, mesero_atendiendo_id')
@@ -366,7 +360,6 @@ export async function confirmarPago(input: {
 
   const sesionId = llamado.sesion_id as string;
 
-  // 2) Calcular subtotal y propina sumando comandas activas (no canceladas).
   const { data: comandasSesion } = await supabase
     .from('comandas')
     .select('id, total, estado')
@@ -380,7 +373,6 @@ export async function confirmarPago(input: {
   const propina = input.conPropina ? Math.round(subtotal * 0.1) : 0;
   const total = subtotal + propina;
 
-  // 3) Insertar pago.
   const { error: errorPago } = await supabase.from('pagos').insert({
     sesion_id: sesionId,
     monto_subtotal: subtotal,
@@ -399,7 +391,6 @@ export async function confirmarPago(input: {
     };
   }
 
-  // 4) Marcar el llamado como atendido.
   const { error: errorLlamado } = await supabase
     .from('llamados_mesero')
     .update({
@@ -410,7 +401,6 @@ export async function confirmarPago(input: {
     .eq('id', input.llamadoId);
 
   if (errorLlamado) {
-    // El pago ya quedó registrado, esto es un estado parcial. Reportamos.
     return {
       ok: false,
       error:
@@ -419,10 +409,13 @@ export async function confirmarPago(input: {
     };
   }
 
-  // 5) Marcar comandas listas como entregadas (caso edge: se cobra antes de
-  //    que el mesero las haya marcado entregadas una por una).
   const idsListas = (comandasSesion ?? [])
-    .filter((c) => c.estado === 'lista' || c.estado === 'pendiente' || c.estado === 'en_preparacion')
+    .filter(
+      (c) =>
+        c.estado === 'lista' ||
+        c.estado === 'pendiente' ||
+        c.estado === 'en_preparacion',
+    )
     .map((c) => c.id);
 
   if (idsListas.length > 0) {
@@ -432,7 +425,6 @@ export async function confirmarPago(input: {
       .in('id', idsListas);
   }
 
-  // 6) Cerrar la sesión.
   const { error: errorSesion } = await supabase
     .from('sesiones')
     .update({
