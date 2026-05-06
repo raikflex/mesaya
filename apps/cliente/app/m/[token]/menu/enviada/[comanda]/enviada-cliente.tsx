@@ -57,6 +57,11 @@ export function ComandaEnviadaCliente({
   const router = useRouter();
   const [comandas, setComandas] = useState<ComandaConItems[]>(comandasIniciales);
   const idsRef = useRef<Set<string>>(new Set(comandasIniciales.map((c) => c.id)));
+  // Modal de "tu pedido fue cancelado" cuando es la única comanda de la sesión
+  // del cliente y se cancela. Si había otras (es una adición), no aparece.
+  const [modalCancelacion, setModalCancelacion] = useState<{
+    motivo: string;
+  } | null>(null);
 
   useEffect(() => {
     setComandas(comandasIniciales);
@@ -98,8 +103,8 @@ export function ComandaEnviadaCliente({
             if (fila.sesion_id !== sesionId) return;
             if (!idsRef.current.has(fila.id)) return;
 
-            setComandas((cs) =>
-              cs.map((c) =>
+            setComandas((cs) => {
+              const actualizadas = cs.map((c) =>
                 c.id === fila.id
                   ? {
                       ...c,
@@ -108,8 +113,28 @@ export function ComandaEnviadaCliente({
                       motivo_cancelacion: fila.motivo_cancelacion,
                     }
                   : c,
-              ),
-            );
+              );
+
+              // Si la comanda actual (la que el cliente está viendo) fue
+              // cancelada Y NO existen otras comandas no-canceladas en su
+              // sesión, mostrar modal grande para que vuelva al menú o salga.
+              if (
+                fila.id === comandaActualId &&
+                fila.estado === 'cancelada'
+              ) {
+                const tieneOtrasActivas = actualizadas.some(
+                  (c) => c.id !== fila.id && c.estado !== 'cancelada',
+                );
+                if (!tieneOtrasActivas) {
+                  setModalCancelacion({
+                    motivo:
+                      fila.motivo_cancelacion ?? 'La cocina canceló tu pedido.',
+                  });
+                }
+              }
+
+              return actualizadas;
+            });
           },
         )
         .on(
@@ -147,7 +172,12 @@ export function ComandaEnviadaCliente({
     };
   }, [qrToken, sesionId, router]);
 
-  const totalAcumulado = comandas.reduce((acc, c) => acc + c.total, 0);
+  // Total acumulado solo cuenta comandas NO canceladas. Si la cocina cancela
+  // un pedido, no debe sumar al monto que el cliente debe pagar.
+  const totalAcumulado = comandas
+    .filter((c) => c.estado !== 'cancelada')
+    .reduce((acc, c) => acc + c.total, 0);
+  const cantidadActivas = comandas.filter((c) => c.estado !== 'cancelada').length;
   const ultimaComanda =
     comandas.find((c) => c.id === comandaActualId) ??
     comandas[comandas.length - 1]!;
@@ -228,7 +258,10 @@ export function ComandaEnviadaCliente({
                 className="text-[0.7rem] mt-0.5"
                 style={{ color: 'var(--color-muted)' }}
               >
-                {comandas.length} pedido{comandas.length === 1 ? '' : 's'}
+                {cantidadActivas} pedido{cantidadActivas === 1 ? '' : 's'}
+                {comandas.length > cantidadActivas
+                  ? ` · ${comandas.length - cantidadActivas} cancelado${comandas.length - cantidadActivas === 1 ? '' : 's'}`
+                  : ''}
               </p>
             </div>
             <span
@@ -289,6 +322,15 @@ export function ComandaEnviadaCliente({
           Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
         </p>
       </footer>
+
+      {modalCancelacion ? (
+        <ModalPedidoCancelado
+          motivo={modalCancelacion.motivo}
+          qrToken={qrToken}
+          colorMarca={colorMarca}
+          nombreNegocio={nombreNegocio}
+        />
+      ) : null}
     </main>
   );
 }
@@ -464,5 +506,86 @@ function EstadoPill({
     >
       {etiqueta.label}
     </span>
+  );
+}
+
+function ModalPedidoCancelado({
+  motivo,
+  qrToken,
+  colorMarca,
+  nombreNegocio,
+}: {
+  motivo: string;
+  qrToken: string;
+  colorMarca: string;
+  nombreNegocio: string;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center p-4"
+      style={{ background: 'rgba(0,0,0,0.55)' }}
+      role="dialog"
+      aria-modal="true"
+    >
+      <div className="w-full max-w-sm rounded-[var(--radius-lg)] bg-white p-6 text-center">
+        <div
+          className="size-14 rounded-full mx-auto mb-4 grid place-items-center"
+          style={{ background: '#fef2f2', color: '#b91c1c' }}
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M18 6L6 18M6 6l12 12"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </div>
+        <h2
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-2"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          Tu pedido fue cancelado
+        </h2>
+        <div
+          className="rounded-[var(--radius-md)] border px-3 py-2 mb-5 text-left"
+          style={{ borderColor: '#fecaca', background: '#fef2f2' }}
+        >
+          <p className="text-[0.65rem] uppercase tracking-[0.12em] mb-1" style={{ color: '#b91c1c' }}>
+            Motivo de la cocina
+          </p>
+          <p className="text-sm" style={{ color: '#7f1d1d' }}>
+            {motivo}
+          </p>
+        </div>
+        <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-ink-soft)' }}>
+          No se cobró nada. Puedes volver al menú y pedir otra cosa, o salir.
+        </p>
+        <div className="space-y-2">
+          <Link
+            href={`/m/${qrToken}/menu`}
+            className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium"
+            style={{ background: colorMarca, color: 'white' }}
+          >
+            Pedir otra cosa
+          </Link>
+          <Link
+            href={`/m/${qrToken}`}
+            className="w-full h-11 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium border"
+            style={{
+              background: 'white',
+              color: 'var(--color-ink)',
+              borderColor: 'var(--color-border-strong)',
+            }}
+          >
+            Salir
+          </Link>
+        </div>
+        <p className="text-[0.7rem] mt-4" style={{ color: 'var(--color-muted)' }}>
+          {nombreNegocio} agradece tu paciencia.
+        </p>
+      </div>
+    </div>
   );
 }

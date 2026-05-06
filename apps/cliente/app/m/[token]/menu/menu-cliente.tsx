@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   borrarSesionCliente,
@@ -46,6 +47,10 @@ export function MenuCliente({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [nombre, setNombre] = useState<string | null>(null);
+  // Si el cliente ya envió al menos una comanda en esta sesión, su id queda
+  // guardado en localStorage. Lo usamos para mostrar un botón "Mi cuenta"
+  // que lo lleva al resumen de pedidos enviados.
+  const [ultimaComandaId, setUltimaComandaId] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
@@ -53,7 +58,6 @@ export function MenuCliente({
   const seccionesRef = useRef<Record<string, HTMLElement | null>>({});
   const tabsRef = useRef<HTMLDivElement | null>(null);
 
-  // Init: leer sesión y carrito.
   useEffect(() => {
     const sesion = leerSesionCliente(qrToken);
     if (!sesion) {
@@ -61,20 +65,18 @@ export function MenuCliente({
       return;
     }
     setNombre(sesion.nombre);
+    setUltimaComandaId(sesion.ultimaComandaId ?? null);
     setCarrito(leerCarrito(qrToken));
     setCargando(false);
   }, [qrToken, router]);
 
-  // Detectar query param ?agregado=... y mostrar toast.
   useEffect(() => {
     const agregado = searchParams.get('agregado');
     if (!agregado) return;
 
     setToast(decodeURIComponent(agregado));
-    // Refrescar carrito desde sessionStorage.
     setCarrito(leerCarrito(qrToken));
 
-    // Limpiar query param sin recargar.
     const url = new URL(window.location.href);
     url.searchParams.delete('agregado');
     window.history.replaceState(null, '', url.toString());
@@ -83,14 +85,12 @@ export function MenuCliente({
     return () => clearTimeout(t);
   }, [searchParams, qrToken]);
 
-  // Inicializar primera categoría como activa.
   useEffect(() => {
     if (!categoriaActiva && grupos.length > 0 && grupos[0]) {
       setCategoriaActiva(grupos[0].id);
     }
   }, [grupos, categoriaActiva]);
 
-  // Scroll-spy.
   useEffect(() => {
     if (cargando || grupos.length === 0) return;
     const observer = new IntersectionObserver(
@@ -116,7 +116,6 @@ export function MenuCliente({
     return () => observer.disconnect();
   }, [cargando, grupos]);
 
-  // Auto-scroll de tabs.
   useEffect(() => {
     if (!categoriaActiva || !tabsRef.current) return;
     const activa = tabsRef.current.querySelector<HTMLElement>(
@@ -172,7 +171,6 @@ export function MenuCliente({
         paddingBottom: carrito.length > 0 ? '5.5rem' : '1rem',
       }}
     >
-      {/* Header sticky */}
       <header
         className="sticky top-0 z-20 border-b backdrop-blur-sm"
         style={{
@@ -205,6 +203,46 @@ export function MenuCliente({
               No soy yo
             </button>
           </div>
+
+          {/* Botón "Volver a mi cuenta" — solo cuando ya hay una comanda enviada */}
+          {ultimaComandaId ? (
+            <Link
+              href={`/m/${qrToken}/menu/enviada/${ultimaComandaId}`}
+              className="mt-2 flex items-center justify-between gap-2 px-3 py-2 rounded-[var(--radius-md)] border"
+              style={{
+                borderColor: colorMarca,
+                background: 'white',
+              }}
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  aria-hidden
+                  style={{ color: colorMarca, flexShrink: 0 }}
+                >
+                  <path
+                    d="M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+                <span className="text-xs truncate" style={{ color: 'var(--color-ink)' }}>
+                  Tienes pedidos en curso
+                </span>
+              </span>
+              <span
+                className="text-xs font-medium shrink-0"
+                style={{ color: colorMarca }}
+              >
+                Ver mi cuenta →
+              </span>
+            </Link>
+          ) : null}
         </div>
 
         {grupos.length > 0 ? (
@@ -240,7 +278,6 @@ export function MenuCliente({
         ) : null}
       </header>
 
-      {/* Toast "Producto agregado" */}
       {toast ? (
         <div
           className="fixed top-24 left-1/2 -translate-x-1/2 z-30 px-4 py-2.5 rounded-full shadow-lg flex items-center gap-2 text-sm font-medium"
@@ -265,7 +302,6 @@ export function MenuCliente({
         </div>
       ) : null}
 
-      {/* Contenido */}
       <div className="flex-1 px-5 pt-4">
         {totalProductos === 0 ? (
           <EstadoVacio colorMarca={colorMarca} />
@@ -311,7 +347,6 @@ export function MenuCliente({
         )}
       </div>
 
-      {/* FAB carrito */}
       {carrito.length > 0 ? (
         <button
           type="button"
@@ -329,9 +364,7 @@ export function MenuCliente({
             >
               {unidadesCarrito}
             </span>
-            <span className="text-sm font-medium">
-              Ver mi pedido
-            </span>
+            <span className="text-sm font-medium">Ver mi pedido</span>
           </span>
           <span className="font-[family-name:var(--font-mono)] text-sm">
             ${totalCarrito.toLocaleString('es-CO')}
@@ -339,7 +372,6 @@ export function MenuCliente({
         </button>
       ) : null}
 
-      {/* Footer */}
       {carrito.length === 0 ? (
         <footer className="py-6 text-center mt-4">
           <p
