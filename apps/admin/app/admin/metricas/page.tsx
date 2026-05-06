@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
+import { SesionesLive, type SesionActiva } from './sesiones-live';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,10 +64,19 @@ export default async function MetricasPage() {
       .eq('restaurante_id', restauranteId)
       .neq('estado', 'cancelada')
       .gte('creada_en', inicioHoyIso),
-    // Sesiones abiertas ahora
+    // Sesiones abiertas ahora con detalle (mesa, comandas, iniciada)
     supabase
       .from('sesiones')
-      .select('id, mesa_id, mesas(numero)', { count: 'exact' })
+      .select(
+        `
+        id,
+        iniciada_en,
+        mesa_id,
+        mesas(numero),
+        comandas(id, total, estado)
+      `,
+        { count: 'exact' },
+      )
       .eq('restaurante_id', restauranteId)
       .eq('estado', 'abierta'),
     // Última sesión cerrada (para "última visita hace X")
@@ -124,13 +134,28 @@ export default async function MetricasPage() {
   const comandasHoy = comandasHoyResp.count ?? 0;
   const sesionesActivasCount = sesionesActivasResp.count ?? 0;
 
-  const sesionesActivas = ((sesionesActivasResp.data ?? []) as Array<{
+  const sesionesActivas: SesionActiva[] = ((sesionesActivasResp.data ?? []) as Array<{
     id: string;
+    iniciada_en: string;
     mesa_id: string;
     mesas: { numero: string } | { numero: string }[] | null;
+    comandas: { total: number; estado: string }[] | null;
   }>).map((s) => {
     const m = Array.isArray(s.mesas) ? s.mesas[0] : s.mesas;
-    return { id: s.id, mesaNumero: m?.numero ?? '?' };
+    const comandasNoCanceladas = (s.comandas ?? []).filter(
+      (c) => c.estado !== 'cancelada',
+    );
+    const total = comandasNoCanceladas.reduce(
+      (acc, c) => acc + (c.total ?? 0),
+      0,
+    );
+    return {
+      id: s.id,
+      mesaNumero: m?.numero ?? '?',
+      totalAcumulado: total,
+      iniciadaEn: s.iniciada_en,
+      comandasCount: comandasNoCanceladas.length,
+    };
   });
 
   const ultimaSesionCerrada = ultimaSesionResp.data?.cerrada_en as string | undefined;
@@ -219,6 +244,13 @@ export default async function MetricasPage() {
             detalle={minutosDesdeUltima === null ? 'Sin visitas aún' : 'desde el último cierre'}
           />
         </section>
+
+        {/* Sesiones en vivo (realtime) */}
+        <SesionesLive
+          sesionesIniciales={sesionesActivas}
+          restauranteId={restauranteId}
+          colorMarca={colorMarca}
+        />
 
         {/* Stats secundarias */}
         {cantidadPagosHoy > 0 ? (

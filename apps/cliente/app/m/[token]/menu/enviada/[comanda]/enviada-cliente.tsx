@@ -12,6 +12,7 @@ export type ComandaConItems = {
   total: number;
   creada_en: string;
   mesero_atendiendo_nombre: string | null;
+  motivo_cancelacion: string | null;
   items: {
     id: string;
     nombre_snapshot: string;
@@ -92,6 +93,7 @@ export function ComandaEnviadaCliente({
               sesion_id: string;
               estado: string;
               mesero_atendiendo_nombre: string | null;
+              motivo_cancelacion: string | null;
             };
             if (fila.sesion_id !== sesionId) return;
             if (!idsRef.current.has(fila.id)) return;
@@ -103,6 +105,7 @@ export function ComandaEnviadaCliente({
                       ...c,
                       estado: fila.estado,
                       mesero_atendiendo_nombre: fila.mesero_atendiendo_nombre,
+                      motivo_cancelacion: fila.motivo_cancelacion,
                     }
                   : c,
               ),
@@ -318,6 +321,12 @@ function ComandaCard({
         ? `Entregada por ${comanda.mesero_atendiendo_nombre}`
         : null;
 
+  // Si fue cancelada por cocina, mostrar motivo prominente.
+  const mensajeCancelacion =
+    comanda.estado === 'cancelada' && comanda.motivo_cancelacion
+      ? comanda.motivo_cancelacion
+      : null;
+
   return (
     <article
       className="rounded-[var(--radius-lg)] border bg-white overflow-hidden"
@@ -354,6 +363,26 @@ function ComandaCard({
         >
           <p className="text-[0.7rem]" style={{ color: colorMarca }}>
             ✦ {mensajeMesero}
+          </p>
+        </div>
+      ) : null}
+
+      {mensajeCancelacion ? (
+        <div
+          className="px-4 py-3 border-b"
+          style={{
+            borderColor: '#fecaca',
+            background: '#fef2f2',
+          }}
+        >
+          <p
+            className="text-[0.7rem] uppercase tracking-[0.12em] mb-1"
+            style={{ color: '#b91c1c' }}
+          >
+            ✗ Cancelada por la cocina
+          </p>
+          <p className="text-sm" style={{ color: '#7f1d1d' }}>
+            {mensajeCancelacion}
           </p>
         </div>
       ) : null}

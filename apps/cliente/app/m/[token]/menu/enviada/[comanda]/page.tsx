@@ -55,7 +55,7 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
   const { data: comandasRaw } = await supabase
     .from('comandas')
     .select(
-      'id, numero_diario, estado, total, creada_en, mesero_atendiendo_nombre',
+      'id, numero_diario, estado, total, creada_en, mesero_atendiendo_nombre, motivo_cancelacion',
     )
     .eq('sesion_id', comandaActual.sesion_id as string)
     .eq('sesion_cliente_id', comandaActual.sesion_cliente_id as string)
@@ -69,6 +69,7 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
     | 'total'
     | 'creada_en'
     | 'mesero_atendiendo_nombre'
+    | 'motivo_cancelacion'
   >[];
 
   if (comandas.length === 0) notFound();

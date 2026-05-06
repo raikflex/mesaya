@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { cambiarEstadoComanda, cerrarSesion } from './actions';
+import { BotonCancelarComanda } from './boton-cancelar';
 import {
   alternarSonido,
   desbloquearAudio,
@@ -54,17 +55,6 @@ export function TableroCocina({
     inicializarAudio();
   }, []);
 
-  /**
-   * Realtime con Supabase. Lecciones aprendidas:
-   *   - El cliente browser NO propaga el JWT al canal de realtime
-   *     automáticamente. Hay que llamar `realtime.setAuth(token)` con el
-   *     access_token de la sesión actual ANTES de subscribe.
-   *   - React Strict Mode (en dev) monta el componente dos veces. Eso
-   *     causaba que el segundo mount intentara `.on()` sobre un canal ya
-   *     subscribed → error "cannot add postgres_changes after subscribe()".
-   *     Fix: nombre de canal único por mount con `useRef` y cleanup
-   *     defensivo que `removeChannel` antes de cualquier otro paso.
-   */
   useEffect(() => {
     const supabase = createClient();
     const canalNombre = `cocina-realtime-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -364,10 +354,7 @@ function Header({
               className="size-2 rounded-full animate-pulse"
               style={{ background: colorMarca }}
             />
-            <span
-              className="text-xs"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
+            <span className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
               {totalComandas} activa{totalComandas === 1 ? '' : 's'}
             </span>
           </div>
@@ -377,7 +364,6 @@ function Header({
               type="button"
               onClick={toggleSonido}
               aria-label={sonidoOn ? 'Apagar sonido' : 'Activar sonido'}
-              title={sonidoOn ? 'Sonido activo. Click para apagar.' : 'Sonido apagado. Click para activar.'}
               className="size-9 rounded-full grid place-items-center transition-colors hover:opacity-80"
               style={{
                 background: sonidoOn ? colorMarca : 'var(--color-paper-deep)',
@@ -467,10 +453,7 @@ function Seccion({
           >
             {titulo}
           </h2>
-          <p
-            className="text-[0.7rem] mt-0.5"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-muted)' }}>
             {descripcion}
           </p>
         </div>
@@ -635,34 +618,36 @@ function CardComanda({
           background: 'var(--color-paper)',
         }}
       >
-        <span
-          className="text-[0.7rem]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
           Total ${comanda.total.toLocaleString('es-CO')}
         </span>
-        {tono === 'done' ? (
-          <span
-            className="text-xs italic"
-            style={{ color: 'var(--color-muted)' }}
-          >
-            Esperando al mesero
-          </span>
-        ) : (
-          <button
-            type="button"
-            onClick={avanzar}
-            disabled={pending}
-            className="text-xs font-medium transition-opacity disabled:opacity-40"
-            style={{ color: colorMarca }}
-          >
-            {pending
-              ? 'Actualizando…'
-              : tono === 'pending'
-                ? 'Empezar a preparar →'
-                : 'Marcar como lista →'}
-          </button>
-        )}
+        <div className="flex items-center gap-3 shrink-0">
+          {tono !== 'done' ? (
+            <BotonCancelarComanda
+              comandaId={comanda.id}
+              numeroComanda={comanda.numeroDiario}
+            />
+          ) : null}
+          {tono === 'done' ? (
+            <span className="text-xs italic" style={{ color: 'var(--color-muted)' }}>
+              Esperando al mesero
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={avanzar}
+              disabled={pending}
+              className="text-xs font-medium transition-opacity disabled:opacity-40"
+              style={{ color: colorMarca }}
+            >
+              {pending
+                ? 'Actualizando…'
+                : tono === 'pending'
+                  ? 'Empezar a preparar →'
+                  : 'Marcar como lista →'}
+            </button>
+          )}
+        </div>
       </footer>
     </article>
   );
