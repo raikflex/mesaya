@@ -1,8 +1,6 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
-import { logout } from '../../actions/auth';
-import { Button } from '@mesaya/ui';
+import { PanelShell } from '../../_components/panel-shell';
 import { MesasManager } from './mesas-manager';
 
 export const metadata = { title: 'Mesas · MesaYA' };
@@ -41,7 +39,8 @@ export default async function MesasPage() {
   const mesasOrdenadas: Mesa[] = ((mesas ?? []) as Mesa[]).slice().sort((a, b) => {
     const na = parseInt(a.numero, 10);
     const nb = parseInt(b.numero, 10);
-    if (Number.isNaN(na) || Number.isNaN(nb)) return a.numero.localeCompare(b.numero);
+    if (Number.isNaN(na) || Number.isNaN(nb))
+      return a.numero.localeCompare(b.numero);
     return na - nb;
   });
 
@@ -51,20 +50,21 @@ export default async function MesasPage() {
     .eq('id', perfil.restaurante_id as string)
     .single();
 
+  const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu negocio';
+
   return (
-    <main className="min-h-screen">
-      <Header nombreNegocio={(restaurante?.nombre_publico as string) ?? ''} />
-
-      <div className="px-6 sm:px-10 py-10 max-w-5xl mx-auto space-y-8">
-        <Breadcrumb />
-
+    <PanelShell currentPage="mesas" nombreNegocio={nombreNegocio}>
+      <main className="px-6 sm:px-10 py-10 max-w-5xl mx-auto space-y-8">
         <header>
           <h1
             className="font-[family-name:var(--font-display)] text-4xl sm:text-5xl tracking-[-0.025em] leading-[1.05]"
             style={{ color: 'var(--color-ink)' }}
           >
             Tus{' '}
-            <em className="not-italic" style={{ fontStyle: 'italic', fontWeight: 400 }}>
+            <em
+              className="not-italic"
+              style={{ fontStyle: 'italic', fontWeight: 400 }}
+            >
               mesas
             </em>
             .
@@ -79,68 +79,7 @@ export default async function MesasPage() {
         </header>
 
         <MesasManager mesas={mesasOrdenadas} />
-      </div>
-    </main>
-  );
-}
-
-function Breadcrumb() {
-  return (
-    <nav className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-muted)' }}>
-      <Link
-        href="/admin"
-        className="uppercase tracking-[0.14em] hover:text-[var(--color-ink)] transition-colors"
-      >
-        Panel
-      </Link>
-      <span aria-hidden>·</span>
-      <span
-        className="uppercase tracking-[0.14em]"
-        style={{ color: 'var(--color-ink)' }}
-      >
-        Mesas
-      </span>
-    </nav>
-  );
-}
-
-function Header({ nombreNegocio }: { nombreNegocio: string }) {
-  return (
-    <header
-      className="border-b px-6 sm:px-10 py-4 flex items-center justify-between"
-      style={{ borderColor: 'var(--color-border)' }}
-    >
-      <Link href="/admin" className="inline-flex items-center gap-2">
-        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden>
-          <rect
-            x="4"
-            y="4"
-            width="24"
-            height="24"
-            rx="6"
-            stroke="var(--color-ink)"
-            strokeWidth="1.5"
-          />
-          <circle cx="22" cy="22" r="3" fill="var(--color-accent)" />
-        </svg>
-        <span
-          className="font-[family-name:var(--font-display)] text-xl tracking-[-0.02em]"
-          style={{ color: 'var(--color-ink)' }}
-        >
-          MesaYA
-        </span>
-        <span
-          className="hidden sm:inline text-sm ml-2 truncate max-w-[200px]"
-          style={{ color: 'var(--color-muted)' }}
-        >
-          / {nombreNegocio}
-        </span>
-      </Link>
-      <form action={logout}>
-        <Button type="submit" variant="ghost" size="sm">
-          Cerrar sesión
-        </Button>
-      </form>
-    </header>
+      </main>
+    </PanelShell>
   );
 }

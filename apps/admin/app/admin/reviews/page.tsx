@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
+import { PanelShell } from '../../_components/panel-shell';
 import { ReviewsManager, type ReviewFila } from './reviews-manager';
 
 export const dynamic = 'force-dynamic';
@@ -36,11 +37,6 @@ export default async function ReviewsPage() {
   const colorMarca = (restaurante?.color_marca as string) ?? '#9a3f6b';
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu negocio';
 
-  /**
-   * Trae todas las reviews del restaurante con info contextual de la sesión:
-   * mesa, total facturado, fecha. La RLS `reviews_select_staff` ya filtra
-   * por restaurante a través de `es_staff_de(s.restaurante_id)`.
-   */
   const { data: reviewsRaw } = await supabase
     .from('reviews')
     .select(
@@ -81,7 +77,6 @@ export default async function ReviewsPage() {
   }>)
     .map((r) => {
       const sesion = Array.isArray(r.sesiones) ? r.sesiones[0] : r.sesiones;
-      // Filtrar defensivamente por restaurante (RLS ya lo hace, esto es backup)
       if (!sesion || sesion.restaurante_id !== restauranteId) return null;
       const mesa = Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas;
       return {
@@ -96,10 +91,12 @@ export default async function ReviewsPage() {
     .filter((r): r is ReviewFila => r !== null);
 
   return (
-    <ReviewsManager
-      reviews={reviews}
-      colorMarca={colorMarca}
-      nombreNegocio={nombreNegocio}
-    />
+    <PanelShell currentPage="reviews" nombreNegocio={nombreNegocio}>
+      <ReviewsManager
+        reviews={reviews}
+        colorMarca={colorMarca}
+        nombreNegocio={nombreNegocio}
+      />
+    </PanelShell>
   );
 }

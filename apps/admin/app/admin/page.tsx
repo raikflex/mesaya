@@ -1,8 +1,7 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
-import { Button } from '@mesaya/ui';
-import { logout } from '../actions/auth';
+import { PanelShell } from '../_components/panel-shell';
 import { BannerActivacion } from './banner-activacion';
 import { BannerBienvenida } from './banner-bienvenida';
 
@@ -63,8 +62,6 @@ export default async function AdminHome({
       .select('rol', { count: 'exact' })
       .eq('restaurante_id', restauranteId)
       .neq('rol', 'dueno'),
-    // Reviews del restaurante para mostrar resumen en dashboard.
-    // La RLS reviews_select_staff filtra automáticamente por restaurante.
     supabase
       .from('reviews')
       .select('estrellas, comentario, creada_en')
@@ -82,6 +79,7 @@ export default async function AdminHome({
   const estado = (restaurante?.estado as string) ?? 'archivado';
   const trialTermina = restaurante?.trial_termina_en as string | null;
   const colorMarca = (restaurante?.color_marca as string) ?? '#9a3f6b';
+  const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
 
   const reviews = (reviewsResp.data ?? []) as {
     estrellas: number;
@@ -100,9 +98,7 @@ export default async function AdminHome({
         };
 
   return (
-    <main className="min-h-screen">
-      <Header nombreNegocio={(restaurante?.nombre_publico as string) ?? ''} />
-
+    <PanelShell currentPage="inicio" nombreNegocio={nombreNegocio}>
       <div className="px-6 sm:px-10 py-10 max-w-5xl mx-auto space-y-8">
         {params.bienvenida === 'activo' ? <BannerBienvenida /> : null}
 
@@ -117,7 +113,7 @@ export default async function AdminHome({
             className="font-[family-name:var(--font-display)] text-5xl tracking-[-0.025em] leading-[1.05]"
             style={{ color: 'var(--color-ink)' }}
           >
-            {(restaurante?.nombre_publico as string) ?? 'Tu restaurante'}
+            {nombreNegocio}
           </h1>
         </section>
 
@@ -132,51 +128,8 @@ export default async function AdminHome({
         />
 
         <SeccionResenas resumen={reviewsResumen} colorMarca={colorMarca} />
-
-        <SeccionProximos />
       </div>
-    </main>
-  );
-}
-
-function Header({ nombreNegocio }: { nombreNegocio: string }) {
-  return (
-    <header
-      className="border-b px-6 sm:px-10 py-4 flex items-center justify-between"
-      style={{ borderColor: 'var(--color-border)' }}
-    >
-      <Link href="/admin" className="inline-flex items-center gap-2">
-        <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden>
-          <rect
-            x="4"
-            y="4"
-            width="24"
-            height="24"
-            rx="6"
-            stroke="var(--color-ink)"
-            strokeWidth="1.5"
-          />
-          <circle cx="22" cy="22" r="3" fill="var(--color-accent)" />
-        </svg>
-        <span
-          className="font-[family-name:var(--font-display)] text-xl tracking-[-0.02em]"
-          style={{ color: 'var(--color-ink)' }}
-        >
-          MesaYA
-        </span>
-        <span
-          className="hidden sm:inline text-sm ml-2 truncate max-w-[200px]"
-          style={{ color: 'var(--color-muted)' }}
-        >
-          / {nombreNegocio}
-        </span>
-      </Link>
-      <form action={logout}>
-        <Button type="submit" variant="ghost" size="sm">
-          Cerrar sesión
-        </Button>
-      </form>
-    </header>
+    </PanelShell>
   );
 }
 
@@ -310,15 +263,12 @@ function SeccionResenas({
           className="rounded-[var(--radius-lg)] border bg-white p-5"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="flex items-center gap-6 mb-4 pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+          <div
+            className="flex items-center gap-6 mb-4 pb-4 border-b"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
             <div className="flex items-center gap-1">
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill={colorMarca}
-                style={{ color: colorMarca }}
-              >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill={colorMarca} style={{ color: colorMarca }}>
                 <polygon
                   points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
                   stroke="currentColor"
@@ -399,32 +349,6 @@ function SeccionResenas({
           </ul>
         </div>
       )}
-    </section>
-  );
-}
-
-function SeccionProximos() {
-  return (
-    <section>
-      <h2
-        className="text-xs uppercase tracking-[0.14em] mb-3"
-        style={{ color: 'var(--color-muted)' }}
-      >
-        Próximamente
-      </h2>
-      <div
-        className="rounded-[var(--radius-lg)] border p-5"
-        style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
-      >
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          Aquí verás tus pedidos del día, ventas en tiempo real y métricas
-          básicas cuando tu restaurante reciba el primer cliente. La gestión
-          completa del menú, mesas y equipo se agrega en la próxima sesión.
-        </p>
-      </div>
     </section>
   );
 }
