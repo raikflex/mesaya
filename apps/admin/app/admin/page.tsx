@@ -32,32 +32,45 @@ export default async function AdminHome({
 
   const restauranteId = perfil.restaurante_id as string;
 
-  const [{ data: restaurante }, categoriasResp, productosResp, mesasResp, equipoResp] =
-    await Promise.all([
-      supabase
-        .from('restaurantes')
-        .select('nombre_publico, estado, color_marca, primer_activacion_en, trial_termina_en')
-        .eq('id', restauranteId)
-        .single(),
-      supabase
-        .from('categorias')
-        .select('*', { count: 'exact', head: true })
-        .eq('restaurante_id', restauranteId)
-        .eq('activa', true),
-      supabase
-        .from('productos')
-        .select('*', { count: 'exact', head: true })
-        .eq('restaurante_id', restauranteId),
-      supabase
-        .from('mesas')
-        .select('*', { count: 'exact', head: true })
-        .eq('restaurante_id', restauranteId),
-      supabase
-        .from('perfiles')
-        .select('rol', { count: 'exact' })
-        .eq('restaurante_id', restauranteId)
-        .neq('rol', 'dueno'),
-    ]);
+  const [
+    { data: restaurante },
+    categoriasResp,
+    productosResp,
+    mesasResp,
+    equipoResp,
+    reviewsResp,
+  ] = await Promise.all([
+    supabase
+      .from('restaurantes')
+      .select('nombre_publico, estado, color_marca, primer_activacion_en, trial_termina_en')
+      .eq('id', restauranteId)
+      .single(),
+    supabase
+      .from('categorias')
+      .select('*', { count: 'exact', head: true })
+      .eq('restaurante_id', restauranteId)
+      .eq('activa', true),
+    supabase
+      .from('productos')
+      .select('*', { count: 'exact', head: true })
+      .eq('restaurante_id', restauranteId),
+    supabase
+      .from('mesas')
+      .select('*', { count: 'exact', head: true })
+      .eq('restaurante_id', restauranteId),
+    supabase
+      .from('perfiles')
+      .select('rol', { count: 'exact' })
+      .eq('restaurante_id', restauranteId)
+      .neq('rol', 'dueno'),
+    // Reviews del restaurante para mostrar resumen en dashboard.
+    // La RLS reviews_select_staff filtra automáticamente por restaurante.
+    supabase
+      .from('reviews')
+      .select('estrellas, comentario, creada_en')
+      .order('creada_en', { ascending: false })
+      .limit(50),
+  ]);
 
   const categorias = categoriasResp.count ?? 0;
   const productos = productosResp.count ?? 0;
@@ -68,6 +81,23 @@ export default async function AdminHome({
 
   const estado = (restaurante?.estado as string) ?? 'archivado';
   const trialTermina = restaurante?.trial_termina_en as string | null;
+  const colorMarca = (restaurante?.color_marca as string) ?? '#9a3f6b';
+
+  const reviews = (reviewsResp.data ?? []) as {
+    estrellas: number;
+    comentario: string | null;
+    creada_en: string;
+  }[];
+
+  const reviewsResumen =
+    reviews.length === 0
+      ? null
+      : {
+          total: reviews.length,
+          promedio:
+            reviews.reduce((acc, r) => acc + r.estrellas, 0) / reviews.length,
+          ultimas: reviews.slice(0, 2),
+        };
 
   return (
     <main className="min-h-screen">
@@ -100,6 +130,8 @@ export default async function AdminHome({
           cocinas={cocinas}
           meseros={meseros}
         />
+
+        <SeccionResenas resumen={reviewsResumen} colorMarca={colorMarca} />
 
         <SeccionProximos />
       </div>
@@ -224,6 +256,150 @@ function Stat({
         </p>
       ) : null}
     </li>
+  );
+}
+
+function SeccionResenas({
+  resumen,
+  colorMarca,
+}: {
+  resumen: {
+    total: number;
+    promedio: number;
+    ultimas: { estrellas: number; comentario: string | null; creada_en: string }[];
+  } | null;
+  colorMarca: string;
+}) {
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-3">
+        <h2
+          className="text-xs uppercase tracking-[0.14em]"
+          style={{ color: 'var(--color-muted)' }}
+        >
+          Reseñas de clientes
+        </h2>
+        <Link
+          href="/admin/reviews"
+          className="text-xs underline"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Ver todas →
+        </Link>
+      </div>
+
+      {resumen === null ? (
+        <div
+          className="rounded-[var(--radius-lg)] border p-5"
+          style={{
+            borderColor: 'var(--color-border)',
+            background: 'var(--color-paper)',
+          }}
+        >
+          <p
+            className="text-sm leading-relaxed"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            Aquí verás las opiniones que dejen tus clientes después de cada
+            visita. Cuando recibas la primera, aparecerá un resumen con
+            estrellas promedio y los comentarios más recientes.
+          </p>
+        </div>
+      ) : (
+        <div
+          className="rounded-[var(--radius-lg)] border bg-white p-5"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <div className="flex items-center gap-6 mb-4 pb-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
+            <div className="flex items-center gap-1">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill={colorMarca}
+                style={{ color: colorMarca }}
+              >
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span
+                className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] ml-1"
+                style={{ color: 'var(--color-ink)' }}
+              >
+                {resumen.promedio.toFixed(1)}
+              </span>
+            </div>
+            <div>
+              <p
+                className="font-[family-name:var(--font-display)] text-xl tracking-[-0.015em]"
+                style={{ color: 'var(--color-ink)' }}
+              >
+                {resumen.total} {resumen.total === 1 ? 'reseña' : 'reseñas'}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
+                de tus clientes
+              </p>
+            </div>
+          </div>
+
+          <p
+            className="text-[0.7rem] uppercase tracking-[0.12em] mb-2"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Más recientes
+          </p>
+          <ul className="space-y-3">
+            {resumen.ultimas.map((r, i) => (
+              <li key={i}>
+                <div className="flex items-center gap-1 mb-1">
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <svg
+                      key={n}
+                      width="11"
+                      height="11"
+                      viewBox="0 0 24 24"
+                      fill={r.estrellas >= n ? colorMarca : 'none'}
+                      style={{
+                        color:
+                          r.estrellas >= n ? colorMarca : 'var(--color-border-strong)',
+                      }}
+                    >
+                      <polygon
+                        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  ))}
+                </div>
+                {r.comentario ? (
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
+                    "{r.comentario}"
+                  </p>
+                ) : (
+                  <p
+                    className="text-xs italic"
+                    style={{ color: 'var(--color-muted)' }}
+                  >
+                    Sin comentario
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
   );
 }
 
