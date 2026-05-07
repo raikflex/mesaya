@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createClient } from '@mesaya/database/client';
 import { logout } from '../actions/auth';
 
 type CurrentPage = 'inicio' | 'menu' | 'mesas' | 'equipo' | 'reviews' | 'metricas' | 'configuracion';
@@ -28,6 +29,89 @@ const ITEMS: {
   { id: 'configuracion', label: 'Configuración', href: '/admin/configuracion', icon: 'gear' },
 ];
 
+type Indicadores = {
+  mesasActivas: number;
+  comandasActivas: number;
+  reseñasUltimas24h: number;
+  estadoRestaurante: string;
+};
+
+/**
+ * Hook que trae indicadores del dashboard refrescados cada 30s.
+ * Usa el cliente Supabase con sesión del navegador (RLS protege).
+ *
+ * Devuelve null mientras carga la primera vez para evitar parpadeos del badge.
+ */
+function useIndicadoresAdmin(): Indicadores | null {
+  const [data, setData] = useState<Indicadores | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    let cancelado = false;
+
+    async function fetchIndicadores() {
+      // Restaurante del usuario actual (vía RLS — perfiles solo deja ver el propio)
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelado) return;
+
+      const { data: perfil } = await supabase
+        .from('perfiles')
+        .select('restaurante_id')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (!perfil?.restaurante_id || cancelado) return;
+      const restauranteId = perfil.restaurante_id as string;
+
+      const ahora = new Date();
+      const hace24h = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
+
+      const [restResp, sesResp, comandasResp, reviewsResp] = await Promise.all([
+        supabase
+          .from('restaurantes')
+          .select('estado')
+          .eq('id', restauranteId)
+          .maybeSingle(),
+        supabase
+          .from('sesiones')
+          .select('id', { count: 'exact', head: true })
+          .eq('restaurante_id', restauranteId)
+          .eq('estado', 'abierta'),
+        supabase
+          .from('comandas')
+          .select('id', { count: 'exact', head: true })
+          .eq('restaurante_id', restauranteId)
+          .in('estado', ['pendiente', 'en_preparacion', 'lista']),
+        supabase
+          .from('reviews')
+          .select('id', { count: 'exact', head: true })
+          .gte('creada_en', hace24h.toISOString()),
+      ]);
+
+      if (cancelado) return;
+
+      setData({
+        mesasActivas: sesResp.count ?? 0,
+        comandasActivas: comandasResp.count ?? 0,
+        reseñasUltimas24h: reviewsResp.count ?? 0,
+        estadoRestaurante: (restResp.data?.estado as string) ?? 'archivado',
+      });
+    }
+
+    fetchIndicadores();
+    const i = setInterval(fetchIndicadores, 30_000);
+
+    return () => {
+      cancelado = true;
+      clearInterval(i);
+    };
+  }, []);
+
+  return data;
+}
+
 export function PanelShell({
   children,
   currentPage,
@@ -38,6 +122,19 @@ export function PanelShell({
   nombreNegocio: string;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const indicadores = useIndicadoresAdmin();
+
+  // Mapa de badges por item: solo se muestra si > 0
+  const badges: Partial<Record<CurrentPage, number>> = indicadores
+    ? {
+        mesas: indicadores.mesasActivas,
+        metricas: indicadores.comandasActivas,
+        reviews: indicadores.reseñasUltimas24h,
+      }
+    : {};
+
+  const estaPausado = indicadores?.estadoRestaurante === 'pausado';
+  const estaActivo = indicadores?.estadoRestaurante === 'activo';
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--color-paper)' }}>
@@ -94,6 +191,7 @@ export function PanelShell({
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
           {ITEMS.map((item) => {
             const activo = item.id === currentPage;
+            const badge = badges[item.id] ?? 0;
             return (
               <Link
                 key={item.id}
@@ -107,11 +205,81 @@ export function PanelShell({
                 }}
               >
                 <ItemIcon name={item.icon} />
-                <span>{item.label}</span>
+                <span className="flex-1">{item.label}</span>
+                {badge > 0 ? (
+                  <span
+                    className="text-[0.6rem] uppercase tracking-[0.05em] px-1.5 py-0.5 rounded-full font-medium tabular-nums"
+                    style={{
+                      background: 'var(--color-accent, #9a3f6b)',
+                      color: 'white',
+                      minWidth: '1.25rem',
+                      textAlign: 'center',
+                    }}
+                  >
+                    {badge > 99 ? '99+' : badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}
         </nav>
+
+        {/* Footer: estado del restaurante con dot pulsante */}
+        {indicadores ? (
+          <div
+            className="px-3 py-3 border-t"
+            style={{ borderColor: 'var(--color-border)' }}
+          >
+            <div
+              className="flex items-center gap-2 px-2 py-1.5 rounded-[var(--radius-md)]"
+              style={{
+                background: estaPausado
+                  ? '#fffbeb'
+                  : estaActivo
+                    ? 'var(--color-paper-deep)'
+                    : 'transparent',
+              }}
+            >
+              <span
+                className={estaActivo ? 'size-2 rounded-full animate-pulse' : 'size-2 rounded-full'}
+                style={{
+                  background: estaPausado
+                    ? '#f59e0b'
+                    : estaActivo
+                      ? '#22c55e'
+                      : 'var(--color-muted)',
+                }}
+              />
+              <div className="min-w-0 flex-1">
+                <p
+                  className="text-[0.65rem] uppercase tracking-[0.1em] leading-tight"
+                  style={{
+                    color: estaPausado
+                      ? '#92400e'
+                      : estaActivo
+                        ? '#15803d'
+                        : 'var(--color-muted)',
+                  }}
+                >
+                  {estaPausado
+                    ? 'Pausado'
+                    : estaActivo
+                      ? 'Recibiendo'
+                      : 'Sin activar'}
+                </p>
+                {indicadores.mesasActivas > 0 ? (
+                  <p
+                    className="text-[0.65rem] leading-tight mt-0.5"
+                    style={{ color: 'var(--color-muted)' }}
+                  >
+                    {indicadores.mesasActivas}{' '}
+                    {indicadores.mesasActivas === 1 ? 'mesa activa' : 'mesas activas'}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <div
           className="p-3 border-t"
