@@ -447,3 +447,82 @@ export async function confirmarPago(input: {
   revalidatePath('/cocina');
   return { ok: true };
 }
+export async function marcarComandaPreparando(input: {
+  comandaId: string;
+}): Promise<TomarResultado> {
+  const validacion = await validarStaffMesero();
+  if (!validacion.ok) return validacion;
+
+  const supabase = await createClient();
+
+  const { data: comanda } = await supabase
+    .from('comandas')
+    .select('id, restaurante_id, estado')
+    .eq('id', input.comandaId)
+    .maybeSingle();
+
+  if (!comanda) return { ok: false, error: 'No encontramos esa comanda.' };
+  if (comanda.restaurante_id !== validacion.restauranteId) {
+    return { ok: false, error: 'Esa comanda no es de tu restaurante.' };
+  }
+  if (comanda.estado !== 'pendiente') {
+    return {
+      ok: false,
+      error: 'Solo podés marcar como en preparación las comandas pendientes.',
+    };
+  }
+
+  const { error } = await supabase
+    .from('comandas')
+    .update({ estado: 'en_preparacion' })
+    .eq('id', input.comandaId);
+
+  if (error) {
+    return { ok: false, error: 'No pudimos actualizar. ' + error.message };
+  }
+
+  revalidatePath('/mesero');
+  return { ok: true };
+}
+
+/**
+ * Mesero marca que la comanda ya está lista para entregar (la recogió de la
+ * cocina). Cambia estado: en_preparacion → lista.
+ */
+export async function marcarComandaLista(input: {
+  comandaId: string;
+}): Promise<TomarResultado> {
+  const validacion = await validarStaffMesero();
+  if (!validacion.ok) return validacion;
+
+  const supabase = await createClient();
+
+  const { data: comanda } = await supabase
+    .from('comandas')
+    .select('id, restaurante_id, estado')
+    .eq('id', input.comandaId)
+    .maybeSingle();
+
+  if (!comanda) return { ok: false, error: 'No encontramos esa comanda.' };
+  if (comanda.restaurante_id !== validacion.restauranteId) {
+    return { ok: false, error: 'Esa comanda no es de tu restaurante.' };
+  }
+  if (comanda.estado !== 'en_preparacion' && comanda.estado !== 'pendiente') {
+    return {
+      ok: false,
+      error: 'Solo podés marcar como lista una comanda en preparación.',
+    };
+  }
+
+  const { error } = await supabase
+    .from('comandas')
+    .update({ estado: 'lista' })
+    .eq('id', input.comandaId);
+
+  if (error) {
+    return { ok: false, error: 'No pudimos actualizar. ' + error.message };
+  }
+
+  revalidatePath('/mesero');
+  return { ok: true };
+}

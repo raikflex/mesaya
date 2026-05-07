@@ -1,6 +1,7 @@
 import { createClient } from '@mesaya/database/server';
 import { obtenerPerfilStaff } from '../../lib/auth-server';
 import { TableroCocina, type ComandaCocina } from './tablero-cocina';
+import { CocinaInactiva } from './cocina-inactiva';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,10 +10,33 @@ export const dynamic = 'force-dynamic';
  * - Carga las comandas del día con estados activos (pendiente, en_preparacion, lista).
  * - Las que están en estado 'entregada' o 'cancelada' no se muestran (ya cerraron su ciclo).
  * - El client component se encarga del realtime y del cambio de estados.
+ *
+ * NUEVO en S10: si el restaurante tiene `cocina_activa = false`, esta pantalla
+ * muestra un mensaje explicando que el dueño desactivó la pantalla de cocina.
+ * El cocinero no debe ver pedidos que el mesero está manejando manualmente.
  */
 export default async function CocinaPage() {
   const perfil = await obtenerPerfilStaff('cocina');
   const supabase = await createClient();
+
+  // Verificar si la pantalla de cocina está activa
+  const { data: restaurante } = await supabase
+    .from('restaurantes')
+    .select('cocina_activa, nombre_publico, color_marca')
+    .eq('id', perfil.restauranteId)
+    .maybeSingle();
+
+  const cocinaActiva = (restaurante?.cocina_activa as boolean) ?? false;
+
+  if (!cocinaActiva) {
+    return (
+      <CocinaInactiva
+        nombreNegocio={(restaurante?.nombre_publico as string) ?? perfil.restauranteNombre}
+        colorMarca={(restaurante?.color_marca as string) ?? perfil.restauranteColor}
+        nombreCocinero={perfil.nombre}
+      />
+    );
+  }
 
   // Filtrar comandas del día actual del restaurante.
   const inicioDia = new Date();

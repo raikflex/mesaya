@@ -14,12 +14,19 @@ const configSchema = z.object({
     .string()
     .trim()
     .regex(/^#[0-9a-fA-F]{6}$/, 'Color inválido (debe ser hex como #9a3f6b)'),
+  // Coerce a boolean. FormData manda 'on' cuando el checkbox está activo,
+  // o no manda nada cuando está desactivado.
+  cocina_activa: z
+    .union([z.literal('on'), z.literal('off'), z.null(), z.undefined()])
+    .transform((v) => v === 'on'),
 });
 
 export type GuardarConfigState = {
   ok: boolean;
   error?: string;
-  fieldErrors?: Partial<Record<'nombre_publico' | 'color_marca', string>>;
+  fieldErrors?: Partial<
+    Record<'nombre_publico' | 'color_marca' | 'cocina_activa', string>
+  >;
 };
 
 export async function guardarConfig(
@@ -29,6 +36,7 @@ export async function guardarConfig(
   const parsed = configSchema.safeParse({
     nombre_publico: formData.get('nombre_publico'),
     color_marca: formData.get('color_marca'),
+    cocina_activa: formData.get('cocina_activa') ?? 'off',
   });
 
   if (!parsed.success) {
@@ -58,11 +66,32 @@ export async function guardarConfig(
     return { ok: false, error: 'No tienes permisos.' };
   }
 
+  // Si activan cocina, validar que exista al menos una cuenta con rol cocina.
+  // Si no hay, error (deben crear una primero en /admin/equipo).
+  if (parsed.data.cocina_activa) {
+    const { count: cocineros } = await supabase
+      .from('perfiles')
+      .select('id', { count: 'exact', head: true })
+      .eq('restaurante_id', perfil.restaurante_id as string)
+      .eq('rol', 'cocina');
+
+    if (!cocineros || cocineros === 0) {
+      return {
+        ok: false,
+        fieldErrors: {
+          cocina_activa:
+            'Necesitas crear una cuenta de cocina antes de activar la pantalla. Andá a Equipo y agregá una.',
+        },
+      };
+    }
+  }
+
   const { error } = await supabase
     .from('restaurantes')
     .update({
       nombre_publico: parsed.data.nombre_publico,
       color_marca: parsed.data.color_marca,
+      cocina_activa: parsed.data.cocina_activa,
     })
     .eq('id', perfil.restaurante_id as string);
 

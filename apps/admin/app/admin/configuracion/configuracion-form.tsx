@@ -20,12 +20,15 @@ const PALETA_PRESET = [
 export function ConfiguracionForm({
   nombreInicial,
   colorInicial,
+  cocinaActivaInicial,
 }: {
   nombreInicial: string;
   colorInicial: string;
+  cocinaActivaInicial: boolean;
 }) {
   const [state, formAction, pending] = useActionState(guardarConfig, initialState);
   const [color, setColor] = useState(colorInicial);
+  const [cocinaActiva, setCocinaActiva] = useState(cocinaActivaInicial);
 
   return (
     <form
@@ -123,6 +126,78 @@ export function ConfiguracionForm({
         ) : null}
       </div>
 
+      {/* === TOGGLE COCINA === */}
+      <div
+        className="rounded-[var(--radius-md)] border p-4"
+        style={{
+          borderColor: cocinaActiva ? 'var(--color-border-strong)' : 'var(--color-border)',
+          background: cocinaActiva ? 'var(--color-paper)' : 'transparent',
+        }}
+      >
+        <label
+          htmlFor="cocina_activa"
+          className="flex items-start gap-3 cursor-pointer select-none"
+        >
+          <button
+            type="button"
+            role="switch"
+            aria-checked={cocinaActiva}
+            onClick={() => setCocinaActiva((v) => !v)}
+            className="relative h-6 w-11 rounded-full transition-colors mt-0.5 shrink-0"
+            style={{
+              background: cocinaActiva ? '#166534' : 'var(--color-paper-deep)',
+              border: `1px solid ${cocinaActiva ? '#166534' : 'var(--color-border-strong)'}`,
+            }}
+          >
+            <span
+              className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform"
+              style={{ transform: cocinaActiva ? 'translateX(20px)' : 'translateX(0)' }}
+            />
+          </button>
+          {/* Hidden input para que el form lo envíe */}
+          <input
+            type="hidden"
+            name="cocina_activa"
+            value={cocinaActiva ? 'on' : 'off'}
+          />
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-sm font-medium"
+              style={{ color: 'var(--color-ink)' }}
+            >
+              Pantalla de cocina activa
+            </p>
+            <p
+              className="text-xs mt-1 leading-relaxed"
+              style={{ color: 'var(--color-ink-soft)' }}
+            >
+              {cocinaActiva ? (
+                <>
+                  La cocina ve los pedidos en una pantalla y marca cuándo están
+                  listos. Necesitás una cuenta de cocina creada en Equipo.
+                </>
+              ) : (
+                <>
+                  El mesero imprime o anota la comanda y se la pasa al chef
+                  físicamente. Después marca cuándo está lista para entregar.
+                  Recomendado para la mayoría de restaurantes.
+                </>
+              )}
+            </p>
+          </div>
+        </label>
+
+        {state.fieldErrors?.cocina_activa ? (
+          <p
+            role="alert"
+            className="text-xs leading-relaxed mt-2"
+            style={{ color: 'var(--color-danger)' }}
+          >
+            {state.fieldErrors.cocina_activa}
+          </p>
+        ) : null}
+      </div>
+
       {state.error ? (
         <div
           role="alert"
@@ -148,7 +223,7 @@ export function ConfiguracionForm({
           }}
         >
           ✓ Cambios guardados. Recarga las apps abiertas (cliente, mesero,
-          cocina) para ver el nuevo color.
+          cocina) para ver los cambios.
         </div>
       ) : null}
 

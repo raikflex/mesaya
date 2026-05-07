@@ -26,6 +26,27 @@ const ETIQUETAS: Record<string, string> = {
   otro: 'Avisaste al mesero',
 };
 
+// Sugerencias predeterminadas para que el cliente no tenga que tipear lo más
+// común. Click en chip → reemplaza la nota actual. Tap-friendly en móvil.
+// Agrupadas por motivo: campana (cosas físicas) vs otro (situaciones).
+const SUGERENCIAS_CAMPANA = [
+  'Más servilletas',
+  'Una cuchara',
+  'Un cuchillo',
+  'Un tenedor',
+  'Vaso de agua',
+  'Caja para llevar',
+  'Cambiar el plato',
+  'La cuenta lista para irme',
+];
+
+const SUGERENCIAS_OTRO = [
+  'Necesito una recomendación',
+  'Hay un problema con mi pedido',
+  'Tengo una alergia',
+  'Quiero hablar con el encargado',
+];
+
 export function LlamarMeseroCliente({
   qrToken,
   numeroMesa,
@@ -65,11 +86,6 @@ export function LlamarMeseroCliente({
     }
   }, [qrToken]);
 
-  /**
-   * Realtime: escuchar cambios en llamados_mesero de esta sesión. Cuando alguien
-   * los toma, mostrar el nombre del mesero. Cuando se atienden, mostrar pantalla
-   * de "atendido" durante un par de segundos antes de volver a la normalidad.
-   */
   useEffect(() => {
     if (!sesionId) return;
 
@@ -126,7 +142,6 @@ export function LlamarMeseroCliente({
               if (fila.motivo === 'pago') return;
 
               if (fila.estado === 'atendido') {
-                // Mostramos un flash "atendido" y limpiamos la card.
                 setLlamados((ls) => ls.filter((l) => l.id !== fila.id));
                 setLlamadoResuelto({
                   nombreMesero: fila.mesero_atendiendo_nombre,
@@ -261,6 +276,10 @@ export function LlamarMeseroCliente({
     );
   }
 
+  // Sugerencias contextuales según motivo seleccionado
+  const sugerencias =
+    motivo === 'campana' ? SUGERENCIAS_CAMPANA : SUGERENCIAS_OTRO;
+
   return (
     <main
       className="min-h-screen flex flex-col"
@@ -393,12 +412,41 @@ export function LlamarMeseroCliente({
             />
           </div>
 
+          {/* Chips de sugerencias rápidas — toca uno para llenar la nota */}
+          <p
+            className="text-xs uppercase tracking-[0.14em] mb-2"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Sugerencias rápidas
+          </p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {sugerencias.map((s) => {
+              const seleccionado = nota.trim() === s;
+              return (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setNota(seleccionado ? '' : s)}
+                  className="px-3 py-1.5 rounded-full text-xs border transition-colors"
+                  style={{
+                    background: seleccionado ? colorMarca : 'transparent',
+                    color: seleccionado ? 'white' : 'var(--color-ink)',
+                    borderColor: seleccionado ? colorMarca : 'var(--color-border-strong)',
+                  }}
+                >
+                  {seleccionado ? '✓ ' : '+ '}
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+
           <label
             htmlFor="nota"
             className="text-xs uppercase tracking-[0.14em] mb-2 block"
             style={{ color: 'var(--color-muted)' }}
           >
-            Detalles{' '}
+            O escribe tu detalle{' '}
             <span className="lowercase tracking-normal">(opcional)</span>
           </label>
           <textarea

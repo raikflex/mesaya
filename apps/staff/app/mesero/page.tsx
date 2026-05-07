@@ -1,6 +1,7 @@
 import { createClient } from '@mesaya/database/server';
 import { obtenerPerfilStaff } from '../../lib/auth-server';
 import { TableroMesero, type ColaMesero } from './tablero-mesero';
+import type { MesaInfo, SesionAbiertaResumen } from './mapa-mesas';
 
 export const dynamic = 'force-dynamic';
 
@@ -21,6 +22,17 @@ export const dynamic = 'force-dynamic';
 export default async function MeseroPage() {
   const perfil = await obtenerPerfilStaff('mesero');
   const supabase = await createClient();
+
+  // Verificar si la pantalla de cocina está activa. Si no lo está, el mesero
+  // ve una sección extra "En preparación" donde maneja el ciclo de vida de
+  // las comandas (pendiente → en_preparacion → lista) manualmente.
+  const { data: restaurante } = await supabase
+    .from('restaurantes')
+    .select('cocina_activa')
+    .eq('id', perfil.restauranteId)
+    .maybeSingle();
+
+  const cocinaActiva = (restaurante?.cocina_activa as boolean) ?? false;
 
   // --- Llamados activos (excluyendo motivo='pago' que va a sección de pagos) ---
   // Traemos también doc_tipo, doc_numero, doc_nombre, forma_pago_preferida y nota.
@@ -72,6 +84,13 @@ export default async function MeseroPage() {
   const inicioDia = new Date();
   inicioDia.setHours(0, 0, 0, 0);
 
+  // Si la cocina está inactiva, el mesero ve TODAS las comandas en estados
+  // activos (pendiente, en_preparacion, lista) para manejarlas manualmente.
+  // Si la cocina está activa, solo ve las que ya están listas para entregar.
+  const estadosFiltro = cocinaActiva
+    ? ['lista']
+    : ['pendiente', 'en_preparacion', 'lista'];
+
   const { data: comandasListasRaw } = await supabase
     .from('comandas')
     .select(
@@ -88,7 +107,7 @@ export default async function MeseroPage() {
     `,
     )
     .eq('restaurante_id', perfil.restauranteId)
-    .eq('estado', 'lista')
+    .in('estado', estadosFiltro)
     .gte('creada_en', inicioDia.toISOString())
     .order('creada_en', { ascending: true });
 
@@ -138,18 +157,67 @@ export default async function MeseroPage() {
       ? (
           await supabase
             .from('comandas')
-            .select('id, sesion_id, total, estado')
+            .select('id, sesion_id, numero_diario, total, estado, creada_en')
             .in('sesion_id', sesionesPago)
             .neq('estado', 'cancelada')
+            .order('creada_en', { ascending: true })
         ).data ?? []
       : [];
 
+  // Traer items de TODAS las comandas de pago en una sola query
+  const idsComandasPago = comandasDeSesionesPago.map((c) => c.id as string);
+  const itemsDeComandasPago =
+    idsComandasPago.length > 0
+      ? (
+          await supabase
+            .from('comanda_items')
+            .select('comanda_id, nombre_snapshot, cantidad, precio_snapshot, nota')
+            .in('comanda_id', idsComandasPago)
+            .order('id', { ascending: true })
+        ).data ?? []
+      : [];
+
+  const itemsPorComandaPago = new Map<
+    string,
+    { nombre: string; cantidad: number; precio: number; nota: string | null }[]
+  >();
+  for (const c of comandasDeSesionesPago) {
+    itemsPorComandaPago.set(c.id as string, []);
+  }
+  for (const it of itemsDeComandasPago) {
+    const arr = itemsPorComandaPago.get(it.comanda_id as string);
+    if (arr) {
+      arr.push({
+        nombre: it.nombre_snapshot as string,
+        cantidad: it.cantidad as number,
+        precio: it.precio_snapshot as number,
+        nota: (it.nota as string) ?? null,
+      });
+    }
+  }
+
   const totalPorSesion = new Map<string, number>();
   const countPorSesion = new Map<string, number>();
+  const comandasDetPorSesion = new Map<
+    string,
+    {
+      numeroDiario: number;
+      total: number;
+      items: { nombre: string; cantidad: number; precio: number; nota: string | null }[];
+    }[]
+  >();
+
   for (const c of comandasDeSesionesPago) {
     const sid = c.sesion_id as string;
     totalPorSesion.set(sid, (totalPorSesion.get(sid) ?? 0) + (c.total as number));
     countPorSesion.set(sid, (countPorSesion.get(sid) ?? 0) + 1);
+    const arr = comandasDetPorSesion.get(sid) ?? [];
+    arr.push({
+      numeroDiario: c.numero_diario as number,
+      total: c.total as number,
+      items: itemsPorComandaPago.get(c.id as string) ?? [],
+    });
+    comandasDetPorSesion.set(sid, arr);
   }
 
   const cola: ColaMesero = {
@@ -165,21 +233,44 @@ export default async function MeseroPage() {
         nota: l.nota,
       };
     }),
-    comandasListas: comandasListasArr.map((c) => {
-      const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
-      const sesion = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
-      const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
-      return {
-        id: c.id,
-        numeroDiario: c.numero_diario,
-        total: c.total,
-        creadaEn: c.creada_en,
-        clienteNombre: sc?.nombre ?? 'Cliente',
-        mesaNumero: mesa?.numero ?? '?',
-        meseroAtendiendoId: c.mesero_atendiendo_id,
-        items: itemsPorComanda.get(c.id) ?? [],
-      };
-    }),
+    comandasListas: comandasListasArr
+      .filter((c) => c.estado === 'lista')
+      .map((c) => {
+        const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
+        const sesion = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
+        const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
+        return {
+          id: c.id,
+          numeroDiario: c.numero_diario,
+          total: c.total,
+          creadaEn: c.creada_en,
+          clienteNombre: sc?.nombre ?? 'Cliente',
+          mesaNumero: mesa?.numero ?? '?',
+          meseroAtendiendoId: c.mesero_atendiendo_id,
+          items: itemsPorComanda.get(c.id) ?? [],
+        };
+      }),
+    // Comandas en pendiente o en_preparacion — solo se llenan cuando
+    // cocinaActiva = false. Si está activa, este array queda vacío.
+    comandasEnPreparacion: comandasListasArr
+      .filter(
+        (c) => c.estado === 'pendiente' || c.estado === 'en_preparacion',
+      )
+      .map((c) => {
+        const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
+        const sesion = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
+        const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
+        return {
+          id: c.id,
+          numeroDiario: c.numero_diario,
+          estado: c.estado as 'pendiente' | 'en_preparacion',
+          total: c.total,
+          creadaEn: c.creada_en,
+          clienteNombre: sc?.nombre ?? 'Cliente',
+          mesaNumero: mesa?.numero ?? '?',
+          items: itemsPorComanda.get(c.id) ?? [],
+        };
+      }),
     pagos: llamadosPago.map((l) => {
       const sesion = Array.isArray(l.sesiones) ? l.sesiones[0] : l.sesiones;
       const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
@@ -195,9 +286,58 @@ export default async function MeseroPage() {
         docTipo: l.doc_tipo,
         docNumero: l.doc_numero,
         docNombre: l.doc_nombre,
+        comandas: comandasDetPorSesion.get(l.sesion_id) ?? [],
       };
     }),
   };
+
+  // === MAPA DE MESAS para el mesero (libres/ocupadas) ===
+  const [mesasResp, sesionesAbiertasResp] = await Promise.all([
+    supabase
+      .from('mesas')
+      .select('id, numero, capacidad')
+      .eq('restaurante_id', perfil.restauranteId)
+      .order('numero', { ascending: true }),
+    supabase
+      .from('sesiones')
+      .select('mesa_id, abierta_en, comandas(id, total, estado)')
+      .eq('restaurante_id', perfil.restauranteId)
+      .eq('estado', 'abierta'),
+  ]);
+
+  const mesasInfo: MesaInfo[] = (
+    (mesasResp.data ?? []) as { id: string; numero: string; capacidad: number }[]
+  )
+    .slice()
+    .sort((a, b) => {
+      const na = parseInt(a.numero, 10);
+      const nb = parseInt(b.numero, 10);
+      if (Number.isNaN(na) || Number.isNaN(nb))
+        return a.numero.localeCompare(b.numero);
+      return na - nb;
+    })
+    .map((m) => ({ id: m.id, numero: m.numero, capacidad: m.capacidad ?? 0 }));
+
+  const sesionesAbiertas: SesionAbiertaResumen[] = (
+    (sesionesAbiertasResp.data ?? []) as Array<{
+      mesa_id: string;
+      abierta_en: string;
+      comandas: { total: number; estado: string }[] | null;
+    }>
+  ).map((s) => {
+    const comandasNoCanceladas = (s.comandas ?? []).filter(
+      (c) => c.estado !== 'cancelada',
+    );
+    return {
+      mesaId: s.mesa_id,
+      abiertaEn: s.abierta_en,
+      totalAcumulado: comandasNoCanceladas.reduce(
+        (acc, c) => acc + (c.total ?? 0),
+        0,
+      ),
+      comandasCount: comandasNoCanceladas.length,
+    };
+  });
 
   return (
     <TableroMesero
@@ -207,6 +347,9 @@ export default async function MeseroPage() {
       colorMarca={perfil.restauranteColor}
       restauranteId={perfil.restauranteId}
       colaInicial={cola}
+      mesasInfo={mesasInfo}
+      sesionesAbiertasInicial={sesionesAbiertas}
+      cocinaActiva={cocinaActiva}
     />
   );
 }

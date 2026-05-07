@@ -1,7 +1,13 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@mesaya/database/client';
+import { MapaMesas, type MesaInfo, type SesionAbiertaResumen } from './mapa-mesas';
+import {
+  SeccionEnPreparacion,
+  type ComandaPreparacionMesero,
+} from './seccion-en-preparacion';
 import {
   alternarSonido,
   desbloquearAudio,
@@ -45,6 +51,19 @@ export type ComandaListaMesero = {
   items: { id: string; nombre: string; cantidad: number; nota: string | null }[];
 };
 
+export type ItemComandaPago = {
+  nombre: string;
+  cantidad: number;
+  precio: number;
+  nota: string | null;
+};
+
+export type ComandaDetalladaPago = {
+  numeroDiario: number;
+  total: number;
+  items: ItemComandaPago[];
+};
+
 export type PagoMesero = {
   id: string;
   sesionId: string;
@@ -62,12 +81,19 @@ export type PagoMesero = {
   docTipo: string | null;
   docNumero: string | null;
   docNombre: string | null;
+  // Detalle completo de TODAS las comandas no canceladas de la sesión + sus
+  // items con precios. El mesero los lee al cobrar para hacer la facturación
+  // electrónica desde su sistema contable externo.
+  comandas: ComandaDetalladaPago[];
 };
 
 export type ColaMesero = {
   llamados: LlamadoMesero[];
   comandasListas: ComandaListaMesero[];
   pagos: PagoMesero[];
+  // Solo se llena cuando restaurantes.cocina_activa = false. El mesero
+  // maneja el ciclo de vida pendiente → en_preparacion → lista manualmente.
+  comandasEnPreparacion: ComandaPreparacionMesero[];
 };
 
 export function TableroMesero({
@@ -77,6 +103,9 @@ export function TableroMesero({
   colorMarca,
   restauranteId,
   colaInicial,
+  mesasInfo,
+  sesionesAbiertasInicial,
+  cocinaActiva,
 }: {
   perfilId: string;
   perfilNombre: string;
@@ -84,8 +113,12 @@ export function TableroMesero({
   colorMarca: string;
   restauranteId: string;
   colaInicial: ColaMesero;
+  mesasInfo: MesaInfo[];
+  sesionesAbiertasInicial: SesionAbiertaResumen[];
+  cocinaActiva: boolean;
 }) {
   const [cola, setCola] = useState<ColaMesero>(colaInicial);
+  const router = useRouter();
 
   const llamadoIdsRef = useRef<Set<string>>(
     new Set(colaInicial.llamados.map((l) => l.id)),
@@ -226,6 +259,18 @@ export function TableroMesero({
               };
               if (fila.restaurante_id !== restauranteId) return;
 
+              // Si la comanda está en pendiente o en_preparacion, refrescar
+              // el SSR para que la sección "En preparación" se mantenga
+              // sincronizada cuando cocina_activa = false. Si está activa,
+              // este refresh es benigno porque esa sección no se renderiza.
+              if (
+                fila.estado === 'pendiente' ||
+                fila.estado === 'en_preparacion'
+              ) {
+                router.refresh();
+                return;
+              }
+
               if (fila.estado === 'lista') {
                 if (comandaIdsRef.current.has(fila.id)) {
                   setCola((c) => ({
@@ -279,10 +324,13 @@ export function TableroMesero({
         canalActual = null;
       }
     };
-  }, [restauranteId]);
+  }, [restauranteId, router]);
 
   const total =
-    cola.llamados.length + cola.comandasListas.length + cola.pagos.length;
+    cola.llamados.length +
+    cola.comandasListas.length +
+    cola.pagos.length +
+    cola.comandasEnPreparacion.length;
 
   return (
     <main
@@ -297,6 +345,28 @@ export function TableroMesero({
       />
 
       <div className="flex-1 px-5 lg:px-8 py-6 max-w-[1400px] mx-auto w-full">
+        {mesasInfo.length > 0 ? (
+          <div className="mb-6">
+            <MapaMesas
+              mesas={mesasInfo}
+              sesionesAbiertasIniciales={sesionesAbiertasInicial}
+              restauranteId={restauranteId}
+              colorMarca={colorMarca}
+              variante="mesero"
+            />
+          </div>
+        ) : null}
+
+        {/* Sección "En preparación" — solo cuando cocina_activa = false */}
+        {!cocinaActiva ? (
+          <div className="mb-6">
+            <SeccionEnPreparacion
+              comandas={cola.comandasEnPreparacion}
+              colorMarca={colorMarca}
+            />
+          </div>
+        ) : null}
+
         {total === 0 ? (
           <EstadoVacio colorMarca={colorMarca} />
         ) : (
@@ -369,14 +439,56 @@ async function traerPagoCompleto(llamadoId: string): Promise<PagoMesero | null> 
 
   if (!llamado) return null;
 
-  const { data: comandas } = await supabase
+  // Traer las comandas no canceladas de la sesión (para detalle del modal).
+  const { data: comandasRaw } = await supabase
     .from('comandas')
-    .select('id, total')
+    .select('id, numero_diario, total, creada_en')
     .eq('sesion_id', llamado.sesion_id as string)
-    .neq('estado', 'cancelada');
+    .neq('estado', 'cancelada')
+    .order('creada_en', { ascending: true });
 
-  const totalAcumulado = (comandas ?? []).reduce(
-    (acc, c) => acc + (c.total as number),
+  const comandasArr = (comandasRaw ?? []) as {
+    id: string;
+    numero_diario: number;
+    total: number;
+    creada_en: string;
+  }[];
+
+  // Traer items de TODAS las comandas en una query.
+  const idsComandas = comandasArr.map((c) => c.id);
+  const itemsRaw =
+    idsComandas.length > 0
+      ? (
+          await supabase
+            .from('comanda_items')
+            .select('comanda_id, nombre_snapshot, cantidad, precio_snapshot, nota')
+            .in('comanda_id', idsComandas)
+            .order('id', { ascending: true })
+        ).data ?? []
+      : [];
+
+  const itemsPorComanda = new Map<string, ItemComandaPago[]>();
+  for (const c of comandasArr) itemsPorComanda.set(c.id, []);
+  for (const it of itemsRaw) {
+    const arr = itemsPorComanda.get(it.comanda_id as string);
+    if (arr) {
+      arr.push({
+        nombre: it.nombre_snapshot as string,
+        cantidad: it.cantidad as number,
+        precio: it.precio_snapshot as number,
+        nota: (it.nota as string) ?? null,
+      });
+    }
+  }
+
+  const comandasDetalladas: ComandaDetalladaPago[] = comandasArr.map((c) => ({
+    numeroDiario: c.numero_diario,
+    total: c.total,
+    items: itemsPorComanda.get(c.id) ?? [],
+  }));
+
+  const totalAcumulado = comandasArr.reduce(
+    (acc, c) => acc + (c.total ?? 0),
     0,
   );
 
@@ -390,11 +502,12 @@ async function traerPagoCompleto(llamadoId: string): Promise<PagoMesero | null> 
     mesaNumero: (mesa as { numero: string } | null)?.numero ?? '?',
     meseroAtendiendoId: (llamado.mesero_atendiendo_id as string | null) ?? null,
     totalAcumulado,
-    cantidadComandas: (comandas ?? []).length,
+    cantidadComandas: comandasArr.length,
     formaPagoPreferida: (llamado.forma_pago_preferida as string | null) ?? null,
     docTipo: (llamado.doc_tipo as string | null) ?? null,
     docNumero: (llamado.doc_numero as string | null) ?? null,
     docNombre: (llamado.doc_nombre as string | null) ?? null,
+    comandas: comandasDetalladas,
   };
 }
 
@@ -1057,6 +1170,103 @@ function ModalCobrar({
         </header>
 
         <div className="px-5 py-4 space-y-4">
+          {/* Detalle de TODAS las comandas de la sesión con items.
+              El mesero lee esto para hacer la facturación electrónica desde
+              su sistema contable, copiando productos uno por uno. */}
+          {pago.comandas.length > 0 ? (
+            <div
+              className="rounded-[var(--radius-md)] border bg-white"
+              style={{ borderColor: 'var(--color-border)' }}
+            >
+              <div
+                className="px-4 py-2.5 border-b flex items-center justify-between"
+                style={{
+                  borderColor: 'var(--color-border)',
+                  background: 'var(--color-paper)',
+                }}
+              >
+                <p
+                  className="text-[0.7rem] uppercase tracking-[0.14em]"
+                  style={{ color: 'var(--color-muted)' }}
+                >
+                  Detalle de la cuenta · {pago.cantidadComandas}{' '}
+                  {pago.cantidadComandas === 1 ? 'comanda' : 'comandas'}
+                </p>
+                <p
+                  className="text-[0.65rem] uppercase tracking-[0.14em]"
+                  style={{ color: 'var(--color-muted)' }}
+                >
+                  Mesa {pago.mesaNumero}
+                </p>
+              </div>
+              <ul
+                className="divide-y"
+                style={{ borderColor: 'var(--color-border)' }}
+              >
+                {pago.comandas.map((c, idxC) => (
+                  <li key={`${c.numeroDiario}-${idxC}`} className="px-4 py-3">
+                    <div className="flex items-baseline justify-between mb-2">
+                      <p
+                        className="font-[family-name:var(--font-display)] text-sm tabular-nums"
+                        style={{ color: 'var(--color-ink)' }}
+                      >
+                        Comanda #{c.numeroDiario.toString().padStart(3, '0')}
+                        {idxC > 0 ? (
+                          <span
+                            className="text-[0.65rem] ml-1.5 italic"
+                            style={{ color: 'var(--color-muted)' }}
+                          >
+                            (adición)
+                          </span>
+                        ) : null}
+                      </p>
+                      <span
+                        className="font-[family-name:var(--font-mono)] text-xs"
+                        style={{ color: 'var(--color-ink-soft)' }}
+                      >
+                        ${c.total.toLocaleString('es-CO')}
+                      </span>
+                    </div>
+                    <ul className="space-y-1">
+                      {c.items.map((it, idxI) => (
+                        <li key={idxI} className="text-sm">
+                          <div className="flex items-baseline gap-2">
+                            <span
+                              className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0 w-7"
+                              style={{ color: 'var(--color-muted)' }}
+                            >
+                              {it.cantidad}×
+                            </span>
+                            <span
+                              className="flex-1"
+                              style={{ color: 'var(--color-ink)' }}
+                            >
+                              {it.nombre}
+                            </span>
+                            <span
+                              className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0"
+                              style={{ color: 'var(--color-ink-soft)' }}
+                            >
+                              ${(it.precio * it.cantidad).toLocaleString('es-CO')}
+                            </span>
+                          </div>
+                          {it.nota ? (
+                            <p
+                              className="text-[0.7rem] ml-9 italic mt-0.5"
+                              style={{ color: 'var(--color-muted)' }}
+                            >
+                              «{it.nota}»
+                            </p>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
           {tieneFactura ? (
             <div
               className="rounded-[var(--radius-md)] border p-4"
