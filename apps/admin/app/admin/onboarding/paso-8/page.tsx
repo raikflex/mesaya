@@ -32,6 +32,14 @@ export default async function Paso8Page() {
     .neq('rol', 'dueno')
     .order('rol', { ascending: true });
 
+  const { data: restaurante } = await supabase
+    .from('restaurantes')
+    .select('cocina_activa')
+    .eq('id', perfil.restaurante_id as string)
+    .single();
+
+  const cocinaActiva = (restaurante?.cocina_activa as boolean) ?? false;
+
   const miembros: MiembroEquipo[] = (equipo ?? []).map((p) => ({
     id: p.id as string,
     nombre: p.nombre as string,
@@ -61,12 +69,13 @@ export default async function Paso8Page() {
           className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Crea cuentas para los meseros y la cocina. Cada uno entrará desde su celular o
-          tablet con el correo y la contraseña que le entregues.
+          {cocinaActiva
+            ? 'Crea cuentas para los meseros y la cocina. Cada uno entrará desde su celular o tablet con el correo y la contraseña que le entregues.'
+            : 'Crea cuentas para los meseros. Cada uno entrará desde su celular o tablet con el correo y la contraseña que le entregues.'}
         </p>
       </header>
 
-      <EquipoManager miembros={miembros} />
+      <EquipoManager miembros={miembros} cocinaActiva={cocinaActiva} />
     </main>
   );
 }

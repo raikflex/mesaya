@@ -17,33 +17,44 @@ type Miembro = {
 
 const initialAdd: CrearCuentaState = { ok: false };
 
-export function EquipoManager({ miembros }: { miembros: Miembro[] }) {
+export function EquipoManager({
+  miembros,
+  cocinaActiva,
+}: {
+  miembros: Miembro[];
+  cocinaActiva: boolean;
+}) {
   const totalCocina = miembros.filter((m) => m.rol === 'cocina').length;
   const totalMeseros = miembros.filter((m) => m.rol === 'mesero').length;
 
-  // Para MVP exigimos al menos 1 cuenta de cocina (alguien tiene que recibir comandas).
-  const puedeCerrar = totalCocina >= 1;
+  // Si la cocina usa pantalla, requiere al menos 1 cocinero (alguien tiene que recibir comandas).
+  // Si no, requiere al menos 1 mesero (alguien tiene que atender mesas).
+  const puedeCerrar = cocinaActiva ? totalCocina >= 1 : totalMeseros >= 1;
 
   return (
     <div className="space-y-8">
-      <FormularioAgregar />
+      <FormularioAgregar cocinaActiva={cocinaActiva} />
 
       <Lista miembros={miembros} />
 
       <div className="pt-2 flex items-center justify-between gap-4 flex-wrap border-t border-[var(--color-border)] mt-2">
         <div className="pt-4">
           <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-            {totalCocina === 0
-              ? 'Necesitas al menos una cuenta de cocina para continuar.'
-              : `${totalCocina} cocina Â· ${totalMeseros} mesero${totalMeseros === 1 ? '' : 's'}.`}
+            {cocinaActiva
+              ? totalCocina === 0
+                ? 'Necesitas al menos una cuenta de cocina para continuar.'
+                : `${totalCocina} cocina · ${totalMeseros} mesero${totalMeseros === 1 ? '' : 's'}.`
+              : totalMeseros === 0
+                ? 'Necesitas al menos un mesero para continuar.'
+                : `${totalMeseros} mesero${totalMeseros === 1 ? '' : 's'}.`}
           </p>
           {puedeCerrar ? (
             <p
               className="text-xs mt-1 max-w-md leading-relaxed"
               style={{ color: 'var(--color-muted)' }}
             >
-              Tu restaurante quedarÃ¡ configurado pero sin abrirse al pÃºblico todavÃ­a.
-              Desde el panel decides cuÃ¡ndo empezar a operar.
+              Tu restaurante quedará configurado pero sin abrirse al público todavía.
+              Desde el panel decides cuándo empezar a operar.
             </p>
           ) : null}
         </div>
@@ -58,15 +69,18 @@ export function EquipoManager({ miembros }: { miembros: Miembro[] }) {
   );
 }
 
-function FormularioAgregar() {
+function FormularioAgregar({ cocinaActiva }: { cocinaActiva: boolean }) {
   const [state, formAction, pending] = useActionState(crearCuentaEquipo, initialAdd);
   const formRef = useRef<HTMLFormElement>(null);
-  const [rolSeleccionado, setRolSeleccionado] = useState<'mesero' | 'cocina'>('cocina');
+  const [rolSeleccionado, setRolSeleccionado] = useState<'mesero' | 'cocina'>(
+    cocinaActiva ? 'cocina' : 'mesero',
+  );
 
   useEffect(() => {
     if (state.ok && formRef.current) {
       formRef.current.reset();
-      // DespuÃ©s de crear, dejar el rol en mesero (lo mÃ¡s comÃºn a agregar despuÃ©s).
+      // Después de crear, dejar el rol en mesero (lo más común a agregar después).
+      // Si cocina no está activa, siempre va a ser mesero — no hay otra opción.
       setRolSeleccionado('mesero');
     }
   }, [state.ok]);
@@ -107,39 +121,43 @@ function FormularioAgregar() {
           </Field>
         </div>
 
-        <div>
-          <label
-            className="block text-sm font-medium tracking-[-0.005em] mb-2"
-            style={{ color: 'var(--color-ink)' }}
-          >
-            Rol
-          </label>
-          <input type="hidden" name="rol" value={rolSeleccionado} />
-          <div className="grid sm:grid-cols-2 gap-3">
-            <RolCard
-              activo={rolSeleccionado === 'cocina'}
-              onClick={() => setRolSeleccionado('cocina')}
-              titulo="Cocina"
-              descripcion="Recibe los pedidos, los marca como listos."
-              icon={<IconCocina />}
-            />
-            <RolCard
-              activo={rolSeleccionado === 'mesero'}
-              onClick={() => setRolSeleccionado('mesero')}
-              titulo="Mesero"
-              descripcion="Atiende llamados, entrega platos, cobra."
-              icon={<IconMesero />}
-            />
-          </div>
-          {state.fieldErrors?.rol ? (
-            <p
-              className="text-xs leading-relaxed mt-2"
-              style={{ color: 'var(--color-danger)' }}
+        {cocinaActiva ? (
+          <div>
+            <label
+              className="block text-sm font-medium tracking-[-0.005em] mb-2"
+              style={{ color: 'var(--color-ink)' }}
             >
-              {state.fieldErrors.rol}
-            </p>
-          ) : null}
-        </div>
+              Rol
+            </label>
+            <input type="hidden" name="rol" value={rolSeleccionado} />
+            <div className="grid sm:grid-cols-2 gap-3">
+              <RolCard
+                activo={rolSeleccionado === 'cocina'}
+                onClick={() => setRolSeleccionado('cocina')}
+                titulo="Cocina"
+                descripcion="Recibe los pedidos, los marca como listos."
+                icon={<IconCocina />}
+              />
+              <RolCard
+                activo={rolSeleccionado === 'mesero'}
+                onClick={() => setRolSeleccionado('mesero')}
+                titulo="Mesero"
+                descripcion="Atiende llamados, entrega platos, cobra."
+                icon={<IconMesero />}
+              />
+            </div>
+            {state.fieldErrors?.rol ? (
+              <p
+                className="text-xs leading-relaxed mt-2"
+                style={{ color: 'var(--color-danger)' }}
+              >
+                {state.fieldErrors.rol}
+              </p>
+            ) : null}
+          </div>
+        ) : (
+          <input type="hidden" name="rol" value="mesero" />
+        )}
 
         {state.error ? (
           <div
@@ -313,7 +331,7 @@ function Lista({ miembros }: { miembros: Miembro[] }) {
         style={{ borderColor: 'var(--color-border-strong)' }}
       >
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          AÃºn no has creado cuentas para tu equipo. Empieza por la cuenta de cocina.
+          Aún no has creado cuentas para tu equipo.
         </p>
       </div>
     );

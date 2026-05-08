@@ -21,7 +21,7 @@ export default async function Paso1Page() {
     ? (
         await supabase
           .from('restaurantes')
-          .select('nombre_publico, nit, direccion, color_marca')
+          .select('nombre_publico, nit, direccion, color_marca, cocina_activa')
           .eq('id', perfil.restaurante_id)
           .single()
       ).data
@@ -62,8 +62,9 @@ export default async function Paso1Page() {
             nit: null,
             direccion: null,
             color_marca: '#c0432e',
-          }
-        }
+            cocina_activa: false,
+      }
+  }
         nombreDueno={perfil?.nombre ?? null}
       />
     </main>

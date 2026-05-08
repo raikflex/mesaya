@@ -28,6 +28,9 @@ const businessSchema = z.object({
     .transform((v) => (v === '' ? null : v))
     .nullable(),
   color_marca: colorSchema,
+  cocina_activa: z
+    .union([z.literal('on'), z.literal('off'), z.null(), z.undefined()])
+    .transform((v) => v === 'on'),
 });
 
 export type Paso1State = {
@@ -45,6 +48,7 @@ export async function guardarDatosNegocio(
     nit: formData.get('nit') ?? '',
     direccion: formData.get('direccion') ?? '',
     color_marca: formData.get('color_marca') ?? '#c0432e',
+    cocina_activa: formData.get('cocina_activa') ?? 'off',
   });
 
   if (!parsed.success) {
@@ -78,6 +82,7 @@ export async function guardarDatosNegocio(
         nit: datos.nit,
         direccion: datos.direccion,
         color_marca: datos.color_marca,
+        cocina_activa: datos.cocina_activa,
       })
       .eq('id', perfilExistente.restaurante_id);
 
@@ -100,6 +105,7 @@ export async function guardarDatosNegocio(
       nit: datos.nit,
       direccion: datos.direccion,
       color_marca: datos.color_marca,
+      cocina_activa: datos.cocina_activa,
       estado: 'archivado',
     })
     .select('id')
