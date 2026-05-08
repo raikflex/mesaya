@@ -47,7 +47,7 @@ export async function GET() {
   }
 
   const baseUrl =
-    (globalThis as any).process?.env?.['NEXT_PUBLIC_APP_URL_CLIENTE'] ??
+    process.env.NEXT_PUBLIC_CLIENTE_URL ??
     'http://localhost:3002';
 
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
