@@ -158,7 +158,7 @@ export async function requestPasswordReset(
     redirectTo: `${baseUrl}/auth/callback?next=/reset-password`,
   });
 
-  // Siempre devolvemos ok para evitar enumeración de emails
+  // Siempre devolvemos ok para evitar enumeración de emails (no decir si el correo existe o no)
   if (error) {
     console.error('resetPasswordForEmail error:', error.message);
   }

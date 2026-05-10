@@ -1,14 +1,31 @@
 'use client';
 
-import Link from 'next/link';
 import { useActionState } from 'react';
 import { Button, Field, Input } from '@mesaya/ui';
-import { loginOwner, type LoginState } from '../../actions/auth';
+import { requestPasswordReset, type ForgotState } from '../../actions/auth';
 
-const initialState: LoginState = { ok: false };
+const initialState: ForgotState = { ok: false };
 
-export function LoginForm() {
-  const [state, formAction, pending] = useActionState(loginOwner, initialState);
+export function ForgotPasswordForm() {
+  const [state, formAction, pending] = useActionState(requestPasswordReset, initialState);
+
+  if (state.ok) {
+    return (
+      <div
+        role="status"
+        className="rounded-[var(--radius-md)] border px-4 py-4 text-sm leading-relaxed"
+        style={{
+          borderColor: '#bbf7d0',
+          color: '#166534',
+          background: '#dcfce7',
+        }}
+      >
+        ✓ Listo. Si esa cuenta existe, te mandamos un email con instrucciones. Revisá tu bandeja
+        (y la carpeta de spam por las dudas).
+      </div>
+    );
+  }
+
   return (
     <form action={formAction} className="space-y-5">
       <Field id="email" label="Correo" error={state.fieldErrors?.email}>
@@ -22,25 +39,6 @@ export function LoginForm() {
           placeholder="tu@restaurante.com"
         />
       </Field>
-      <Field id="password" label="Contraseña" error={state.fieldErrors?.password}>
-        <Input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-        />
-      </Field>
-
-      <div className="flex justify-end -mt-2">
-        <Link
-          href="/forgot-password"
-          className="text-xs underline underline-offset-4 hover:text-[var(--color-ink)] transition-colors"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          ¿Olvidaste tu contraseña?
-        </Link>
-      </div>
 
       {state.error ? (
         <div
@@ -55,8 +53,9 @@ export function LoginForm() {
           {state.error}
         </div>
       ) : null}
+
       <Button type="submit" size="lg" loading={pending} className="w-full mt-2">
-        {pending ? 'Entrando…' : 'Entrar'}
+        {pending ? 'Enviando…' : 'Enviar enlace'}
       </Button>
     </form>
   );
