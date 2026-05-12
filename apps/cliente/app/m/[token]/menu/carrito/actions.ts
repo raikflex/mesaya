@@ -53,6 +53,7 @@ export async function enviarComanda(input: {
     .from('mesas')
     .select('id, restaurante_id, activa, restaurantes(estado)')
     .eq('qr_token', input.qrToken)
+    .is('borrada_en', null)
     .maybeSingle();
 
   if (!mesa || !mesa.activa) {

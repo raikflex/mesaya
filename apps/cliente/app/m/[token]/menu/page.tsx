@@ -43,6 +43,7 @@ export default async function MenuPage({ params }: PageProps) {
     `,
     )
     .eq('qr_token', token)
+    .is('borrada_en', null)
     .maybeSingle();
 
   if (!mesa) {

@@ -27,6 +27,7 @@ export async function generateMetadata({ params }: PageProps) {
     .from('mesas')
     .select('numero, restaurantes(nombre_publico)')
     .eq('qr_token', token)
+    .is('borrada_en', null)
     .maybeSingle();
 
   if (!mesa) {
@@ -66,6 +67,7 @@ export default async function MesaQRPage({ params }: PageProps) {
     `,
     )
     .eq('qr_token', token)
+    .is('borrada_en', null)
     .maybeSingle();
 
   if (!mesa) {
