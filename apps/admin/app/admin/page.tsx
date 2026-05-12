@@ -5,6 +5,7 @@ import { PanelShell } from '../_components/panel-shell';
 import { BannerActivacion } from './banner-activacion';
 import { BannerBienvenida } from './banner-bienvenida';
 import { ToggleEstadoRestaurante } from './toggle-estado-restaurante';
+import { PedidosLargos, type PedidoLargo } from './pedidos-largos';
 
 export const metadata = { title: 'Panel · MesaYA' };
 export const dynamic = 'force-dynamic';
@@ -48,6 +49,7 @@ export default async function AdminHome({
     pagosHoyResp,
     comandasHoyResp,
     sesionesActivasResp,
+    pedidosLargosResp,
   ] = await Promise.all([
     supabase
       .from('restaurantes')
@@ -91,11 +93,20 @@ export default async function AdminHome({
       .gte('creada_en', inicioDiaIso)
       .neq('estado', 'cancelada'),
     // Sesiones abiertas ahora
+    // Sesiones abiertas ahora
     supabase
       .from('sesiones')
       .select('id', { count: 'exact', head: true })
       .eq('restaurante_id', restauranteId)
       .eq('estado', 'abierta'),
+    // Comandas activas con +2h de antiguedad (potencialmente fantasmas)
+    supabase
+      .from('comandas')
+      .select('id, numero_diario, total, creada_en, estado, sesiones(mesas(numero))')
+      .eq('restaurante_id', restauranteId)
+      .in('estado', ['pendiente', 'en_preparacion', 'lista'])
+      .lt('creada_en', new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
+      .order('creada_en', { ascending: true }),
   ]);
 
   const categorias = categoriasResp.count ?? 0;
@@ -113,6 +124,28 @@ export default async function AdminHome({
   const cantidadPagosHoy = pagosHoy.length;
   const comandasHoy = comandasHoyResp.count ?? 0;
   const sesionesActivas = sesionesActivasResp.count ?? 0;
+
+  // Pedidos largos: comandas activas con +2h sin terminarse
+  type PedidoLargoRaw = {
+    id: string;
+    numero_diario: number;
+    total: number;
+    creada_en: string;
+    estado: string;
+    sesiones: { mesas: { numero: string } | { numero: string }[] | null } | { mesas: { numero: string } | { numero: string }[] | null }[] | null;
+  };
+  const pedidosLargos: PedidoLargo[] = ((pedidosLargosResp.data ?? []) as PedidoLargoRaw[]).map((p) => {
+    const sesion = Array.isArray(p.sesiones) ? p.sesiones[0] : p.sesiones;
+    const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
+    return {
+      id: p.id,
+      numeroDiario: p.numero_diario,
+      total: p.total ?? 0,
+      creadaEn: p.creada_en,
+      estado: p.estado,
+      mesaNumero: mesa?.numero ?? '?',
+    };
+  });
 
   const estado = (restaurante?.estado as string) ?? 'archivado';
   const trialTermina = restaurante?.trial_termina_en as string | null;
@@ -158,6 +191,8 @@ export default async function AdminHome({
         <BannerActivacion estado={estado} trialTerminaEn={trialTermina} />
 
         <ToggleEstadoRestaurante estadoActual={estado} colorMarca={colorMarca} />
+
+        <PedidosLargos pedidos={pedidosLargos} colorMarca={colorMarca} />
 
         <ResumenHoy
           ingreso={ingresoHoy}
