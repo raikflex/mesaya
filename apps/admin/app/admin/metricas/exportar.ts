@@ -1,0 +1,404 @@
+/**
+ * Helpers de exportacion para los reportes. Todo client-side: convierten
+ * los datos crudos a CSV / Excel / PDF y disparan la descarga en el browser.
+ */
+
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import type { DatosReporte } from './reporte-actions';
+
+function formatearFechaCorta(iso: string): string {
+  const d = new Date(iso);
+  const dia = d.getDate().toString().padStart(2, '0');
+  const mes = (d.getMonth() + 1).toString().padStart(2, '0');
+  const ano = d.getFullYear();
+  const hora = d.getHours().toString().padStart(2, '0');
+  const min = d.getMinutes().toString().padStart(2, '0');
+  return `${dia}/${mes}/${ano} ${hora}:${min}`;
+}
+
+function etiquetaMetodo(m: string): string {
+  switch (m) {
+    case 'efectivo':
+      return 'Efectivo';
+    case 'tarjeta':
+      return 'Tarjeta';
+    case 'transferencia':
+      return 'Transferencia';
+    case 'no_seguro':
+      return 'Sin definir';
+    default:
+      return m;
+  }
+}
+
+function nombreBase(data: DatosReporte): string {
+  return `reporte-${data.rango.desde}-a-${data.rango.hasta}`;
+}
+
+/** Dispara descarga de un blob en el browser. */
+function descargar(blob: Blob, nombre: string): void {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = nombre;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Escapa un campo CSV: comillas dobles dentro -> "" y envuelve en comillas si tiene caracteres especiales. */
+function escaparCsv(valor: string | number): string {
+  const s = String(valor);
+  if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes(';')) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+function filasACsv(filas: (string | number)[][]): string {
+  return filas.map((fila) => fila.map(escaparCsv).join(',')).join('\n');
+}
+
+/* ============= CSV (2 archivos: sesiones + comandas) ============= */
+
+export function exportarCSV(data: DatosReporte): void {
+  // Archivo 1: sesiones con encabezado de resumen
+  const filasSesiones: (string | number)[][] = [
+    [`Reporte: ${data.restaurante.nombre}`],
+    [`Periodo: ${data.rango.desde} a ${data.rango.hasta}`],
+    [`Generado: ${formatearFechaCorta(new Date().toISOString())}`],
+    [],
+    ['RESUMEN'],
+    ['Total facturado', data.resumen.totalFacturado],
+    ['Propinas totales', data.resumen.propinasTotal],
+    ['Cantidad de sesiones', data.resumen.cantidadSesiones],
+    ['Cantidad de comandas', data.resumen.cantidadComandas],
+    ['Ticket promedio', data.resumen.ticketPromedio],
+    [],
+    ['SESIONES'],
+    ['Fecha', 'Mesa', 'Cantidad de comandas', 'Total', 'Propina', 'Metodo'],
+    ...data.sesiones.map((s) => [
+      formatearFechaCorta(s.fecha),
+      s.mesaNumero,
+      s.cantidadComandas,
+      s.total,
+      s.propina,
+      etiquetaMetodo(s.metodo),
+    ]),
+  ];
+
+  const csvSesiones = filasACsv(filasSesiones);
+  descargar(
+    new Blob(['\uFEFF' + csvSesiones], { type: 'text/csv;charset=utf-8' }),
+    `${nombreBase(data)}-sesiones.csv`,
+  );
+
+  // Archivo 2: comandas con sus items aplanados
+  const filasComandas: (string | number)[][] = [
+    [`Reporte: ${data.restaurante.nombre} - Comandas detalladas`],
+    [`Periodo: ${data.rango.desde} a ${data.rango.hasta}`],
+    [],
+    [
+      'Fecha',
+      'Numero diario',
+      'Mesa',
+      'Cliente',
+      'Estado',
+      'Producto',
+      'Cantidad',
+      'Precio unitario',
+      'Subtotal',
+      'Total comanda',
+    ],
+  ];
+
+  for (const c of data.comandas) {
+    if (c.items.length === 0) {
+      filasComandas.push([
+        formatearFechaCorta(c.fecha),
+        c.numeroDiario,
+        c.mesaNumero,
+        c.cliente,
+        c.estado,
+        '(sin items)',
+        '',
+        '',
+        '',
+        c.total,
+      ]);
+    } else {
+      c.items.forEach((it, idx) => {
+        filasComandas.push([
+          formatearFechaCorta(c.fecha),
+          c.numeroDiario,
+          c.mesaNumero,
+          c.cliente,
+          c.estado,
+          it.nombre,
+          it.cantidad,
+          it.precio,
+          it.subtotal,
+          idx === 0 ? c.total : '', // total solo en la primera fila de cada comanda
+        ]);
+      });
+    }
+  }
+
+  const csvComandas = filasACsv(filasComandas);
+  descargar(
+    new Blob(['\uFEFF' + csvComandas], { type: 'text/csv;charset=utf-8' }),
+    `${nombreBase(data)}-comandas.csv`,
+  );
+}
+
+/* ============= EXCEL (1 archivo, 2 hojas) ============= */
+
+export function exportarExcel(data: DatosReporte): void {
+  const wb = XLSX.utils.book_new();
+
+  // Hoja 1: Resumen + sesiones
+  const hojaSesionesData: (string | number)[][] = [
+    [`Reporte: ${data.restaurante.nombre}`],
+    [`Periodo: ${data.rango.desde} a ${data.rango.hasta}`],
+    [`Generado: ${formatearFechaCorta(new Date().toISOString())}`],
+    [],
+    ['RESUMEN'],
+    ['Total facturado', data.resumen.totalFacturado],
+    ['Propinas totales', data.resumen.propinasTotal],
+    ['Cantidad de sesiones', data.resumen.cantidadSesiones],
+    ['Cantidad de comandas', data.resumen.cantidadComandas],
+    ['Ticket promedio', data.resumen.ticketPromedio],
+    [],
+    ['SESIONES'],
+    ['Fecha', 'Mesa', 'Cantidad de comandas', 'Total', 'Propina', 'Metodo'],
+    ...data.sesiones.map((s) => [
+      formatearFechaCorta(s.fecha),
+      s.mesaNumero,
+      s.cantidadComandas,
+      s.total,
+      s.propina,
+      etiquetaMetodo(s.metodo),
+    ]),
+  ];
+  const hojaSesiones = XLSX.utils.aoa_to_sheet(hojaSesionesData);
+
+  // Ajuste de anchos
+  hojaSesiones['!cols'] = [
+    { wch: 18 }, // Fecha
+    { wch: 8 }, // Mesa
+    { wch: 22 }, // Cantidad comandas
+    { wch: 14 }, // Total
+    { wch: 12 }, // Propina
+    { wch: 16 }, // Metodo
+  ];
+
+  XLSX.utils.book_append_sheet(wb, hojaSesiones, 'Resumen y sesiones');
+
+  // Hoja 2: Comandas con items
+  const hojaComandasData: (string | number)[][] = [
+    [
+      'Fecha',
+      'Numero diario',
+      'Mesa',
+      'Cliente',
+      'Estado',
+      'Producto',
+      'Cantidad',
+      'Precio unitario',
+      'Subtotal',
+      'Total comanda',
+    ],
+  ];
+
+  for (const c of data.comandas) {
+    if (c.items.length === 0) {
+      hojaComandasData.push([
+        formatearFechaCorta(c.fecha),
+        c.numeroDiario,
+        c.mesaNumero,
+        c.cliente,
+        c.estado,
+        '(sin items)',
+        '',
+        '',
+        '',
+        c.total,
+      ]);
+    } else {
+      c.items.forEach((it, idx) => {
+        hojaComandasData.push([
+          formatearFechaCorta(c.fecha),
+          c.numeroDiario,
+          c.mesaNumero,
+          c.cliente,
+          c.estado,
+          it.nombre,
+          it.cantidad,
+          it.precio,
+          it.subtotal,
+          idx === 0 ? c.total : '',
+        ]);
+      });
+    }
+  }
+  const hojaComandas = XLSX.utils.aoa_to_sheet(hojaComandasData);
+  hojaComandas['!cols'] = [
+    { wch: 18 }, // Fecha
+    { wch: 14 }, // Numero
+    { wch: 8 }, // Mesa
+    { wch: 18 }, // Cliente
+    { wch: 12 }, // Estado
+    { wch: 28 }, // Producto
+    { wch: 10 }, // Cantidad
+    { wch: 14 }, // Precio
+    { wch: 14 }, // Subtotal
+    { wch: 14 }, // Total comanda
+  ];
+
+  XLSX.utils.book_append_sheet(wb, hojaComandas, 'Comandas detalladas');
+
+  // Generar y descargar
+  const buf = XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
+  descargar(
+    new Blob([buf], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    }),
+    `${nombreBase(data)}.xlsx`,
+  );
+}
+
+/* ============= PDF (con jspdf-autotable) ============= */
+
+export function exportarPDF(data: DatosReporte): void {
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const margenIzq = 40;
+  let yPos = 50;
+
+  // Encabezado
+  doc.setFontSize(18);
+  doc.text(data.restaurante.nombre, margenIzq, yPos);
+  yPos += 18;
+  doc.setFontSize(11);
+  doc.setTextColor(100);
+  doc.text(
+    `Reporte del ${data.rango.desde} al ${data.rango.hasta}`,
+    margenIzq,
+    yPos,
+  );
+  yPos += 14;
+  doc.setFontSize(9);
+  doc.text(
+    `Generado: ${formatearFechaCorta(new Date().toISOString())}`,
+    margenIzq,
+    yPos,
+  );
+  yPos += 24;
+  doc.setTextColor(0);
+
+  // Resumen como tabla 2 columnas
+  doc.setFontSize(13);
+  doc.text('Resumen', margenIzq, yPos);
+  yPos += 8;
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['Concepto', 'Valor']],
+    body: [
+      ['Total facturado', `$${data.resumen.totalFacturado.toLocaleString('es-CO')}`],
+      ['Propinas totales', `$${data.resumen.propinasTotal.toLocaleString('es-CO')}`],
+      ['Cantidad de sesiones', String(data.resumen.cantidadSesiones)],
+      ['Cantidad de comandas', String(data.resumen.cantidadComandas)],
+      ['Ticket promedio', `$${data.resumen.ticketPromedio.toLocaleString('es-CO')}`],
+    ],
+    theme: 'striped',
+    headStyles: { fillColor: [60, 60, 60] },
+    styles: { fontSize: 10 },
+    margin: { left: margenIzq, right: margenIzq },
+  });
+
+  // Sesiones
+  // @ts-expect-error - lastAutoTable es agregado en runtime
+  yPos = (doc.lastAutoTable?.finalY ?? yPos) + 30;
+  doc.setFontSize(13);
+  doc.text('Sesiones', margenIzq, yPos);
+  yPos += 8;
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [['Fecha', 'Mesa', 'Comandas', 'Total', 'Propina', 'Metodo']],
+    body: data.sesiones.map((s) => [
+      formatearFechaCorta(s.fecha),
+      s.mesaNumero,
+      String(s.cantidadComandas),
+      `$${s.total.toLocaleString('es-CO')}`,
+      `$${s.propina.toLocaleString('es-CO')}`,
+      etiquetaMetodo(s.metodo),
+    ]),
+    theme: 'striped',
+    headStyles: { fillColor: [60, 60, 60] },
+    styles: { fontSize: 9 },
+    margin: { left: margenIzq, right: margenIzq },
+  });
+
+  // Comandas con items en pagina nueva
+  doc.addPage();
+  yPos = 50;
+  doc.setFontSize(13);
+  doc.text('Comandas detalladas', margenIzq, yPos);
+  yPos += 8;
+
+  const filasComandas: string[][] = [];
+  for (const c of data.comandas) {
+    if (c.items.length === 0) {
+      filasComandas.push([
+        formatearFechaCorta(c.fecha),
+        String(c.numeroDiario),
+        c.mesaNumero,
+        c.cliente,
+        '(sin items)',
+        '',
+        '',
+        `$${c.total.toLocaleString('es-CO')}`,
+      ]);
+    } else {
+      c.items.forEach((it, idx) => {
+        filasComandas.push([
+          idx === 0 ? formatearFechaCorta(c.fecha) : '',
+          idx === 0 ? String(c.numeroDiario) : '',
+          idx === 0 ? c.mesaNumero : '',
+          idx === 0 ? c.cliente : '',
+          it.nombre,
+          String(it.cantidad),
+          `$${it.subtotal.toLocaleString('es-CO')}`,
+          idx === 0 ? `$${c.total.toLocaleString('es-CO')}` : '',
+        ]);
+      });
+    }
+  }
+
+  autoTable(doc, {
+    startY: yPos,
+    head: [
+      [
+        'Fecha',
+        'No.',
+        'Mesa',
+        'Cliente',
+        'Producto',
+        'Cant',
+        'Subtotal',
+        'Total',
+      ],
+    ],
+    body: filasComandas,
+    theme: 'striped',
+    headStyles: { fillColor: [60, 60, 60] },
+    styles: { fontSize: 8 },
+    margin: { left: margenIzq, right: margenIzq },
+  });
+
+  doc.save(`${nombreBase(data)}.pdf`);
+}

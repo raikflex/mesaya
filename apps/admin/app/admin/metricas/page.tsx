@@ -3,6 +3,7 @@ import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { SesionesLive, type SesionActiva } from './sesiones-live';
 import { ComandasActivasLive, type ComandaActiva } from './comandas-activas-live';
+import { ReporteExportador } from './reporte-exportador';
 
 export const dynamic = 'force-dynamic';
 
@@ -416,6 +417,8 @@ export default async function MetricasPage() {
           Lo que pasa en {nombreNegocio} hoy.
         </p>
 
+        <ReporteExportador />
+
         {/* Cards principales */}
         <section className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
           <CardMetrica
@@ -734,6 +737,8 @@ export default async function MetricasPage() {
             </div>
           </section>
         ) : null}
+
+        {/* Exportar reporte */}
 
         {/* Empty state si no hay nada */}
         {cantidadPagosHoy === 0 && comandasHoy === 0 && sesionesActivasCount === 0 ? (
