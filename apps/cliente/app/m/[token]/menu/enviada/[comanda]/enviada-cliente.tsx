@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@mesaya/database/client';
+import { borrarSesionCliente } from '../../../../../../lib/cliente-session';
 
 export type ComandaConItems = {
   id: string;
@@ -29,7 +30,7 @@ const ETIQUETAS_ESTADO: Record<
   { label: string; tono: EstadoTono }
 > = {
   pendiente: { label: 'En cola', tono: 'pending' },
-  en_preparacion: { label: 'En preparación', tono: 'progress' },
+  en_preparacion: { label: 'En preparacion', tono: 'progress' },
   lista: { label: 'Lista', tono: 'progress' },
   entregada: { label: 'Entregada', tono: 'done' },
   cancelada: { label: 'Cancelada', tono: 'done' },
@@ -57,8 +58,6 @@ export function ComandaEnviadaCliente({
   const router = useRouter();
   const [comandas, setComandas] = useState<ComandaConItems[]>(comandasIniciales);
   const idsRef = useRef<Set<string>>(new Set(comandasIniciales.map((c) => c.id)));
-  // Modal de "tu pedido fue cancelado" cuando es la única comanda de la sesión
-  // del cliente y se cancela. Si había otras (es una adición), no aparece.
   const [modalCancelacion, setModalCancelacion] = useState<{
     motivo: string;
   } | null>(null);
@@ -68,11 +67,6 @@ export function ComandaEnviadaCliente({
     idsRef.current = new Set(comandasIniciales.map((c) => c.id));
   }, [comandasIniciales]);
 
-  /**
-   * Realtime cliente: nos suscribimos a UPDATEs de comandas (cambios de estado
-   * y mesero_atendiendo_nombre) y a INSERTs en pagos (para redirigir a
-   * pantalla de gracias cuando el mesero confirma el pago).
-   */
   useEffect(() => {
     const supabase = createClient();
     const canalNombre = `cliente-comanda-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -115,9 +109,6 @@ export function ComandaEnviadaCliente({
                   : c,
               );
 
-              // Si la comanda actual (la que el cliente está viendo) fue
-              // cancelada Y NO existen otras comandas no-canceladas en su
-              // sesión, mostrar modal grande para que vuelva al menú o salga.
               if (
                 fila.id === comandaActualId &&
                 fila.estado === 'cancelada'
@@ -128,7 +119,7 @@ export function ComandaEnviadaCliente({
                 if (!tieneOtrasActivas) {
                   setModalCancelacion({
                     motivo:
-                      fila.motivo_cancelacion ?? 'La cocina canceló tu pedido.',
+                      fila.motivo_cancelacion ?? 'La cocina cancelo tu pedido.',
                   });
                 }
               }
@@ -170,18 +161,12 @@ export function ComandaEnviadaCliente({
         canalActual = null;
       }
     };
-  }, [qrToken, sesionId, router]);
+  }, [qrToken, sesionId, comandaActualId, router]);
 
-  // Total acumulado solo cuenta comandas NO canceladas. Si la cocina cancela
-  // un pedido, no debe sumar al monto que el cliente debe pagar.
   const totalAcumulado = comandas
     .filter((c) => c.estado !== 'cancelada')
     .reduce((acc, c) => acc + c.total, 0);
   const cantidadActivas = comandas.filter((c) => c.estado !== 'cancelada').length;
-  // Solo permitimos pedir la cuenta cuando TODAS las comandas no canceladas
-  // están en estado 'entregada'. Si hay alguna en pendiente/preparando/lista,
-  // el botón se deshabilita con un mensaje explicativo. Esto evita que el
-  // cliente pague antes de recibir su pedido completo.
   const todasEntregadas =
     cantidadActivas > 0 &&
     comandas
@@ -221,7 +206,7 @@ export function ComandaEnviadaCliente({
               en cocina
             </p>
             <h1 className="font-[family-name:var(--font-display)] text-xl tracking-[-0.015em] mt-0.5">
-              ¡Listo, {nombreCliente}!
+              Listo, {nombreCliente}!
             </h1>
           </div>
         </div>
@@ -230,7 +215,7 @@ export function ComandaEnviadaCliente({
           className="text-xs text-center mb-6"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Mesa {mesaNumero} · {nombreNegocio}
+          Mesa {mesaNumero} - {nombreNegocio}
         </p>
 
         <h2
@@ -269,7 +254,7 @@ export function ComandaEnviadaCliente({
               >
                 {cantidadActivas} pedido{cantidadActivas === 1 ? '' : 's'}
                 {comandas.length > cantidadActivas
-                  ? ` · ${comandas.length - cantidadActivas} cancelado${comandas.length - cantidadActivas === 1 ? '' : 's'}`
+                  ? ` - ${comandas.length - cantidadActivas} cancelado${comandas.length - cantidadActivas === 1 ? '' : 's'}`
                   : ''}
               </p>
             </div>
@@ -286,8 +271,8 @@ export function ComandaEnviadaCliente({
           className="text-[0.7rem] text-center mb-8 leading-relaxed px-2"
           style={{ color: 'var(--color-muted)' }}
         >
-          La cocina ya recibió tu pedido. Cuando quieras, pide la cuenta y el
-          mesero se acercará a tu mesa.
+          La cocina ya recibio tu pedido. Cuando quieras, pide la cuenta y el
+          mesero se acercara a tu mesa.
         </p>
 
         <div className="space-y-2">
@@ -296,7 +281,7 @@ export function ComandaEnviadaCliente({
             className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium"
             style={{ background: colorMarca, color: 'white' }}
           >
-            Agregar más al pedido
+            Agregar mas al pedido
           </Link>
           <Link
             href={`/m/${qrToken}/llamar-mesero`}
@@ -331,7 +316,7 @@ export function ComandaEnviadaCliente({
                 className="text-[0.7rem] uppercase tracking-[0.12em]"
                 style={{ color: 'var(--color-muted)' }}
               >
-                Pedir la cuenta · Disponible al recibir
+                Pedir la cuenta - Disponible al recibir
               </p>
               <p
                 className="text-xs mt-1 leading-relaxed"
@@ -378,6 +363,7 @@ function ComandaCard({
     label: comanda.estado,
     tono: 'pending' as EstadoTono,
   };
+  const estaCancelada = comanda.estado === 'cancelada';
 
   const hora = new Date(comanda.creada_en).toLocaleTimeString('es-CO', {
     hour: '2-digit',
@@ -385,7 +371,6 @@ function ComandaCard({
     hour12: false,
   });
 
-  // Muestra info del mesero asignado cuando exista (denormalizado en DB).
   const mensajeMesero =
     comanda.estado === 'lista' && comanda.mesero_atendiendo_nombre
       ? `${comanda.mesero_atendiendo_nombre} la trae a tu mesa`
@@ -393,7 +378,6 @@ function ComandaCard({
         ? `Entregada por ${comanda.mesero_atendiendo_nombre}`
         : null;
 
-  // Si fue cancelada por cocina, mostrar motivo prominente.
   const mensajeCancelacion =
     comanda.estado === 'cancelada' && comanda.motivo_cancelacion
       ? comanda.motivo_cancelacion
@@ -405,6 +389,7 @@ function ComandaCard({
       style={{
         borderColor: esLaUltima ? colorMarca : 'var(--color-border)',
         borderWidth: esLaUltima ? 1.5 : 1,
+        opacity: estaCancelada ? 0.75 : 1,
       }}
     >
       <header
@@ -434,7 +419,7 @@ function ComandaCard({
           }}
         >
           <p className="text-[0.7rem]" style={{ color: colorMarca }}>
-            ✦ {mensajeMesero}
+            * {mensajeMesero}
           </p>
         </div>
       ) : null}
@@ -451,7 +436,7 @@ function ComandaCard({
             className="text-[0.7rem] uppercase tracking-[0.12em] mb-1"
             style={{ color: '#b91c1c' }}
           >
-            ✗ Cancelada por la cocina
+            x Cancelada por la cocina
           </p>
           <p className="text-sm" style={{ color: '#7f1d1d' }}>
             {mensajeCancelacion}
@@ -466,9 +451,15 @@ function ComandaCard({
             <li key={item.id} className="px-4 py-2.5">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm" style={{ color: 'var(--color-ink)' }}>
+                  <p
+                    className="text-sm"
+                    style={{
+                      color: 'var(--color-ink)',
+                      textDecoration: estaCancelada ? 'line-through' : 'none',
+                    }}
+                  >
                     <span style={{ color: 'var(--color-muted)' }}>
-                      {item.cantidad}×
+                      {item.cantidad}x
                     </span>{' '}
                     {item.nombre_snapshot}
                   </p>
@@ -483,7 +474,10 @@ function ComandaCard({
                 </div>
                 <span
                   className="font-[family-name:var(--font-mono)] text-xs shrink-0"
-                  style={{ color: 'var(--color-ink-soft)' }}
+                  style={{
+                    color: 'var(--color-ink-soft)',
+                    textDecoration: estaCancelada ? 'line-through' : 'none',
+                  }}
                 >
                   ${subtotal.toLocaleString('es-CO')}
                 </span>
@@ -506,12 +500,32 @@ function ComandaCard({
         >
           Subtotal
         </span>
-        <span
-          className="font-[family-name:var(--font-mono)] text-sm"
-          style={{ color: 'var(--color-ink)' }}
-        >
-          ${comanda.total.toLocaleString('es-CO')}
-        </span>
+        {estaCancelada ? (
+          <span className="flex items-center gap-2">
+            <span
+              className="text-[0.65rem] uppercase tracking-[0.12em] px-2 py-0.5 rounded font-medium"
+              style={{ background: '#fee2e2', color: '#b91c1c' }}
+            >
+              No se cobra
+            </span>
+            <span
+              className="font-[family-name:var(--font-mono)] text-sm"
+              style={{
+                color: 'var(--color-muted)',
+                textDecoration: 'line-through',
+              }}
+            >
+              ${comanda.total.toLocaleString('es-CO')}
+            </span>
+          </span>
+        ) : (
+          <span
+            className="font-[family-name:var(--font-mono)] text-sm"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            ${comanda.total.toLocaleString('es-CO')}
+          </span>
+        )}
       </footer>
     </article>
   );
@@ -550,6 +564,16 @@ function ModalPedidoCancelado({
   colorMarca: string;
   nombreNegocio: string;
 }) {
+  const router = useRouter();
+
+  // "Salir": borra la sesion cliente del sessionStorage antes de navegar.
+  // Si no la borramos, el formulario de nombre lee la sesion al cargar y
+  // redirige inmediatamente al menu (loop infernal).
+  function handleSalir() {
+    borrarSesionCliente(qrToken);
+    router.push(`/m/${qrToken}`);
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center p-4"
@@ -590,7 +614,7 @@ function ModalPedidoCancelado({
           </p>
         </div>
         <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-ink-soft)' }}>
-          No se cobró nada. Puedes volver al menú y pedir otra cosa, o salir.
+          No se cobro nada. Puedes volver al menu y pedir otra cosa, o salir.
         </p>
         <div className="space-y-2">
           <Link
@@ -600,8 +624,9 @@ function ModalPedidoCancelado({
           >
             Pedir otra cosa
           </Link>
-          <Link
-            href={`/m/${qrToken}`}
+          <button
+            type="button"
+            onClick={handleSalir}
             className="w-full h-11 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium border"
             style={{
               background: 'white',
@@ -610,7 +635,7 @@ function ModalPedidoCancelado({
             }}
           >
             Salir
-          </Link>
+          </button>
         </div>
         <p className="text-[0.7rem] mt-4" style={{ color: 'var(--color-muted)' }}>
           {nombreNegocio} agradece tu paciencia.

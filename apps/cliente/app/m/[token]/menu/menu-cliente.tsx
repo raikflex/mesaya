@@ -3,9 +3,11 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@mesaya/database/client';
 import {
   borrarSesionCliente,
   leerSesionCliente,
+  limpiarUltimaComandaId,
 } from '../../../../lib/cliente-session';
 import {
   calcularTotal,
@@ -47,8 +49,8 @@ export function MenuCliente({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [nombre, setNombre] = useState<string | null>(null);
-  // Si el cliente ya envió al menos una comanda en esta sesión, su id queda
-  // guardado en localStorage. Lo usamos para mostrar un botón "Mi cuenta"
+  // Si el cliente ya envio al menos una comanda en esta sesion, su id queda
+  // guardado en sessionStorage. Lo usamos para mostrar un boton "Mi cuenta"
   // que lo lleva al resumen de pedidos enviados.
   const [ultimaComandaId, setUltimaComandaId] = useState<string | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -68,6 +70,30 @@ export function MenuCliente({
     setUltimaComandaId(sesion.ultimaComandaId ?? null);
     setCarrito(leerCarrito(qrToken));
     setCargando(false);
+
+    // Si hay una ultimaComandaId guardada, verificar en BD que no fue
+    // cancelada. Si lo fue, limpiamos del sessionStorage para que no
+    // aparezca el banner "Tienes pedidos en curso" mintiendo.
+    if (!sesion.ultimaComandaId) return;
+
+    let cancelado = false;
+    const supabase = createClient();
+    supabase
+      .from('comandas')
+      .select('estado')
+      .eq('id', sesion.ultimaComandaId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelado) return;
+        if (!data || data.estado === 'cancelada') {
+          limpiarUltimaComandaId(qrToken);
+          setUltimaComandaId(null);
+        }
+      });
+
+    return () => {
+      cancelado = true;
+    };
   }, [qrToken, router]);
 
   useEffect(() => {
@@ -154,7 +180,7 @@ export function MenuCliente({
         style={{ background: 'var(--color-paper)' }}
       >
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          Cargando…
+          Cargando...
         </p>
       </main>
     );
@@ -185,7 +211,7 @@ export function MenuCliente({
                 className="text-[0.65rem] uppercase tracking-[0.14em]"
                 style={{ color: 'var(--color-muted)' }}
               >
-                Mesa {numeroMesa} · Hola, {nombre}
+                Mesa {numeroMesa} - Hola, {nombre}
               </p>
               <h1
                 className="font-[family-name:var(--font-display)] text-lg tracking-[-0.015em] truncate"
@@ -204,7 +230,6 @@ export function MenuCliente({
             </button>
           </div>
 
-          {/* Botón "Volver a mi cuenta" — solo cuando ya hay una comanda enviada */}
           {ultimaComandaId ? (
             <Link
               href={`/m/${qrToken}/menu/enviada/${ultimaComandaId}`}
@@ -239,7 +264,7 @@ export function MenuCliente({
                 className="text-xs font-medium shrink-0"
                 style={{ color: colorMarca }}
               >
-                Ver mi cuenta →
+                Ver mi cuenta
               </span>
             </Link>
           ) : null}
@@ -327,7 +352,7 @@ export function MenuCliente({
                     className="text-sm py-4 italic"
                     style={{ color: 'var(--color-muted)' }}
                   >
-                    Pronto hay novedades aquí.
+                    Pronto hay novedades aqui.
                   </p>
                 ) : (
                   <ul className="space-y-2">
@@ -507,14 +532,14 @@ function EstadoVacio({ colorMarca }: { colorMarca: string }) {
         className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
         style={{ color: 'var(--color-ink)' }}
       >
-        El menú se está actualizando.
+        El menu se esta actualizando.
       </h2>
       <p
         className="text-sm leading-relaxed"
         style={{ color: 'var(--color-ink-soft)' }}
       >
-        Llama al mesero para hacer tu pedido. Pronto el menú estará disponible
-        aquí.
+        Llama al mesero para hacer tu pedido. Pronto el menu estara disponible
+        aqui.
       </p>
     </div>
   );

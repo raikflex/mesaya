@@ -1,16 +1,16 @@
 /**
- * Helper para gestionar la sesión del cliente en sessionStorage.
- * Sobrevive refresh, se borra al cerrar pestaña.
+ * Helper para gestionar la sesion del cliente en sessionStorage.
+ * Sobrevive refresh, se borra al cerrar pestana.
  *
  * Estructura:
- *   mesaya:cliente:{qr_token} → { nombre, iniciada_en, authUserId?, ultimaComandaId? }
+ *   mesaya:cliente:{qr_token} -> { nombre, iniciada_en, authUserId?, ultimaComandaId? }
  *
- * - authUserId: id del user anónimo de Supabase. Persiste para que múltiples
+ * - authUserId: id del user anonimo de Supabase. Persiste para que multiples
  *   comandas del mismo browser usen el mismo sesion_cliente_id.
  *
- * - ultimaComandaId: id de la última comanda enviada por este cliente. Se usa
+ * - ultimaComandaId: id de la ultima comanda enviada por este cliente. Se usa
  *   para que las pantallas /llamar-mesero y /pedir-cuenta tengan un "Volver"
- *   que apunte a la pantalla de confirmación con el acumulado.
+ *   que apunte a la pantalla de confirmacion con el acumulado.
  */
 
 export type ClienteSession = {
@@ -71,12 +71,30 @@ export function guardarUltimaComandaId(qrToken: string, comandaId: string): void
   window.sessionStorage.setItem(key(qrToken), JSON.stringify(actualizada));
 }
 
+/**
+ * Limpia solo el campo ultimaComandaId del sessionStorage, manteniendo
+ * el nombre y authUserId. Util cuando la comanda fue cancelada y queremos
+ * ocultar el banner "Tienes pedidos en curso" sin desloguear al cliente.
+ */
+export function limpiarUltimaComandaId(qrToken: string): void {
+  if (typeof window === 'undefined') return;
+  const existente = leerSesionCliente(qrToken);
+  if (!existente) return;
+  const actualizada: ClienteSession = {
+    nombre: existente.nombre,
+    iniciadaEn: existente.iniciadaEn,
+    authUserId: existente.authUserId,
+    // ultimaComandaId queda undefined
+  };
+  window.sessionStorage.setItem(key(qrToken), JSON.stringify(actualizada));
+}
+
 export function borrarSesionCliente(qrToken: string): void {
   if (typeof window === 'undefined') return;
   window.sessionStorage.removeItem(key(qrToken));
 }
 
-/** Capitaliza primera letra de cada palabra. "ana maría" → "Ana María". */
+/** Capitaliza primera letra de cada palabra. */
 export function capitalizarNombre(texto: string): string {
   return texto
     .trim()
