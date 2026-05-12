@@ -51,7 +51,8 @@ export async function agregarMesas(
   const { supabase, restauranteId } = await getRestauranteId();
   if (!restauranteId) return { ok: false, error: 'Tu sesión expiró.' };
 
-  // Buscar el número más alto actual (incluyendo las inactivas) para no duplicar.
+  // Buscar el número más alto actual (incluyendo borradas e inactivas) para
+  // no duplicar ni reusar numeración. La numeración debe ser monotónica.
   const { data: existentes } = await supabase
     .from('mesas')
     .select('numero')
@@ -93,7 +94,8 @@ export async function actualizarCapacidad(formData: FormData) {
     .from('mesas')
     .update({ capacidad })
     .eq('id', id)
-    .eq('restaurante_id', restauranteId);
+    .eq('restaurante_id', restauranteId)
+    .is('borrada_en', null);
 
   revalidatePath('/admin/mesas');
 }
@@ -113,17 +115,26 @@ export async function toggleActiva(formData: FormData) {
     .from('mesas')
     .update({ activa: activar })
     .eq('id', id)
-    .eq('restaurante_id', restauranteId);
+    .eq('restaurante_id', restauranteId)
+    .is('borrada_en', null);
 
   revalidatePath('/admin/mesas');
 }
 
-/* ============ ELIMINAR (soft delete: activa=false) ============ */
+/* ============ ELIMINAR (soft delete con borrada_en) ============ */
 
 /**
- * Soft delete. La mesa queda como inactiva (oculta del panel principal),
- * pero se conserva en DB. Si un cliente escanea su QR viejo, verá
- * "Esta mesa no está disponible" (manejado en apps/cliente).
+ * Hard-delete-equivalente desde el punto de vista del dueño: la mesa
+ * desaparece del panel, de los QRs y de cualquier query que filtre
+ * por `borrada_en IS NULL`. En la BD se conserva con timestamp
+ * `borrada_en` para preservar el histórico de comandas, sesiones y
+ * reseñas asociadas (necesario para reportes y métricas).
+ *
+ * También seteamos activa=false para defensa en profundidad: cualquier
+ * query vieja que solo mire `activa` también filtra esta mesa.
+ *
+ * Si el dueño quiere volver a usar el número, debe agregar una mesa
+ * nueva — la numeración no se reusa.
  */
 export async function eliminarMesa(formData: FormData) {
   const id = String(formData.get('id') ?? '');
@@ -134,7 +145,7 @@ export async function eliminarMesa(formData: FormData) {
 
   await supabase
     .from('mesas')
-    .update({ activa: false })
+    .update({ borrada_en: new Date().toISOString(), activa: false })
     .eq('id', id)
     .eq('restaurante_id', restauranteId);
 

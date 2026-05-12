@@ -34,10 +34,11 @@ export default async function MesasPage() {
   const restauranteId = perfil.restaurante_id as string;
 
   const [mesasResp, sesionesResp, restauranteResp] = await Promise.all([
-    supabase
+   supabase
       .from('mesas')
       .select('id, numero, capacidad, activa, qr_token')
       .eq('restaurante_id', restauranteId)
+      .is('borrada_en', null)
       .order('numero', { ascending: true }),
     supabase
       .from('sesiones')

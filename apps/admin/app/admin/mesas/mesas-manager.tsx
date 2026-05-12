@@ -36,7 +36,7 @@ export function MesasManager({ mesas }: { mesas: Mesa[] }) {
           style={{ borderColor: 'var(--color-border-strong)' }}
         >
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            No tienes mesas activas. Agrega algunas con el botón de arriba.
+            No tienes mesas activas. Agrega algunas con el boton de arriba.
           </p>
         </div>
       )}
@@ -88,10 +88,10 @@ function FormAgregar() {
           className="text-xs mt-0.5"
           style={{ color: 'var(--color-muted)' }}
         >
-          Continuamos la numeración desde la última.
+          Continuamos la numeracion desde la ultima.
         </p>
       </div>
-      <Field id="cantidad" label="¿Cuántas?" error={state.fieldErrors?.cantidad}>
+      <Field id="cantidad" label="Cuantas?" error={state.fieldErrors?.cantidad}>
         <Input
           id="cantidad"
           name="cantidad"
@@ -180,7 +180,7 @@ function SeccionMesas({
         className="text-xs uppercase tracking-[0.14em] mb-3 px-1 flex items-center gap-2"
         style={{ color: 'var(--color-muted)' }}
       >
-        {titulo} · {mesas.length}
+        {titulo} - {mesas.length}
       </h2>
       <ul
         className="rounded-[var(--radius-lg)] border divide-y"
@@ -200,6 +200,7 @@ function SeccionMesas({
 function ItemMesa({ mesa }: { mesa: Mesa }) {
   const [editando, setEditando] = useState(false);
   const [valorCapacidad, setValorCapacidad] = useState(mesa.capacidad.toString());
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
 
   function guardarCapacidad() {
     const formData = new FormData();
@@ -276,7 +277,7 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
             className="text-xs mt-0.5 hover:underline transition-colors text-left"
             style={{ color: 'var(--color-muted)' }}
           >
-            {mesa.capacidad} comensales · editar
+            {mesa.capacidad} comensales - editar
           </button>
         )}
       </div>
@@ -300,30 +301,94 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
           </button>
         </form>
 
-        {mesa.activa ? (
+        <button
+          type="button"
+          onClick={() => setConfirmandoEliminar(true)}
+          aria-label={`Eliminar mesa ${mesa.numero}`}
+          className={cn(
+            'size-8 grid place-items-center rounded-[var(--radius-md)] transition-colors',
+            'text-[var(--color-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-paper-deep)]',
+          )}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {confirmandoEliminar ? (
+        <ModalEliminarMesa
+          mesa={mesa}
+          onCancelar={() => setConfirmandoEliminar(false)}
+        />
+      ) : null}
+    </li>
+  );
+}
+
+function ModalEliminarMesa({
+  mesa,
+  onCancelar,
+}: {
+  mesa: Mesa;
+  onCancelar: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 grid place-items-center px-4"
+      style={{ background: 'rgba(0,0,0,0.4)' }}
+      onClick={onCancelar}
+    >
+      <div
+        className="w-full max-w-md rounded-[var(--radius-lg)] bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          Eliminar Mesa {mesa.numero}?
+        </h3>
+        <p
+          className="text-sm mt-3 leading-relaxed"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Esta accion no se puede deshacer. La mesa desaparecera del panel y
+          los QRs viejos dejaran de funcionar. Las comandas, sesiones y
+          resenas asociadas se preservan en la base para tus reportes
+          historicos.
+        </p>
+        <div className="flex gap-2 mt-6 justify-end">
+          <button
+            type="button"
+            onClick={onCancelar}
+            className="h-10 px-4 rounded-[var(--radius-md)] text-sm border transition-colors"
+            style={{
+              borderColor: 'var(--color-border-strong)',
+              color: 'var(--color-ink)',
+              background: 'white',
+            }}
+          >
+            Cancelar
+          </button>
           <form action={eliminarMesa}>
             <input type="hidden" name="id" value={mesa.id} />
             <button
               type="submit"
-              aria-label={`Eliminar mesa ${mesa.numero}`}
-              className={cn(
-                'size-8 grid place-items-center rounded-[var(--radius-md)] transition-colors',
-                'text-[var(--color-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-paper-deep)]',
-              )}
+              className="h-10 px-4 rounded-[var(--radius-md)] text-sm font-medium text-white transition-colors hover:opacity-90"
+              style={{ background: '#dc2626' }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path
-                  d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+              Eliminar permanentemente
             </button>
           </form>
-        ) : null}
+        </div>
       </div>
-    </li>
+    </div>
   );
 }
