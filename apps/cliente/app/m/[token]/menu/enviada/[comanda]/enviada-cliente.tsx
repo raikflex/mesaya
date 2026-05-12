@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { borrarSesionCliente } from '../../../../../../lib/cliente-session';
+import { cerrarSesionAbandonada } from '../../../cerrar-sesion-actions';
 
 export type ComandaConItems = {
   id: string;
@@ -569,7 +570,10 @@ function ModalPedidoCancelado({
   // "Salir": borra la sesion cliente del sessionStorage antes de navegar.
   // Si no la borramos, el formulario de nombre lee la sesion al cargar y
   // redirige inmediatamente al menu (loop infernal).
-  function handleSalir() {
+  async function handleSalir() {
+    // Cerrar la sesion en BD (libera la mesa) antes de borrar la sesion local
+    // y navegar. Si hay otras comandas activas, la action no hace nada.
+    await cerrarSesionAbandonada(qrToken);
     borrarSesionCliente(qrToken);
     router.push(`/m/${qrToken}`);
   }
