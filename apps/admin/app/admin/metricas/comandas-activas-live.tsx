@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { createClient } from '@mesaya/database/client';
+import { cancelarComanda } from '../cancelar-comanda-actions';
 
 export type ComandaActiva = {
   id: string;
@@ -25,8 +27,11 @@ const ETIQUETAS_ESTADO: Record<
 
 /**
  * Lista de comandas activas en cocina (pendientes/preparando/listas) con
- * realtime. Útil para que el dueño vea de un vistazo cuántos pedidos están
+ * realtime. Util para que el dueno vea de un vistazo cuantos pedidos estan
  * en proceso, sin tener que abrir la app de cocina.
+ *
+ * Tambien permite cancelar cualquier comanda manualmente con modal de
+ * confirmacion (util para fantasmas, clientes que se fueron, errores, etc).
  */
 export function ComandasActivasLive({
   comandasIniciales,
@@ -167,13 +172,12 @@ export function ComandasActivasLive({
           Comandas en cocina
         </h2>
         <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-          La cocina está al día. No hay pedidos en proceso ahora.
+          La cocina esta al dia. No hay pedidos en proceso ahora.
         </p>
       </section>
     );
   }
 
-  // Resumen por estado
   const conteo = {
     pendiente: comandas.filter((c) => c.estado === 'pendiente').length,
     en_preparacion: comandas.filter((c) => c.estado === 'en_preparacion').length,
@@ -187,7 +191,7 @@ export function ComandasActivasLive({
           className="text-xs uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
-          Comandas en cocina · {comandas.length}
+          Comandas en cocina - {comandas.length}
         </h2>
         <div className="flex items-center gap-1.5">
           <span
@@ -203,7 +207,6 @@ export function ComandasActivasLive({
         </div>
       </div>
 
-      {/* Mini resumen por estado */}
       <div className="grid grid-cols-3 gap-2 mb-3">
         <ResumenEstado label="En cola" valor={conteo.pendiente} estado="pendiente" />
         <ResumenEstado label="Preparando" valor={conteo.en_preparacion} estado="en_preparacion" />
@@ -215,60 +218,212 @@ export function ComandasActivasLive({
         style={{ borderColor: 'var(--color-border)' }}
       >
         <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-          {comandas.map((c) => {
-            const minutos = Math.max(
-              0,
-              Math.floor((Date.now() - new Date(c.creadaEn).getTime()) / 60000),
-            );
-            const tiempoFmt =
-              minutos < 1
-                ? 'recién'
-                : minutos < 60
-                  ? `hace ${minutos}m`
-                  : `hace ${Math.floor(minutos / 60)}h ${minutos % 60}m`;
-            const etiqueta = ETIQUETAS_ESTADO[c.estado];
-
-            void tick;
-
-            return (
-              <li
-                key={c.id}
-                className="px-5 py-3 flex items-center justify-between gap-3"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <span
-                    className="font-[family-name:var(--font-display)] text-sm tabular-nums shrink-0"
-                    style={{ color: colorMarca }}
-                  >
-                    #{c.numeroDiario.toString().padStart(3, '0')}
-                  </span>
-                  <div className="min-w-0">
-                    <p className="text-sm" style={{ color: 'var(--color-ink)' }}>
-                      Mesa {c.mesaNumero} · {c.clienteNombre}
-                    </p>
-                    <p
-                      className="text-[0.7rem]"
-                      style={{ color: 'var(--color-muted)' }}
-                    >
-                      {tiempoFmt}
-                      {c.meseroAtendiendoNombre
-                        ? ` · ${c.meseroAtendiendoNombre} la lleva`
-                        : ''}
-                    </p>
-                  </div>
-                </div>
-                <span
-                  className="text-[0.65rem] uppercase tracking-[0.1em] px-2 py-1 rounded-full font-medium shrink-0"
-                  style={{ background: etiqueta.bg, color: etiqueta.fg }}
-                >
-                  {etiqueta.label}
-                </span>
-              </li>
-            );
-          })}
+          {comandas.map((c) => (
+            <ItemComanda
+              key={c.id}
+              comanda={c}
+              colorMarca={colorMarca}
+              tick={tick}
+            />
+          ))}
         </ul>
       </div>
     </section>
+  );
+}
+
+function ItemComanda({
+  comanda: c,
+  colorMarca,
+  tick,
+}: {
+  comanda: ComandaActiva;
+  colorMarca: string;
+  tick: number;
+}) {
+  const [confirmando, setConfirmando] = useState(false);
+
+  const minutos = Math.max(
+    0,
+    Math.floor((Date.now() - new Date(c.creadaEn).getTime()) / 60000),
+  );
+  const tiempoFmt =
+    minutos < 1
+      ? 'recien'
+      : minutos < 60
+        ? `hace ${minutos}m`
+        : `hace ${Math.floor(minutos / 60)}h ${minutos % 60}m`;
+  const etiqueta = ETIQUETAS_ESTADO[c.estado];
+
+  void tick;
+  void colorMarca;
+
+  return (
+    <li className="px-5 py-3 flex items-center justify-between gap-3">
+      <div className="flex items-center gap-3 min-w-0">
+        <span
+          className="font-[family-name:var(--font-display)] text-sm tabular-nums shrink-0"
+          style={{ color: colorMarca }}
+        >
+          #{c.numeroDiario.toString().padStart(3, '0')}
+        </span>
+        <div className="min-w-0">
+          <p className="text-sm" style={{ color: 'var(--color-ink)' }}>
+            Mesa {c.mesaNumero} - {c.clienteNombre}
+          </p>
+          <p
+            className="text-[0.7rem]"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            {tiempoFmt}
+            {c.meseroAtendiendoNombre
+              ? ` - ${c.meseroAtendiendoNombre} la lleva`
+              : ''}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 shrink-0">
+        <span
+          className="text-[0.65rem] uppercase tracking-[0.1em] px-2 py-1 rounded-full font-medium"
+          style={{ background: etiqueta.bg, color: etiqueta.fg }}
+        >
+          {etiqueta.label}
+        </span>
+        <button
+          type="button"
+          onClick={() => setConfirmando(true)}
+          aria-label={`Cancelar comanda ${c.numeroDiario}`}
+          className="size-7 grid place-items-center rounded-[var(--radius-md)] transition-colors text-[var(--color-muted)] hover:text-[var(--color-danger)] hover:bg-[var(--color-paper-deep)]"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M18 6L6 18M6 6l12 12"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+
+      {confirmando ? (
+        <ModalCancelarComanda
+          comanda={c}
+          onCancelar={() => setConfirmando(false)}
+        />
+      ) : null}
+    </li>
+  );
+}
+
+function ModalCancelarComanda({
+  comanda,
+  onCancelar,
+}: {
+  comanda: ComandaActiva;
+  onCancelar: () => void;
+}) {
+  const [mounted, setMounted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
+
+  async function handleSubmit(formData: FormData) {
+    setPending(true);
+    setError(null);
+    const resultado = await cancelarComanda(formData);
+    setPending(false);
+    if (!resultado.ok) {
+      setError(resultado.error);
+    } else {
+      onCancelar();
+    }
+  }
+
+  return createPortal(
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'rgba(0,0,0,0.5)',
+        display: 'grid',
+        placeItems: 'center',
+        padding: '1rem',
+      }}
+      onClick={onCancelar}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '28rem',
+          background: 'white',
+          borderRadius: '14px',
+          padding: '1.5rem',
+          boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          Cancelar comanda #{comanda.numeroDiario.toString().padStart(3, '0')}?
+        </h3>
+        <p
+          className="text-sm mt-3 leading-relaxed"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Mesa {comanda.mesaNumero} - {comanda.clienteNombre} - $
+          {comanda.total.toLocaleString('es-CO')}. La cocina/staff sabran que
+          ya no deben prepararlo. No cuenta en tus metricas.
+        </p>
+
+        {error ? (
+          <p
+            className="text-xs mt-3 px-3 py-2 rounded"
+            style={{ background: '#fee2e2', color: '#991b1b' }}
+          >
+            {error}
+          </p>
+        ) : null}
+
+        <div className="flex gap-2 mt-6 justify-end">
+          <button
+            type="button"
+            onClick={onCancelar}
+            disabled={pending}
+            className="h-10 px-4 rounded-[var(--radius-md)] text-sm border transition-colors disabled:opacity-60"
+            style={{
+              borderColor: 'var(--color-border-strong)',
+              color: 'var(--color-ink)',
+              background: 'white',
+            }}
+          >
+            Volver
+          </button>
+          <form action={handleSubmit}>
+            <input type="hidden" name="comandaId" value={comanda.id} />
+            <button
+              type="submit"
+              disabled={pending}
+              className="h-10 px-4 rounded-[var(--radius-md)] text-sm font-medium text-white transition-colors hover:opacity-90 disabled:opacity-60"
+              style={{ background: '#dc2626' }}
+            >
+              {pending ? 'Cancelando...' : 'Si, cancelar'}
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>,
+    document.body,
   );
 }
 
