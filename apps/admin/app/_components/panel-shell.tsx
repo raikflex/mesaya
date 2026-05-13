@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { logout } from '../actions/auth';
 
-type CurrentPage = 'inicio' | 'menu' | 'mesas' | 'equipo' | 'reviews' | 'metricas' | 'horarios' | 'configuracion' | 'perfil';
+type CurrentPage = 'inicio' | 'menu' | 'mesas' | 'equipo' | 'reviews' | 'metricas' | 'horarios' | 'branding' | 'configuracion' | 'perfil';
 
 const ITEMS: {
   id: CurrentPage;
@@ -18,6 +18,7 @@ const ITEMS: {
     | '/admin/reviews'
     | '/admin/metricas'
     | '/admin/horarios'
+    | '/admin/branding'
     | '/admin/configuracion';
   icon: string;
 }[] = [
@@ -28,6 +29,7 @@ const ITEMS: {
   { id: 'reviews', label: 'Reseñas', href: '/admin/reviews', icon: 'star' },
   { id: 'metricas', label: 'Métricas', href: '/admin/metricas', icon: 'chart' },
   { id: 'horarios', label: 'Horarios', href: '/admin/horarios', icon: 'clock' },
+  { id: 'branding', label: 'Branding', href: '/admin/branding', icon: 'image' },
   { id: 'configuracion', label: 'Configuración', href: '/admin/configuracion', icon: 'gear' },
 ];
 
@@ -433,6 +435,14 @@ function ItemIcon({ name }: { name: string }) {
         <svg {...props}>
           <circle cx="12" cy="12" r="9" {...stroke} />
           <path d="M12 7v5l3 2" {...stroke} />
+        </svg>
+      );
+    case 'image':
+      return (
+        <svg {...props}>
+          <rect x="3" y="3" width="18" height="18" rx="2" {...stroke} />
+          <circle cx="9" cy="9" r="2" {...stroke} />
+          <path d="M21 15l-5-5L5 21" {...stroke} />
         </svg>
       );
     case 'user':

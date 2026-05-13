@@ -53,7 +53,8 @@ export default async function MesaQRPage({ params }: PageProps) {
         id,
         nombre_publico,
         color_marca,
-        estado
+        estado,
+        logo_url
       )
     `,
     )
@@ -72,6 +73,7 @@ export default async function MesaQRPage({ params }: PageProps) {
     nombre_publico: string;
     color_marca: string;
     estado: 'activo' | 'archivado' | 'suspendido' | 'pausado';
+    logo_url: string | null;
   } | null;
 
   if (!restaurante) {
@@ -173,6 +175,13 @@ export default async function MesaQRPage({ params }: PageProps) {
       style={{ background: 'var(--color-paper)' }}
     >
       <div className="w-full max-w-sm">
+        {restaurante.logo_url ? (
+          <img
+            src={restaurante.logo_url}
+            alt={`Logo de ${restaurante.nombre_publico}`}
+            className="size-20 mx-auto mb-5 object-contain"
+          />
+        ) : null}
         <p
           className="text-[0.7rem] uppercase tracking-[0.16em] mb-2"
           style={{ color: 'var(--color-muted)' }}
