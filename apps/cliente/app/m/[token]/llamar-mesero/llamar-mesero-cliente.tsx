@@ -26,22 +26,18 @@ const ETIQUETAS: Record<string, string> = {
   otro: 'Avisaste al mesero',
 };
 
-// Sugerencias predeterminadas para que el cliente no tenga que tipear lo más
-// común. Click en chip → reemplaza la nota actual. Tap-friendly en móvil.
-// Agrupadas por motivo: campana (cosas físicas) vs otro (situaciones).
 const SUGERENCIAS_CAMPANA = [
-  'Más servilletas',
+  'Mas servilletas',
   'Una cuchara',
   'Un cuchillo',
   'Un tenedor',
   'Vaso de agua',
   'Caja para llevar',
   'Cambiar el plato',
-  'La cuenta lista para irme',
 ];
 
 const SUGERENCIAS_OTRO = [
-  'Necesito una recomendación',
+  'Necesito una recomendacion',
   'Hay un problema con mi pedido',
   'Tengo una alergia',
   'Quiero hablar con el encargado',
@@ -55,6 +51,7 @@ export function LlamarMeseroCliente({
   tieneSesionAbierta,
   llamadosActivos,
   sesionId,
+  todasEntregadas,
 }: {
   qrToken: string;
   numeroMesa: string;
@@ -63,6 +60,7 @@ export function LlamarMeseroCliente({
   tieneSesionAbierta: boolean;
   llamadosActivos: LlamadoActivo[];
   sesionId: string | null;
+  todasEntregadas: boolean;
 }) {
   const router = useRouter();
   const [motivo, setMotivo] = useState<Motivo>('campana');
@@ -255,13 +253,13 @@ export function LlamarMeseroCliente({
             className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
             style={{ color: 'var(--color-ink)' }}
           >
-            Aún no hiciste tu pedido.
+            Aun no hiciste tu pedido.
           </h1>
           <p
             className="text-sm leading-relaxed mb-8"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Pide algo del menú primero. Después puedes llamar al mesero si lo
+            Pide algo del menu primero. Despues puedes llamar al mesero si lo
             necesitas.
           </p>
           <Link
@@ -269,14 +267,13 @@ export function LlamarMeseroCliente({
             className="inline-flex items-center justify-center h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium"
             style={{ background: colorMarca, color: 'white' }}
           >
-            Ir al menú
+            Ir al menu
           </Link>
         </div>
       </main>
     );
   }
 
-  // Sugerencias contextuales según motivo seleccionado
   const sugerencias =
     motivo === 'campana' ? SUGERENCIAS_CAMPANA : SUGERENCIAS_OTRO;
 
@@ -312,10 +309,10 @@ export function LlamarMeseroCliente({
 
       <div className="flex-1 px-5 py-6 max-w-md mx-auto w-full">
         <p
-          className="text-[0.65rem] uppercase tracking-[0.14em] mb-1"
+          className="text-xs uppercase tracking-[0.14em] mb-1"
           style={{ color: 'var(--color-muted)' }}
         >
-          Mesa {numeroMesa} · {nombreNegocio}
+          Mesa {numeroMesa} - {nombreNegocio}
         </p>
         <h1
           className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] leading-[1.1] mb-6"
@@ -323,6 +320,109 @@ export function LlamarMeseroCliente({
         >
           Llamar al mesero
         </h1>
+
+        {/* CTA destacado: pedir la cuenta. Solo habilitado si todas las
+            comandas estan entregadas. */}
+        {todasEntregadas ? (
+          <Link
+            href={`/m/${qrToken}/pedir-cuenta`}
+            className="rounded-[var(--radius-lg)] border bg-white p-4 mb-6 flex items-center gap-3"
+            style={{ borderColor: colorMarca, borderWidth: 1.5 }}
+          >
+            <div
+              className="size-11 rounded-full grid place-items-center shrink-0"
+              style={{ background: colorMarca, color: 'white' }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M4 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8 9h6M8 13h4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-base font-semibold"
+                style={{ color: 'var(--color-ink)' }}
+              >
+                Listo para irte?
+              </p>
+              <p
+                className="text-sm mt-0.5"
+                style={{ color: 'var(--color-ink-soft)' }}
+              >
+                Pedir la cuenta con propina y metodo de pago
+              </p>
+            </div>
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden
+              style={{ color: colorMarca }}
+            >
+              <path
+                d="M9 18l6-6-6-6"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+        ) : (
+          <div
+            className="rounded-[var(--radius-lg)] border-2 border-dashed p-4 mb-6 flex items-center gap-3"
+            style={{ borderColor: 'var(--color-border)' }}
+            aria-disabled="true"
+          >
+            <div
+              className="size-11 rounded-full grid place-items-center shrink-0"
+              style={{
+                background: 'var(--color-paper-deep)',
+                color: 'var(--color-muted)',
+              }}
+            >
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M4 4h12a2 2 0 0 1 2 2v14l-4-2-4 2-4-2-4 2V6a2 2 0 0 1 2-2z"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8 9h6M8 13h4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-base font-semibold"
+                style={{ color: 'var(--color-ink-soft)' }}
+              >
+                Pedir la cuenta
+              </p>
+              <p
+                className="text-sm mt-0.5"
+                style={{ color: 'var(--color-muted)' }}
+              >
+                Disponible cuando recibas tu pedido
+              </p>
+            </div>
+          </div>
+        )}
 
         {llamadoResuelto ? (
           <section
@@ -333,13 +433,7 @@ export function LlamarMeseroCliente({
               className="size-12 rounded-full mx-auto mb-3 grid place-items-center"
               style={{ background: '#dcfce7', color: '#166534' }}
             >
-              <svg
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden
-              >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <polyline
                   points="5 12 10 17 19 8"
                   stroke="currentColor"
@@ -357,10 +451,10 @@ export function LlamarMeseroCliente({
             </p>
             {llamadoResuelto.nombreMesero ? (
               <p
-                className="text-[0.7rem] mt-1"
+                className="text-xs mt-1"
                 style={{ color: 'var(--color-ink-soft)' }}
               >
-                {llamadoResuelto.nombreMesero} pasó por tu mesa
+                {llamadoResuelto.nombreMesero} paso por tu mesa
               </p>
             ) : null}
           </section>
@@ -397,7 +491,7 @@ export function LlamarMeseroCliente({
             <OpcionMotivo
               value="campana"
               label="Necesito algo"
-              descripcion="Más servilletas, agua, una recomendación, etc."
+              descripcion="Mas servilletas, agua, una recomendacion, etc."
               checked={motivo === 'campana'}
               onChange={() => setMotivo('campana')}
               colorMarca={colorMarca}
@@ -412,12 +506,11 @@ export function LlamarMeseroCliente({
             />
           </div>
 
-          {/* Chips de sugerencias rápidas — toca uno para llenar la nota */}
           <p
             className="text-xs uppercase tracking-[0.14em] mb-2"
             style={{ color: 'var(--color-muted)' }}
           >
-            Sugerencias rápidas
+            Sugerencias rapidas
           </p>
           <div className="flex flex-wrap gap-2 mb-4">
             {sugerencias.map((s) => {
@@ -431,10 +524,12 @@ export function LlamarMeseroCliente({
                   style={{
                     background: seleccionado ? colorMarca : 'transparent',
                     color: seleccionado ? 'white' : 'var(--color-ink)',
-                    borderColor: seleccionado ? colorMarca : 'var(--color-border-strong)',
+                    borderColor: seleccionado
+                      ? colorMarca
+                      : 'var(--color-border-strong)',
                   }}
                 >
-                  {seleccionado ? '✓ ' : '+ '}
+                  {seleccionado ? '+ ' : '+ '}
                   {s}
                 </button>
               );
@@ -463,7 +558,7 @@ export function LlamarMeseroCliente({
             }}
           />
           <p
-            className="text-[0.7rem] mt-1 text-right"
+            className="text-xs mt-1 text-right"
             style={{ color: 'var(--color-muted)' }}
           >
             {nota.length} / 200
@@ -486,16 +581,16 @@ export function LlamarMeseroCliente({
             className="w-full mt-4 h-12 rounded-[var(--radius-md)] text-base font-medium transition-opacity disabled:opacity-60"
             style={{ background: colorMarca, color: 'white' }}
           >
-            {pending ? 'Avisando…' : 'Avisar al mesero'}
+            {pending ? 'Avisando...' : 'Avisar al mesero'}
           </button>
         </section>
 
         <p
-          className="text-[0.7rem] text-center mt-6 leading-relaxed px-2"
+          className="text-xs text-center mt-6 leading-relaxed px-2"
           style={{ color: 'var(--color-muted)' }}
         >
           El mesero recibe el aviso al instante en su tableta. Si tarda,
-          puedes volver a llamarlo después de 1 minuto y 45 segundos.
+          puedes volver a llamarlo despues de 1 minuto y 45 segundos.
         </p>
       </div>
     </main>
@@ -561,7 +656,7 @@ function LlamadoActivoCard({
               {ETIQUETAS[llamado.motivo] ?? 'Llamado activo'}
             </p>
             <p
-              className="text-[0.7rem]"
+              className="text-xs"
               style={{ color: tieneAsignado ? colorMarca : 'var(--color-muted)' }}
             >
               {tieneAsignado
@@ -600,11 +695,11 @@ function LlamadoActivoCard({
               background: 'white',
             }}
           >
-            {pending ? 'Avisando…' : 'Volver a llamar'}
+            {pending ? 'Avisando...' : 'Volver a llamar'}
           </button>
         ) : (
           <p
-            className="text-[0.7rem] text-center"
+            className="text-xs text-center"
             style={{ color: 'var(--color-muted)' }}
           >
             Si no llega en{' '}
@@ -614,7 +709,7 @@ function LlamadoActivoCard({
             >
               {minutos}:{segs.toString().padStart(2, '0')}
             </span>
-            , podrás llamarlo de nuevo
+            , podras llamarlo de nuevo
           </p>
         )}
       </div>
@@ -675,7 +770,7 @@ function OpcionMotivo({
           {label}
         </p>
         <p
-          className="text-[0.7rem] mt-0.5"
+          className="text-xs mt-0.5"
           style={{ color: 'var(--color-ink-soft)' }}
         >
           {descripcion}

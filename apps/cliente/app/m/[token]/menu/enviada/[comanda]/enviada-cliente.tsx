@@ -31,7 +31,7 @@ const ETIQUETAS_ESTADO: Record<
   { label: string; tono: EstadoTono }
 > = {
   pendiente: { label: 'En cola', tono: 'pending' },
-  en_preparacion: { label: 'En preparacion', tono: 'progress' },
+  en_preparacion: { label: 'Preparando', tono: 'progress' },
   lista: { label: 'Lista', tono: 'progress' },
   entregada: { label: 'Entregada', tono: 'done' },
   cancelada: { label: 'Cancelada', tono: 'done' },
@@ -182,16 +182,17 @@ export function ComandaEnviadaCliente({
       className="min-h-screen flex flex-col"
       style={{ background: 'var(--color-paper)' }}
     >
-      <div className="flex-1 px-5 py-10 max-w-md mx-auto w-full">
-        <div
-          className="rounded-[var(--radius-lg)] p-5 mb-6 flex items-center gap-4"
+      <div className="flex-1 px-5 py-8 max-w-md mx-auto w-full">
+        {/* HERO de confirmacion */}
+        <section
+          className="rounded-[var(--radius-lg)] p-6 mb-6 text-center"
           style={{ background: colorMarca, color: 'white' }}
         >
           <div
-            className="size-12 rounded-full grid place-items-center shrink-0"
-            style={{ background: 'rgba(255,255,255,0.2)' }}
+            className="size-16 rounded-full grid place-items-center mx-auto mb-4"
+            style={{ background: 'rgba(255,255,255,0.22)' }}
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden>
               <polyline
                 points="5 12 10 17 19 8"
                 stroke="currentColor"
@@ -201,26 +202,26 @@ export function ComandaEnviadaCliente({
               />
             </svg>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[0.7rem] uppercase tracking-[0.14em] opacity-80">
-              Pedido #{ultimaComanda.numero_diario.toString().padStart(3, '0')}{' '}
-              en cocina
-            </p>
-            <h1 className="font-[family-name:var(--font-display)] text-xl tracking-[-0.015em] mt-0.5">
-              Listo, {nombreCliente}!
-            </h1>
-          </div>
-        </div>
+          <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em] mb-2">
+            Listo, {nombreCliente}!
+          </h1>
+          <p className="text-lg opacity-95 leading-snug font-medium">
+            Tu pedido esta en la cocina
+          </p>
+          <p className="text-base opacity-80 mt-2 font-medium">
+            Pedido #{ultimaComanda.numero_diario.toString().padStart(3, '0')}
+          </p>
+        </section>
 
         <p
-          className="text-xs text-center mb-6"
+          className="text-base text-center mb-6 font-medium"
           style={{ color: 'var(--color-ink-soft)' }}
         >
           Mesa {mesaNumero} - {nombreNegocio}
         </p>
 
         <h2
-          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-4"
+          className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.015em] mb-4"
           style={{ color: 'var(--color-ink)' }}
         >
           Tu cuenta hasta ahora
@@ -238,20 +239,20 @@ export function ComandaEnviadaCliente({
         </div>
 
         <section
-          className="rounded-[var(--radius-lg)] border bg-white px-5 py-4 mb-6"
+          className="rounded-[var(--radius-lg)] border bg-white px-5 py-5 mb-6"
           style={{ borderColor: 'var(--color-border)' }}
         >
           <div className="flex items-center justify-between">
             <div>
               <p
-                className="text-xs uppercase tracking-[0.14em]"
+                className="text-base uppercase tracking-[0.12em] font-semibold"
                 style={{ color: 'var(--color-muted)' }}
               >
                 Total acumulado
               </p>
               <p
-                className="text-[0.7rem] mt-0.5"
-                style={{ color: 'var(--color-muted)' }}
+                className="text-base mt-1 font-medium"
+                style={{ color: 'var(--color-ink-soft)' }}
               >
                 {cantidadActivas} pedido{cantidadActivas === 1 ? '' : 's'}
                 {comandas.length > cantidadActivas
@@ -260,7 +261,7 @@ export function ComandaEnviadaCliente({
               </p>
             </div>
             <span
-              className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]"
+              className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em]"
               style={{ color: 'var(--color-ink)' }}
             >
               ${totalAcumulado.toLocaleString('es-CO')}
@@ -268,37 +269,19 @@ export function ComandaEnviadaCliente({
           </div>
         </section>
 
-        <p
-          className="text-[0.7rem] text-center mb-8 leading-relaxed px-2"
-          style={{ color: 'var(--color-muted)' }}
-        >
-          La cocina ya recibio tu pedido. Cuando quieras, pide la cuenta y el
-          mesero se acercara a tu mesa.
-        </p>
-
-        <div className="space-y-2">
+        {/* Botones principales */}
+        <div className="space-y-2 mb-6">
           <Link
             href={`/m/${qrToken}/menu`}
-            className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium"
+            className="w-full h-14 grid place-items-center rounded-[var(--radius-md)] text-lg font-semibold"
             style={{ background: colorMarca, color: 'white' }}
           >
             Agregar mas al pedido
           </Link>
-          <Link
-            href={`/m/${qrToken}/llamar-mesero`}
-            className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium border"
-            style={{
-              background: 'white',
-              color: 'var(--color-ink)',
-              borderColor: 'var(--color-border-strong)',
-            }}
-          >
-            Llamar al mesero
-          </Link>
           {todasEntregadas ? (
             <Link
               href={`/m/${qrToken}/pedir-cuenta`}
-              className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium border"
+              className="w-full h-14 grid place-items-center rounded-[var(--radius-md)] text-lg font-semibold border"
               style={{
                 background: 'white',
                 color: 'var(--color-ink)',
@@ -309,30 +292,62 @@ export function ComandaEnviadaCliente({
             </Link>
           ) : (
             <div
-              className="w-full rounded-[var(--radius-md)] border-2 border-dashed px-3 py-3 text-center"
+              className="w-full rounded-[var(--radius-md)] border-2 border-dashed px-4 py-4 text-center"
               style={{ borderColor: 'var(--color-border)' }}
               aria-disabled="true"
             >
               <p
-                className="text-[0.7rem] uppercase tracking-[0.12em]"
+                className="text-base uppercase tracking-[0.1em] font-semibold"
                 style={{ color: 'var(--color-muted)' }}
               >
-                Pedir la cuenta - Disponible al recibir
+                Pedir la cuenta
               </p>
               <p
-                className="text-xs mt-1 leading-relaxed"
+                className="text-base mt-1 leading-relaxed"
                 style={{ color: 'var(--color-ink-soft)' }}
               >
-                Espera a que el mesero entregue todos tus pedidos.
+                Disponible cuando recibas tu pedido
               </p>
             </div>
           )}
+        </div>
+
+        {/* "Necesitas algo?" secundario */}
+        <div
+          className="rounded-[var(--radius-md)] border bg-white px-4 py-4 flex items-center justify-between gap-3"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <div className="min-w-0 flex-1">
+            <p
+              className="text-base font-semibold"
+              style={{ color: 'var(--color-ink)' }}
+            >
+              Necesitas algo?
+            </p>
+            <p
+              className="text-sm mt-0.5"
+              style={{ color: 'var(--color-ink-soft)' }}
+            >
+              Cubiertos, mas servilletas, una consulta...
+            </p>
+          </div>
+          <Link
+            href={`/m/${qrToken}/llamar-mesero`}
+            className="h-11 px-4 grid place-items-center rounded-[var(--radius-md)] text-base font-semibold shrink-0 border"
+            style={{
+              background: 'white',
+              color: colorMarca,
+              borderColor: colorMarca,
+            }}
+          >
+            Avisar al mesero
+          </Link>
         </div>
       </div>
 
       <footer className="py-6 text-center">
         <p
-          className="text-[0.7rem] uppercase tracking-[0.14em]"
+          className="text-sm uppercase tracking-[0.14em] font-medium"
           style={{ color: 'var(--color-muted)' }}
         >
           Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
@@ -399,12 +414,12 @@ function ComandaCard({
       >
         <div className="flex items-center gap-3 min-w-0">
           <p
-            className="font-[family-name:var(--font-display)] text-base"
+            className="font-[family-name:var(--font-display)] text-xl"
             style={{ color: 'var(--color-ink)' }}
           >
             #{comanda.numero_diario.toString().padStart(3, '0')}
           </p>
-          <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
+          <span className="text-base font-medium" style={{ color: 'var(--color-muted)' }}>
             {hora}
           </span>
         </div>
@@ -413,14 +428,14 @@ function ComandaCard({
 
       {mensajeMesero ? (
         <div
-          className="px-4 py-2 border-b"
+          className="px-4 py-3 border-b"
           style={{
             borderColor: 'var(--color-border)',
             background: 'var(--color-paper)',
           }}
         >
-          <p className="text-[0.7rem]" style={{ color: colorMarca }}>
-            * {mensajeMesero}
+          <p className="text-base font-semibold" style={{ color: colorMarca }}>
+            {mensajeMesero}
           </p>
         </div>
       ) : null}
@@ -434,12 +449,12 @@ function ComandaCard({
           }}
         >
           <p
-            className="text-[0.7rem] uppercase tracking-[0.12em] mb-1"
+            className="text-sm uppercase tracking-[0.12em] mb-1 font-semibold"
             style={{ color: '#b91c1c' }}
           >
-            x Cancelada por la cocina
+            Cancelada por la cocina
           </p>
-          <p className="text-sm" style={{ color: '#7f1d1d' }}>
+          <p className="text-base" style={{ color: '#7f1d1d' }}>
             {mensajeCancelacion}
           </p>
         </div>
@@ -449,24 +464,27 @@ function ComandaCard({
         {comanda.items.map((item) => {
           const subtotal = item.precio_snapshot * item.cantidad;
           return (
-            <li key={item.id} className="px-4 py-2.5">
+            <li key={item.id} className="px-4 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <p
-                    className="text-sm"
+                    className="text-lg"
                     style={{
                       color: 'var(--color-ink)',
                       textDecoration: estaCancelada ? 'line-through' : 'none',
                     }}
                   >
-                    <span style={{ color: 'var(--color-muted)' }}>
+                    <span
+                      className="font-semibold"
+                      style={{ color: 'var(--color-muted)' }}
+                    >
                       {item.cantidad}x
                     </span>{' '}
                     {item.nombre_snapshot}
                   </p>
                   {item.nota ? (
                     <p
-                      className="text-[0.7rem] mt-0.5 italic"
+                      className="text-base mt-1 italic"
                       style={{ color: 'var(--color-ink-soft)' }}
                     >
                       {item.nota}
@@ -474,7 +492,7 @@ function ComandaCard({
                   ) : null}
                 </div>
                 <span
-                  className="font-[family-name:var(--font-mono)] text-xs shrink-0"
+                  className="font-[family-name:var(--font-mono)] text-base font-medium shrink-0"
                   style={{
                     color: 'var(--color-ink-soft)',
                     textDecoration: estaCancelada ? 'line-through' : 'none',
@@ -489,14 +507,14 @@ function ComandaCard({
       </ul>
 
       <footer
-        className="px-4 py-2.5 flex items-center justify-between border-t"
+        className="px-4 py-3 flex items-center justify-between border-t"
         style={{
           borderColor: 'var(--color-border)',
           background: 'var(--color-paper)',
         }}
       >
         <span
-          className="text-xs uppercase tracking-[0.1em]"
+          className="text-base uppercase tracking-[0.1em] font-semibold"
           style={{ color: 'var(--color-muted)' }}
         >
           Subtotal
@@ -504,13 +522,13 @@ function ComandaCard({
         {estaCancelada ? (
           <span className="flex items-center gap-2">
             <span
-              className="text-[0.65rem] uppercase tracking-[0.12em] px-2 py-0.5 rounded font-medium"
+              className="text-sm uppercase tracking-[0.1em] px-2 py-0.5 rounded font-semibold"
               style={{ background: '#fee2e2', color: '#b91c1c' }}
             >
               No se cobra
             </span>
             <span
-              className="font-[family-name:var(--font-mono)] text-sm"
+              className="font-[family-name:var(--font-mono)] text-lg"
               style={{
                 color: 'var(--color-muted)',
                 textDecoration: 'line-through',
@@ -521,7 +539,7 @@ function ComandaCard({
           </span>
         ) : (
           <span
-            className="font-[family-name:var(--font-mono)] text-sm"
+            className="font-[family-name:var(--font-mono)] text-lg font-semibold"
             style={{ color: 'var(--color-ink)' }}
           >
             ${comanda.total.toLocaleString('es-CO')}
@@ -546,7 +564,7 @@ function EstadoPill({
 
   return (
     <span
-      className="text-[0.65rem] uppercase tracking-[0.1em] px-2 py-1 rounded-full font-medium shrink-0"
+      className="text-sm uppercase tracking-[0.08em] px-3 py-1 rounded-full font-semibold shrink-0"
       style={{ background: s.bg, color: s.fg }}
     >
       {etiqueta.label}
@@ -567,12 +585,7 @@ function ModalPedidoCancelado({
 }) {
   const router = useRouter();
 
-  // "Salir": borra la sesion cliente del sessionStorage antes de navegar.
-  // Si no la borramos, el formulario de nombre lee la sesion al cargar y
-  // redirige inmediatamente al menu (loop infernal).
   async function handleSalir() {
-    // Cerrar la sesion en BD (libera la mesa) antes de borrar la sesion local
-    // y navegar. Si hay otras comandas activas, la action no hace nada.
     await cerrarSesionAbandonada(qrToken);
     borrarSesionCliente(qrToken);
     router.push(`/m/${qrToken}`);
@@ -601,29 +614,29 @@ function ModalPedidoCancelado({
           </svg>
         </div>
         <h2
-          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-2"
+          className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.015em] mb-2"
           style={{ color: 'var(--color-ink)' }}
         >
           Tu pedido fue cancelado
         </h2>
         <div
-          className="rounded-[var(--radius-md)] border px-3 py-2 mb-5 text-left"
+          className="rounded-[var(--radius-md)] border px-3 py-2.5 mb-5 text-left"
           style={{ borderColor: '#fecaca', background: '#fef2f2' }}
         >
-          <p className="text-[0.65rem] uppercase tracking-[0.12em] mb-1" style={{ color: '#b91c1c' }}>
+          <p className="text-sm uppercase tracking-[0.12em] mb-1 font-semibold" style={{ color: '#b91c1c' }}>
             Motivo de la cocina
           </p>
-          <p className="text-sm" style={{ color: '#7f1d1d' }}>
+          <p className="text-base" style={{ color: '#7f1d1d' }}>
             {motivo}
           </p>
         </div>
-        <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-ink-soft)' }}>
+        <p className="text-base leading-relaxed mb-6" style={{ color: 'var(--color-ink-soft)' }}>
           No se cobro nada. Puedes volver al menu y pedir otra cosa, o salir.
         </p>
         <div className="space-y-2">
           <Link
             href={`/m/${qrToken}/menu`}
-            className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium"
+            className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-lg font-semibold"
             style={{ background: colorMarca, color: 'white' }}
           >
             Pedir otra cosa
@@ -631,7 +644,7 @@ function ModalPedidoCancelado({
           <button
             type="button"
             onClick={handleSalir}
-            className="w-full h-11 grid place-items-center rounded-[var(--radius-md)] text-sm font-medium border"
+            className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-lg font-semibold border"
             style={{
               background: 'white',
               color: 'var(--color-ink)',
@@ -641,7 +654,7 @@ function ModalPedidoCancelado({
             Salir
           </button>
         </div>
-        <p className="text-[0.7rem] mt-4" style={{ color: 'var(--color-muted)' }}>
+        <p className="text-sm mt-4 font-medium" style={{ color: 'var(--color-muted)' }}>
           {nombreNegocio} agradece tu paciencia.
         </p>
       </div>

@@ -39,7 +39,7 @@ export default async function LlamarMeseroPage({ params }: PageProps) {
     notFound();
   }
 
-  // Buscar sesión abierta de la mesa.
+  // Buscar sesion abierta de la mesa.
   const { data: sesion } = await supabase
     .from('sesiones')
     .select('id')
@@ -47,8 +47,22 @@ export default async function LlamarMeseroPage({ params }: PageProps) {
     .eq('estado', 'abierta')
     .maybeSingle();
 
-  // Si hay sesión, ver si ya hay llamados pendientes (incluyendo nombre del
-  // mesero que los tomó, denormalizado para que el cliente lo vea).
+  // Saber si todas las comandas no canceladas estan entregadas.
+  // Solo asi se habilita el CTA "Pedir la cuenta".
+  let todasEntregadas = false;
+  if (sesion) {
+    const { data: comandas } = await supabase
+      .from('comandas')
+      .select('estado')
+      .eq('sesion_id', sesion.id as string)
+      .neq('estado', 'cancelada');
+    todasEntregadas =
+      (comandas?.length ?? 0) > 0 &&
+      (comandas ?? []).every((c) => c.estado === 'entregada');
+  }
+
+  // Si hay sesion, ver si ya hay llamados pendientes (incluyendo nombre del
+  // mesero que los tomo, denormalizado para que el cliente lo vea).
   let llamadosActivos: {
     id: string;
     motivo: string;
@@ -79,6 +93,7 @@ export default async function LlamarMeseroPage({ params }: PageProps) {
       tieneSesionAbierta={Boolean(sesion)}
       llamadosActivos={llamadosActivos}
       sesionId={(sesion?.id as string) ?? null}
+      todasEntregadas={todasEntregadas}
     />
   );
 }
