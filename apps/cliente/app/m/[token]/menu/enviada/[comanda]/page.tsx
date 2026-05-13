@@ -18,7 +18,7 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
       `
       restaurante_id,
       numero,
-      restaurantes (nombre_publico, color_marca)
+      restaurantes (nombre_publico, color_marca, tiempo_estimado_preparacion_min)
     `,
     )
     .eq('qr_token', token)
@@ -31,6 +31,7 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
     : mesa.restaurantes) as {
     nombre_publico: string;
     color_marca: string;
+    tiempo_estimado_preparacion_min: number | null;
   } | null;
 
   if (!restaurante) notFound();
@@ -113,6 +114,7 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
       nombreCliente={nombreCliente}
       comandaActualId={comanda}
       comandasIniciales={comandasConItems}
+      tiempoEstimadoMin={restaurante.tiempo_estimado_preparacion_min}
     />
   );
 }

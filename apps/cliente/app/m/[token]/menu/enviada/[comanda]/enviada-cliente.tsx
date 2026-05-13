@@ -46,6 +46,7 @@ export function ComandaEnviadaCliente({
   nombreCliente,
   comandaActualId,
   comandasIniciales,
+  tiempoEstimadoMin,
 }: {
   qrToken: string;
   sesionId: string;
@@ -55,6 +56,7 @@ export function ComandaEnviadaCliente({
   nombreCliente: string;
   comandaActualId: string;
   comandasIniciales: ComandaConItems[];
+  tiempoEstimadoMin: number | null;
 }) {
   const router = useRouter();
   const [comandas, setComandas] = useState<ComandaConItems[]>(comandasIniciales);
@@ -183,7 +185,6 @@ export function ComandaEnviadaCliente({
       style={{ background: 'var(--color-paper)' }}
     >
       <div className="flex-1 px-5 py-8 max-w-md mx-auto w-full">
-        {/* HERO de confirmacion */}
         <section
           className="rounded-[var(--radius-lg)] p-6 mb-6 text-center"
           style={{ background: colorMarca, color: 'white' }}
@@ -202,13 +203,33 @@ export function ComandaEnviadaCliente({
               />
             </svg>
           </div>
-          <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em] mb-2">
+          <h1 className="font-[family-name:var(--font-display)] text-4xl tracking[-0.02em] mb-2">
             Listo, {nombreCliente}!
           </h1>
           <p className="text-lg opacity-95 leading-snug font-medium">
             Tu pedido esta en la cocina
           </p>
-          <p className="text-base opacity-80 mt-2 font-medium">
+          {tiempoEstimadoMin !== null ? (
+            <div
+              className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full"
+              style={{ background: 'rgba(255,255,255,0.22)' }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.75" />
+                <path
+                  d="M12 7v5l3 2"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              <span className="text-sm font-semibold">
+                Listo en ~{tiempoEstimadoMin} minutos
+              </span>
+            </div>
+          ) : null}
+          <p className="text-base opacity-80 mt-3 font-medium">
             Pedido #{ultimaComanda.numero_diario.toString().padStart(3, '0')}
           </p>
         </section>
@@ -269,7 +290,6 @@ export function ComandaEnviadaCliente({
           </div>
         </section>
 
-        {/* Botones principales */}
         <div className="space-y-2 mb-6">
           <Link
             href={`/m/${qrToken}/menu`}
@@ -312,7 +332,6 @@ export function ComandaEnviadaCliente({
           )}
         </div>
 
-        {/* "Necesitas algo?" secundario */}
         <div
           className="rounded-[var(--radius-md)] border bg-white px-4 py-4 flex items-center justify-between gap-3"
           style={{ borderColor: 'var(--color-border)' }}

@@ -21,6 +21,10 @@ export type ResultadoEliminar =
   | { ok: true }
   | { ok: false; error: string };
 
+export type ResultadoTiempo =
+  | { ok: true }
+  | { ok: false; error: string };
+
 function extensionDe(mime: string): string {
   switch (mime) {
     case 'image/png':
@@ -180,6 +184,46 @@ export async function eliminarLogo(): Promise<ResultadoEliminar> {
     return {
       ok: false,
       error: 'Archivos borrados pero no pudimos limpiar la URL: ' + errorUpdate.message,
+    };
+  }
+
+  revalidatePath('/admin/branding');
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+/**
+ * Actualiza el tiempo estimado de preparacion (en minutos).
+ * Pasar null para limpiar (no mostrar nada al cliente).
+ */
+export async function actualizarTiempoEstimado(
+  minutos: number | null,
+): Promise<ResultadoTiempo> {
+  if (minutos !== null) {
+    if (!Number.isInteger(minutos)) {
+      return { ok: false, error: 'El tiempo debe ser un numero entero.' };
+    }
+    if (minutos < 1 || minutos > 240) {
+      return {
+        ok: false,
+        error: 'El tiempo debe estar entre 1 y 240 minutos.',
+      };
+    }
+  }
+
+  const auth = await verificarDueno();
+  if (!auth.ok) return auth;
+
+  const admin = createServiceClient();
+  const { error } = await admin
+    .from('restaurantes')
+    .update({ tiempo_estimado_preparacion_min: minutos })
+    .eq('id', auth.restauranteId);
+
+  if (error) {
+    return {
+      ok: false,
+      error: 'No pudimos guardar: ' + error.message,
     };
   }
 

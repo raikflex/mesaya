@@ -25,7 +25,7 @@ export default async function BrandingPage() {
 
   const { data: restaurante } = await supabase
     .from('restaurantes')
-    .select('nombre_publico, logo_url, color_marca')
+    .select('nombre_publico, logo_url, color_marca, tiempo_estimado_preparacion_min')
     .eq('id', restauranteId)
     .maybeSingle();
 
@@ -33,6 +33,8 @@ export default async function BrandingPage() {
     (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
   const logoUrl = (restaurante?.logo_url as string | null) ?? null;
   const colorMarca = (restaurante?.color_marca as string) ?? '#9a3f6b';
+  const tiempoEstimado =
+    (restaurante?.tiempo_estimado_preparacion_min as number | null) ?? null;
 
   return (
     <PanelShell currentPage="branding" nombreNegocio={nombreNegocio}>
@@ -69,6 +71,7 @@ export default async function BrandingPage() {
           logoInicial={logoUrl}
           nombreNegocio={nombreNegocio}
           colorMarca={colorMarca}
+          tiempoEstimadoInicial={tiempoEstimado}
         />
       </main>
     </PanelShell>

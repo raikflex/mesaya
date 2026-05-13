@@ -1,7 +1,7 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { subirLogo, eliminarLogo } from './actions';
+import { subirLogo, eliminarLogo, actualizarTiempoEstimado } from './actions';
 
 const TIPOS_PERMITIDOS = [
   'image/png',
@@ -16,10 +16,12 @@ export function BrandingForm({
   logoInicial,
   nombreNegocio,
   colorMarca,
+  tiempoEstimadoInicial,
 }: {
   logoInicial: string | null;
   nombreNegocio: string;
   colorMarca: string;
+  tiempoEstimadoInicial: number | null;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(logoInicial);
@@ -61,7 +63,6 @@ export function BrandingForm({
         setExito('Logo actualizado.');
         setTimeout(() => setExito(null), 3000);
       }
-      // Limpiar input para permitir re-seleccionar el mismo archivo
       if (inputRef.current) inputRef.current.value = '';
     });
   }
@@ -83,132 +84,133 @@ export function BrandingForm({
   }
 
   return (
-    <section
-      className="rounded-[var(--radius-lg)] border bg-white p-5 sm:p-7"
-      style={{ borderColor: 'var(--color-border)' }}
-    >
-      <h2
-        className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-1"
-        style={{ color: 'var(--color-ink)' }}
+    <>
+      <section
+        className="rounded-[var(--radius-lg)] border bg-white p-5 sm:p-7 mb-6"
+        style={{ borderColor: 'var(--color-border)' }}
       >
-        Logo
-      </h2>
-      <p className="text-sm mb-6" style={{ color: 'var(--color-ink-soft)' }}>
-        Aparece en la pantalla de bienvenida cuando un cliente escanea el QR.
-        Recomendado: cuadrado, PNG con fondo transparente.
-      </p>
-
-      {/* Preview */}
-      <div className="mb-6">
-        <div
-          className="size-32 sm:size-40 rounded-[var(--radius-lg)] border-2 border-dashed grid place-items-center mx-auto sm:mx-0 overflow-hidden"
-          style={{
-            borderColor: 'var(--color-border-strong)',
-            background: 'var(--color-paper)',
-          }}
+        <h2
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-1"
+          style={{ color: 'var(--color-ink)' }}
         >
-          {logoUrl ? (
-            <img
-              src={logoUrl}
-              alt={`Logo de ${nombreNegocio}`}
-              className="size-full object-contain p-2"
-            />
-          ) : (
-            <PlaceholderLogo nombre={nombreNegocio} colorMarca={colorMarca} />
-          )}
-        </div>
-        {!logoUrl ? (
-          <p
-            className="text-[0.7rem] mt-2 text-center sm:text-left"
-            style={{ color: 'var(--color-muted)' }}
-          >
-            Sin logo - mostramos las iniciales por ahora
-          </p>
-        ) : null}
-      </div>
+          Logo
+        </h2>
+        <p className="text-sm mb-6" style={{ color: 'var(--color-ink-soft)' }}>
+          Aparece en la pantalla de bienvenida cuando un cliente escanea el QR.
+          Recomendado: cuadrado, PNG con fondo transparente.
+        </p>
 
-      {/* Input oculto */}
-      <input
-        ref={inputRef}
-        type="file"
-        accept="image/png,image/jpeg,image/webp,image/svg+xml"
-        onChange={onArchivoSeleccionado}
-        className="hidden"
-      />
-
-      {/* Botones */}
-      <div className="flex flex-col sm:flex-row gap-2">
-        <button
-          type="button"
-          onClick={elegirArchivo}
-          disabled={pending}
-          className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-50"
-          style={{
-            background: 'var(--color-ink)',
-            color: 'var(--color-paper)',
-          }}
-        >
-          {pending ? 'Subiendo...' : logoUrl ? 'Cambiar logo' : 'Subir logo'}
-        </button>
-
-        {logoUrl ? (
-          <button
-            type="button"
-            onClick={() => setConfirmandoEliminar(true)}
-            disabled={pending}
-            className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium border disabled:opacity-50"
+        <div className="mb-6">
+          <div
+            className="size-32 sm:size-40 rounded-[var(--radius-lg)] border-2 border-dashed grid place-items-center mx-auto sm:mx-0 overflow-hidden"
             style={{
-              background: 'white',
-              color: '#b91c1c',
-              borderColor: '#fecaca',
+              borderColor: 'var(--color-border-strong)',
+              background: 'var(--color-paper)',
             }}
           >
-            Eliminar logo
-          </button>
-        ) : null}
-      </div>
-
-      <p
-        className="text-[0.7rem] mt-3"
-        style={{ color: 'var(--color-muted)' }}
-      >
-        Formatos: PNG, JPG, WebP, SVG. Tamano maximo: 2 MB.
-      </p>
-
-      {error ? (
-        <div
-          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
-          style={{
-            borderColor: '#fecaca',
-            background: '#fef2f2',
-            color: '#b91c1c',
-          }}
-        >
-          {error}
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`Logo de ${nombreNegocio}`}
+                className="size-full object-contain p-2"
+              />
+            ) : (
+              <PlaceholderLogo nombre={nombreNegocio} colorMarca={colorMarca} />
+            )}
+          </div>
+          {!logoUrl ? (
+            <p
+              className="text-[0.7rem] mt-2 text-center sm:text-left"
+              style={{ color: 'var(--color-muted)' }}
+            >
+              Sin logo - mostramos las iniciales por ahora
+            </p>
+          ) : null}
         </div>
-      ) : null}
 
-      {exito ? (
-        <div
-          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
-          style={{
-            borderColor: '#bbf7d0',
-            background: '#f0fdf4',
-            color: '#166534',
-          }}
-        >
-          {exito}
-        </div>
-      ) : null}
-
-      {confirmandoEliminar ? (
-        <ModalConfirmar
-          onConfirmar={handleEliminar}
-          onCancelar={() => setConfirmandoEliminar(false)}
-          pending={pending}
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,image/svg+xml"
+          onChange={onArchivoSeleccionado}
+          className="hidden"
         />
-      ) : null}
-    </section>
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            onClick={elegirArchivo}
+            disabled={pending}
+            className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-50"
+            style={{
+              background: 'var(--color-ink)',
+              color: 'var(--color-paper)',
+            }}
+          >
+            {pending ? 'Subiendo...' : logoUrl ? 'Cambiar logo' : 'Subir logo'}
+          </button>
+
+          {logoUrl ? (
+            <button
+              type="button"
+              onClick={() => setConfirmandoEliminar(true)}
+              disabled={pending}
+              className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium border disabled:opacity-50"
+              style={{
+                background: 'white',
+                color: '#b91c1c',
+                borderColor: '#fecaca',
+              }}
+            >
+              Eliminar logo
+            </button>
+          ) : null}
+        </div>
+
+        <p
+          className="text-[0.7rem] mt-3"
+          style={{ color: 'var(--color-muted)' }}
+        >
+          Formatos: PNG, JPG, WebP, SVG. Tamano maximo: 2 MB.
+        </p>
+
+        {error ? (
+          <div
+            className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+            style={{
+              borderColor: '#fecaca',
+              background: '#fef2f2',
+              color: '#b91c1c',
+            }}
+          >
+            {error}
+          </div>
+        ) : null}
+
+        {exito ? (
+          <div
+            className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+            style={{
+              borderColor: '#bbf7d0',
+              background: '#f0fdf4',
+              color: '#166534',
+            }}
+          >
+            {exito}
+          </div>
+        ) : null}
+
+        {confirmandoEliminar ? (
+          <ModalConfirmar
+            onConfirmar={handleEliminar}
+            onCancelar={() => setConfirmandoEliminar(false)}
+            pending={pending}
+          />
+        ) : null}
+      </section>
+
+      <SeccionTiempoEstimado tiempoInicial={tiempoEstimadoInicial} />
+    </>
   );
 }
 
@@ -292,5 +294,136 @@ function ModalConfirmar({
         </div>
       </div>
     </div>
+  );
+}
+
+function SeccionTiempoEstimado({
+  tiempoInicial,
+}: {
+  tiempoInicial: number | null;
+}) {
+  const [valor, setValor] = useState<string>(
+    tiempoInicial !== null ? String(tiempoInicial) : '',
+  );
+  const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function handleGuardar() {
+    setError(null);
+    setExito(null);
+    const trim = valor.trim();
+    const minutos = trim === '' ? null : Number(trim);
+
+    if (
+      minutos !== null &&
+      (!Number.isInteger(minutos) || minutos < 1 || minutos > 240)
+    ) {
+      setError('Ingresa un numero entero entre 1 y 240.');
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await actualizarTiempoEstimado(minutos);
+      if (!res.ok) {
+        setError(res.error);
+      } else {
+        setExito(
+          minutos === null
+            ? 'Tiempo eliminado. Los clientes no veran estimacion.'
+            : 'Tiempo guardado.',
+        );
+        setTimeout(() => setExito(null), 3000);
+      }
+    });
+  }
+
+  return (
+    <section
+      className="rounded-[var(--radius-lg)] border bg-white p-5 sm:p-7"
+      style={{ borderColor: 'var(--color-border)' }}
+    >
+      <h2
+        className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-1"
+        style={{ color: 'var(--color-ink)' }}
+      >
+        Tiempo estimado de preparacion
+      </h2>
+      <p className="text-sm mb-5" style={{ color: 'var(--color-ink-soft)' }}>
+        Cuando un cliente hace un pedido, ve &quot;Estara listo en ~X
+        minutos&quot;. Deja vacio si no quieres mostrar nada.
+      </p>
+
+      <div className="flex items-end gap-3">
+        <div className="flex-1 max-w-[10rem]">
+          <label
+            htmlFor="tiempo"
+            className="block text-xs uppercase tracking-[0.12em] mb-1.5"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Minutos
+          </label>
+          <input
+            id="tiempo"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={240}
+            step={1}
+            value={valor}
+            onChange={(e) => {
+              setValor(e.target.value);
+              setError(null);
+              setExito(null);
+            }}
+            placeholder="Ej: 20"
+            className="w-full h-11 px-3 rounded-[var(--radius-md)] border text-base"
+            style={{
+              borderColor: 'var(--color-border-strong)',
+              color: 'var(--color-ink)',
+              background: 'var(--color-paper)',
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleGuardar}
+          disabled={pending}
+          className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-50"
+          style={{
+            background: 'var(--color-ink)',
+            color: 'var(--color-paper)',
+          }}
+        >
+          {pending ? 'Guardando...' : 'Guardar'}
+        </button>
+      </div>
+
+      {error ? (
+        <div
+          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+          style={{
+            borderColor: '#fecaca',
+            background: '#fef2f2',
+            color: '#b91c1c',
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {exito ? (
+        <div
+          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+          style={{
+            borderColor: '#bbf7d0',
+            background: '#f0fdf4',
+            color: '#166534',
+          }}
+        >
+          {exito}
+        </div>
+      ) : null}
+    </section>
   );
 }
