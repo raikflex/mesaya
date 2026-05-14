@@ -43,7 +43,8 @@ export default async function MenuPage({ params }: PageProps) {
         id,
         nombre_publico,
         color_marca,
-        estado
+        estado,
+        logo_url
       )
     `,
     )
@@ -62,6 +63,7 @@ export default async function MenuPage({ params }: PageProps) {
     nombre_publico: string;
     color_marca: string;
     estado: string;
+    logo_url: string | null;
   } | null;
 
   if (!restaurante) {
@@ -177,6 +179,7 @@ export default async function MenuPage({ params }: PageProps) {
       numeroMesa={mesa.numero as string}
       nombreNegocio={restaurante.nombre_publico}
       colorMarca={restaurante.color_marca}
+      logoUrl={restaurante.logo_url}
       grupos={grupos}
       totalProductos={totalProductos}
     />

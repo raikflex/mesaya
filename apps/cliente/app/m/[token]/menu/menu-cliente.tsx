@@ -36,6 +36,7 @@ export function MenuCliente({
   numeroMesa,
   nombreNegocio,
   colorMarca,
+  logoUrl,
   grupos,
   totalProductos,
 }: {
@@ -43,6 +44,7 @@ export function MenuCliente({
   numeroMesa: string;
   nombreNegocio: string;
   colorMarca: string;
+  logoUrl: string | null;
   grupos: Grupo[];
   totalProductos: number;
 }) {
@@ -205,7 +207,15 @@ export function MenuCliente({
         }}
       >
         <div className="px-5 py-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={`Logo de ${nombreNegocio}`}
+                className="size-10 rounded-full object-contain shrink-0"
+                style={{ background: 'white' }}
+              />
+            ) : null}
             <div className="min-w-0 flex-1">
               <p
                 className="text-[0.65rem] uppercase tracking-[0.14em]"
