@@ -18,7 +18,7 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
       `
       restaurante_id,
       numero,
-      restaurantes (nombre_publico, color_marca, tiempo_estimado_preparacion_min)
+      restaurantes (nombre_publico, color_marca)
     `,
     )
     .eq('qr_token', token)
@@ -31,7 +31,6 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
     : mesa.restaurantes) as {
     nombre_publico: string;
     color_marca: string;
-    tiempo_estimado_preparacion_min: number | null;
   } | null;
 
   if (!restaurante) notFound();
@@ -56,7 +55,7 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
   const { data: comandasRaw } = await supabase
     .from('comandas')
     .select(
-      'id, numero_diario, estado, total, creada_en, mesero_atendiendo_nombre, motivo_cancelacion',
+      'id, numero_diario, estado, total, creada_en, mesero_atendiendo_nombre, motivo_cancelacion, tiempo_estimado_min',
     )
     .eq('sesion_id', comandaActual.sesion_id as string)
     .eq('sesion_cliente_id', comandaActual.sesion_cliente_id as string)
@@ -71,11 +70,13 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
     | 'creada_en'
     | 'mesero_atendiendo_nombre'
     | 'motivo_cancelacion'
+    | 'tiempo_estimado_min'
   >[];
 
   if (comandas.length === 0) notFound();
 
   const comandaIds = comandas.map((c) => c.id);
+
   const { data: itemsRaw } = await supabase
     .from('comanda_items')
     .select('id, comanda_id, nombre_snapshot, precio_snapshot, cantidad, nota')
@@ -114,7 +115,6 @@ export default async function ComandaEnviadaPage({ params }: PageProps) {
       nombreCliente={nombreCliente}
       comandaActualId={comanda}
       comandasIniciales={comandasConItems}
-      tiempoEstimadoMin={restaurante.tiempo_estimado_preparacion_min}
     />
   );
 }

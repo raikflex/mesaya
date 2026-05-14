@@ -15,6 +15,7 @@ export type ComandaConItems = {
   creada_en: string;
   mesero_atendiendo_nombre: string | null;
   motivo_cancelacion: string | null;
+  tiempo_estimado_min: number | null;
   items: {
     id: string;
     nombre_snapshot: string;
@@ -46,7 +47,6 @@ export function ComandaEnviadaCliente({
   nombreCliente,
   comandaActualId,
   comandasIniciales,
-  tiempoEstimadoMin,
 }: {
   qrToken: string;
   sesionId: string;
@@ -56,7 +56,6 @@ export function ComandaEnviadaCliente({
   nombreCliente: string;
   comandaActualId: string;
   comandasIniciales: ComandaConItems[];
-  tiempoEstimadoMin: number | null;
 }) {
   const router = useRouter();
   const [comandas, setComandas] = useState<ComandaConItems[]>(comandasIniciales);
@@ -203,13 +202,13 @@ export function ComandaEnviadaCliente({
               />
             </svg>
           </div>
-          <h1 className="font-[family-name:var(--font-display)] text-4xl tracking[-0.02em] mb-2">
+          <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em] mb-2">
             Listo, {nombreCliente}!
           </h1>
           <p className="text-lg opacity-95 leading-snug font-medium">
             Tu pedido esta en la cocina
           </p>
-          {tiempoEstimadoMin !== null ? (
+          {ultimaComanda.tiempo_estimado_min !== null ? (
             <div
               className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full"
               style={{ background: 'rgba(255,255,255,0.22)' }}
@@ -225,7 +224,7 @@ export function ComandaEnviadaCliente({
                 />
               </svg>
               <span className="text-sm font-semibold">
-                Listo en ~{tiempoEstimadoMin} minutos
+                Listo en ~{ultimaComanda.tiempo_estimado_min} minutos
               </span>
             </div>
           ) : null}

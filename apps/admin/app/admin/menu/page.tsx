@@ -3,7 +3,7 @@ import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { MenuManager } from './menu-manager';
 
-export const metadata = { title: 'Menú · MesaYA' };
+export const metadata = { title: 'Menu - MesaYA' };
 
 export type Categoria = {
   id: string;
@@ -19,6 +19,7 @@ export type Producto = {
   categoria_id: string;
   descripcion: string | null;
   disponible: boolean;
+  tiempo_preparacion_min: number | null;
 };
 
 export default async function MenuPage({
@@ -31,18 +32,14 @@ export default async function MenuPage({
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect('/login');
-
   const { data: perfil } = await supabase
     .from('perfiles')
     .select('restaurante_id, rol')
     .eq('id', user.id)
     .maybeSingle();
-
   if (!perfil?.restaurante_id) redirect('/admin/onboarding/paso-1');
   if (perfil.rol !== 'dueno') redirect('/login?error=acceso-denegado');
-
   const restauranteId = perfil.restaurante_id as string;
-
   const [{ data: categorias }, { data: productos }, { data: restaurante }] =
     await Promise.all([
       supabase
@@ -53,7 +50,9 @@ export default async function MenuPage({
         .order('orden', { ascending: true }),
       supabase
         .from('productos')
-        .select('id, nombre, precio, categoria_id, descripcion, disponible')
+        .select(
+          'id, nombre, precio, categoria_id, descripcion, disponible, tiempo_preparacion_min',
+        )
         .eq('restaurante_id', restauranteId)
         .order('nombre', { ascending: true }),
       supabase
@@ -62,13 +61,10 @@ export default async function MenuPage({
         .eq('id', restauranteId)
         .single(),
     ]);
-
   const params = await searchParams;
   const tabActiva: 'categorias' | 'productos' =
     params.tab === 'categorias' ? 'categorias' : 'productos';
-
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu negocio';
-
   return (
     <PanelShell currentPage="menu" nombreNegocio={nombreNegocio}>
       <main className="px-6 sm:px-10 py-10 max-w-5xl mx-auto space-y-8">
@@ -82,7 +78,7 @@ export default async function MenuPage({
               className="not-italic"
               style={{ fontStyle: 'italic', fontWeight: 400 }}
             >
-              menú
+              menu
             </em>
             .
           </h1>
@@ -94,7 +90,6 @@ export default async function MenuPage({
             agrega novedades.
           </p>
         </header>
-
         <MenuManager
           categorias={(categorias ?? []) as Categoria[]}
           productos={(productos ?? []) as Producto[]}

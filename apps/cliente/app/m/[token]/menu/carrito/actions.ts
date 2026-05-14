@@ -8,8 +8,8 @@ import { createServiceClient } from '@mesaya/database/service';
  * Flujo:
  *   1. Validar mesa/restaurante activo y mesa activa.
  *   2. Validar productos del carrito.
- *   3. Buscar/crear sesión "abierta" para la mesa.
- *   4. Validar que authUserId existe en auth.users (lo creó el cliente con signInAnonymously).
+ *   3. Buscar/crear sesion "abierta" para la mesa.
+ *   4. Validar que authUserId existe en auth.users (lo creo el cliente con signInAnonymously).
  *   5. Crear sesion_cliente.
  *   6. Crear comanda (numero_diario lo asigna el trigger BEFORE INSERT).
  *   7. Crear comanda_items con snapshot.
@@ -32,7 +32,7 @@ export async function enviarComanda(input: {
   items: ItemEntrada[];
 }): Promise<EnviarComandaResultado> {
   if (!input.items || input.items.length === 0) {
-    return { ok: false, error: 'Tu pedido está vacío.' };
+    return { ok: false, error: 'Tu pedido esta vacio.' };
   }
 
   if (!input.nombreCliente || input.nombreCliente.trim().length < 2) {
@@ -42,7 +42,7 @@ export async function enviarComanda(input: {
   if (!input.authUserId) {
     return {
       ok: false,
-      error: 'No pudimos identificar tu sesión. Recarga la página e intenta de nuevo.',
+      error: 'No pudimos identificar tu sesion. Recarga la pagina e intenta de nuevo.',
     };
   }
 
@@ -51,21 +51,24 @@ export async function enviarComanda(input: {
   // 1) Validar mesa + restaurante.
   const { data: mesa } = await admin
     .from('mesas')
-    .select('id, restaurante_id, activa, restaurantes(estado)')
+    .select('id, restaurante_id, activa, restaurantes(estado, tiempo_estimado_preparacion_min)')
     .eq('qr_token', input.qrToken)
     .is('borrada_en', null)
     .maybeSingle();
 
   if (!mesa || !mesa.activa) {
-    return { ok: false, error: 'Esta mesa ya no está disponible.' };
+    return { ok: false, error: 'Esta mesa ya no esta disponible.' };
   }
 
   const restaurante = (Array.isArray(mesa.restaurantes)
     ? mesa.restaurantes[0]
-    : mesa.restaurantes) as { estado: string } | null;
+    : mesa.restaurantes) as {
+    estado: string;
+    tiempo_estimado_preparacion_min: number | null;
+  } | null;
 
   if (!restaurante || restaurante.estado !== 'activo') {
-    return { ok: false, error: 'El restaurante no está atendiendo en este momento.' };
+    return { ok: false, error: 'El restaurante no esta atendiendo en este momento.' };
   }
 
   const restauranteId = mesa.restaurante_id as string;
@@ -75,7 +78,7 @@ export async function enviarComanda(input: {
   const productosIds = input.items.map((i) => i.productoId);
   const { data: productos, error: productosError } = await admin
     .from('productos')
-    .select('id, nombre, precio, disponible')
+    .select('id, nombre, precio, disponible, tiempo_preparacion_min')
     .in('id', productosIds)
     .eq('restaurante_id', restauranteId);
 
@@ -90,6 +93,8 @@ export async function enviarComanda(input: {
         nombre: p.nombre as string,
         precio: p.precio as number,
         disponible: p.disponible as boolean,
+        tiempoPreparacionMin:
+          (p.tiempo_preparacion_min as number | null) ?? null,
       },
     ]),
   );
@@ -111,13 +116,13 @@ export async function enviarComanda(input: {
       ok: false,
       error:
         noDisponibles.length === 1
-          ? `Lo sentimos, "${noDisponibles[0]}" ya no está disponible. Quítalo del pedido y vuelve a enviar.`
-          : `Algunos productos ya no están disponibles: ${noDisponibles.join(', ')}.`,
+          ? `Lo sentimos, "${noDisponibles[0]}" ya no esta disponible. Quitalo del pedido y vuelve a enviar.`
+          : `Algunos productos ya no estan disponibles: ${noDisponibles.join(', ')}.`,
       productosAfectados: noDisponibles,
     };
   }
 
-  // 3) Buscar sesión abierta o crear nueva.
+  // 3) Buscar sesion abierta o crear nueva.
   let sesionId: string;
   const { data: sesionExistente } = await admin
     .from('sesiones')
@@ -149,7 +154,7 @@ export async function enviarComanda(input: {
   }
 
   // 4) Crear sesion_cliente con auth_user_id real (el cliente hizo signInAnonymously).
-  // Si ya existe un sesion_cliente con este authUserId en esta sesión, lo reutilizamos
+  // Si ya existe un sesion_cliente con este authUserId en esta sesion, lo reutilizamos
   // (el cliente hizo otro pedido en la misma mesa).
   const { data: sesionClienteExistente } = await admin
     .from('sesion_clientes')
@@ -188,6 +193,20 @@ export async function enviarComanda(input: {
     return acc + prod.precio * item.cantidad;
   }, 0);
 
+  // 5b) Calcular tiempo estimado de preparacion (snapshot al crear).
+  // Para cada item: usa el tiempo del producto si tiene, sino el global del restaurante.
+  // El tiempo de la comanda = max de tiempos efectivos (cocina paralela, ritmo del mas lento).
+  // Si ningun item tiene tiempo, la comanda queda sin estimacion (no muestra badge).
+  const tiempoGlobalRestaurante = restaurante.tiempo_estimado_preparacion_min;
+  const tiemposEfectivos = input.items
+    .map((item) => {
+      const prod = productosMap.get(item.productoId)!;
+      return prod.tiempoPreparacionMin ?? tiempoGlobalRestaurante ?? null;
+    })
+    .filter((t): t is number => t !== null);
+  const tiempoEstimadoMin =
+    tiemposEfectivos.length > 0 ? Math.max(...tiemposEfectivos) : null;
+
   // 6) Crear comanda.
   const { data: comanda, error: comandaError } = await admin
     .from('comandas')
@@ -198,6 +217,7 @@ export async function enviarComanda(input: {
       numero_diario: 0, // placeholder - trigger asigna el real
       estado: 'pendiente',
       total,
+      tiempo_estimado_min: tiempoEstimadoMin,
     })
     .select('id, numero_diario')
     .single();

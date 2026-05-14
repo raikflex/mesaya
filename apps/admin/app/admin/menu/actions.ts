@@ -19,10 +19,10 @@ async function getRestauranteId() {
   return { supabase, restauranteId: perfil?.restaurante_id ?? null };
 }
 
-/* ============ CATEGORÍAS ============ */
+/* ============ CATEGORIAS ============ */
 
 const categoriaNombreSchema = z.object({
-  nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(60, 'Máximo 60'),
+  nombre: z.string().trim().min(2, 'Minimo 2 caracteres').max(60, 'Maximo 60'),
 });
 
 export type CategoriaState = {
@@ -41,9 +41,8 @@ export async function agregarCategoria(
   }
 
   const { supabase, restauranteId } = await getRestauranteId();
-  if (!restauranteId) return { ok: false, error: 'Tu sesión expiró.' };
+  if (!restauranteId) return { ok: false, error: 'Tu sesion expiro.' };
 
-  // Calcular el siguiente orden.
   const { data: existentes } = await supabase
     .from('categorias')
     .select('orden')
@@ -89,8 +88,6 @@ export async function eliminarCategoria(formData: FormData) {
   const { supabase, restauranteId } = await getRestauranteId();
   if (!restauranteId) return;
 
-  // Soft delete: activa=false. Si tiene productos asociados, se ocultan en cascada
-  // visualmente (el cliente filtra por activa=true).
   await supabase
     .from('categorias')
     .update({ activa: false })
@@ -102,18 +99,29 @@ export async function eliminarCategoria(formData: FormData) {
 
 /* ============ PRODUCTOS ============ */
 
+// Tiempo opcional. Si llega vacio, queda como null (usa fallback global del restaurante).
+// Si llega valor, validar entre 1 y 240.
+const tiempoSchema = z
+  .union([z.literal(''), z.coerce.number().int().min(1).max(240)])
+  .optional()
+  .transform((v) => (v === '' || v === undefined ? null : v));
+
 const productoSchema = z.object({
-  nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80'),
-  precio: z.coerce.number().int('Solo enteros').min(0, 'Mínimo 0'),
-  categoria_id: z.string().uuid('Categoría inválida'),
-  descripcion: z.string().trim().max(200, 'Máximo 200').optional().or(z.literal('')),
+  nombre: z.string().trim().min(2, 'Minimo 2 caracteres').max(80, 'Maximo 80'),
+  precio: z.coerce.number().int('Solo enteros').min(0, 'Minimo 0'),
+  categoria_id: z.string().uuid('Categoria invalida'),
+  descripcion: z.string().trim().max(200, 'Maximo 200').optional().or(z.literal('')),
+  tiempo_preparacion_min: tiempoSchema,
 });
 
 export type ProductoState = {
   ok: boolean;
   error?: string;
   fieldErrors?: Partial<
-    Record<'nombre' | 'precio' | 'categoria_id' | 'descripcion', string>
+    Record<
+      'nombre' | 'precio' | 'categoria_id' | 'descripcion' | 'tiempo_preparacion_min',
+      string
+    >
   >;
 };
 
@@ -126,6 +134,7 @@ export async function agregarProducto(
     precio: formData.get('precio'),
     categoria_id: formData.get('categoria_id'),
     descripcion: formData.get('descripcion'),
+    tiempo_preparacion_min: formData.get('tiempo_preparacion_min'),
   });
 
   if (!parsed.success) {
@@ -138,7 +147,7 @@ export async function agregarProducto(
   }
 
   const { supabase, restauranteId } = await getRestauranteId();
-  if (!restauranteId) return { ok: false, error: 'Tu sesión expiró.' };
+  if (!restauranteId) return { ok: false, error: 'Tu sesion expiro.' };
 
   const { error } = await supabase.from('productos').insert({
     restaurante_id: restauranteId,
@@ -146,6 +155,7 @@ export async function agregarProducto(
     nombre: parsed.data.nombre,
     precio: parsed.data.precio,
     descripcion: parsed.data.descripcion || null,
+    tiempo_preparacion_min: parsed.data.tiempo_preparacion_min,
     disponible: true,
   });
 
@@ -176,6 +186,15 @@ export async function actualizarProducto(formData: FormData) {
     const categoria_id = String(valor ?? '');
     if (!categoria_id) return;
     update.categoria_id = categoria_id;
+  } else if (campo === 'tiempo_preparacion_min') {
+    const raw = String(valor ?? '').trim();
+    if (raw === '') {
+      update.tiempo_preparacion_min = null;
+    } else {
+      const t = parseInt(raw, 10);
+      if (Number.isNaN(t) || t < 1 || t > 240) return;
+      update.tiempo_preparacion_min = t;
+    }
   } else {
     return;
   }
@@ -214,8 +233,6 @@ export async function eliminarProducto(formData: FormData) {
   const { supabase, restauranteId } = await getRestauranteId();
   if (!restauranteId) return;
 
-  // Hard delete OK porque todavía no hay comandas reales que referencien productos.
-  // Cuando llegue S5/S6 con comandas históricas, cambiar a soft delete con campo `activo`.
   await supabase
     .from('productos')
     .delete()

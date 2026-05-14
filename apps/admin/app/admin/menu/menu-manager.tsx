@@ -106,10 +106,10 @@ function Tabs({
       style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
     >
       <TabButton activa={activa === 'productos'} onClick={() => onChange('productos')}>
-        Productos · {totalProductos}
+        Productos - {totalProductos}
       </TabButton>
       <TabButton activa={activa === 'categorias'} onClick={() => onChange('categorias')}>
-        Categorías · {totalCategorias}
+        Categorias - {totalCategorias}
       </TabButton>
     </div>
   );
@@ -140,7 +140,7 @@ function TabButton({
   );
 }
 
-/* ============ TAB CATEGORÍAS ============ */
+/* ============ TAB CATEGORIAS ============ */
 
 function TabCategorias({ categorias }: { categorias: Categoria[] }) {
   const [state, formAction, pending] = useActionState(agregarCategoria, initialCategoria);
@@ -159,7 +159,7 @@ function TabCategorias({ categorias }: { categorias: Categoria[] }) {
         style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
       >
         <div className="flex-1">
-          <Field id="cat-nombre" label="Nueva categoría" error={state.fieldErrors?.nombre}>
+          <Field id="cat-nombre" label="Nueva categoria" error={state.fieldErrors?.nombre}>
             <Input
               id="cat-nombre"
               name="nombre"
@@ -181,7 +181,7 @@ function TabCategorias({ categorias }: { categorias: Categoria[] }) {
           style={{ borderColor: 'var(--color-border-strong)' }}
         >
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            Aún no tienes categorías. Agrega la primera arriba.
+            Aun no tienes categorias. Agrega la primera arriba.
           </p>
         </div>
       ) : (
@@ -295,7 +295,7 @@ function TabProductos({
         style={{ borderColor: 'var(--color-border-strong)' }}
       >
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          Necesitas crear al menos una categoría antes de agregar productos.
+          Necesitas crear al menos una categoria antes de agregar productos.
         </p>
       </div>
     );
@@ -307,7 +307,7 @@ function TabProductos({
 
       {grupos.length === 0 ? (
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          Aún no tienes productos.
+          Aun no tienes productos.
         </p>
       ) : (
         <div className="space-y-5">
@@ -325,7 +325,7 @@ function TabProductos({
                 className="text-xs uppercase tracking-[0.14em] mb-2 px-1"
                 style={{ color: 'var(--color-danger)' }}
               >
-                Sin categoría · {huerfanos.length}
+                Sin categoria - {huerfanos.length}
               </h3>
               <ul
                 className="rounded-[var(--radius-lg)] border divide-y"
@@ -371,7 +371,7 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
       >
         Agregar producto
       </p>
-      <div className="grid sm:grid-cols-3 gap-3">
+      <div className="grid sm:grid-cols-2 gap-3">
         <Field id="prod-nombre" label="Nombre" error={state.fieldErrors?.nombre}>
           <Input
             id="prod-nombre"
@@ -385,13 +385,15 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
         <Field id="prod-precio" label="Precio (COP)" error={state.fieldErrors?.precio}>
           <PrecioInput resetSignal={resetSignal} />
         </Field>
+      </div>
+      <div className="grid sm:grid-cols-2 gap-3">
         <div>
           <label
             htmlFor="prod-categoria"
             className="block text-sm font-medium mb-1.5"
             style={{ color: 'var(--color-ink)' }}
           >
-            Categoría
+            Categoria
           </label>
           <select
             id="prod-categoria"
@@ -406,7 +408,7 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
             }}
           >
             <option value="" disabled>
-              Elige…
+              Elige...
             </option>
             {categorias.map((c) => (
               <option key={c.id} value={c.id}>
@@ -420,10 +422,27 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
             </p>
           ) : null}
         </div>
+        <Field
+          id="prod-tiempo"
+          label="Tiempo preparacion (min, opcional)"
+          error={state.fieldErrors?.tiempo_preparacion_min}
+        >
+          <Input
+            id="prod-tiempo"
+            name="tiempo_preparacion_min"
+            type="number"
+            inputMode="numeric"
+            min={1}
+            max={240}
+            step={1}
+            placeholder="Vacio = usa el global"
+            autoComplete="off"
+          />
+        </Field>
       </div>
       <Field
         id="prod-descripcion"
-        label="Descripción (opcional)"
+        label="Descripcion (opcional)"
         error={state.fieldErrors?.descripcion}
       >
         <Input
@@ -463,14 +482,14 @@ function SeccionCategoria({
         className="text-xs uppercase tracking-[0.14em] mb-2 px-1"
         style={{ color: 'var(--color-muted)' }}
       >
-        {categoria.nombre} · {productos.length}
+        {categoria.nombre} - {productos.length}
       </h3>
       {productos.length === 0 ? (
         <div
           className="rounded-[var(--radius-lg)] border border-dashed p-4 text-xs text-center"
           style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-muted)' }}
         >
-          Sin productos en esta categoría.
+          Sin productos en esta categoria.
         </div>
       ) : (
         <ul
@@ -497,8 +516,14 @@ function ItemProducto({
   const [nombre, setNombre] = useState(producto.nombre);
   const [editandoPrecio, setEditandoPrecio] = useState(false);
   const [precio, setPrecio] = useState(producto.precio.toString());
+  const [editandoTiempo, setEditandoTiempo] = useState(false);
+  const [tiempo, setTiempo] = useState(
+    producto.tiempo_preparacion_min !== null
+      ? producto.tiempo_preparacion_min.toString()
+      : '',
+  );
 
-  function guardarCampo(campo: 'nombre' | 'precio', valor: string) {
+  function guardarCampo(campo: 'nombre' | 'precio' | 'tiempo_preparacion_min', valor: string) {
     const fd = new FormData();
     fd.append('id', producto.id);
     fd.append('campo', campo);
@@ -512,6 +537,26 @@ function ItemProducto({
     fd.append('campo', 'categoria_id');
     fd.append('valor', e.target.value);
     void actualizarProducto(fd);
+  }
+
+  function commitTiempo() {
+    const raw = tiempo.trim();
+    if (raw === '') {
+      guardarCampo('tiempo_preparacion_min', '');
+    } else {
+      const n = parseInt(raw, 10);
+      if (Number.isNaN(n) || n < 1 || n > 240) {
+        setTiempo(
+          producto.tiempo_preparacion_min !== null
+            ? producto.tiempo_preparacion_min.toString()
+            : '',
+        );
+        setEditandoTiempo(false);
+        return;
+      }
+      guardarCampo('tiempo_preparacion_min', raw);
+    }
+    setEditandoTiempo(false);
   }
 
   return (
@@ -560,7 +605,7 @@ function ItemProducto({
           </p>
         ) : null}
 
-        <div className="flex items-center gap-3 pt-0.5">
+        <div className="flex items-center gap-3 pt-0.5 flex-wrap">
           {editandoPrecio ? (
             <input
               type="number"
@@ -591,6 +636,47 @@ function ItemProducto({
               style={{ color: 'var(--color-ink-soft)' }}
             >
               ${producto.precio.toLocaleString('es-CO')}
+            </button>
+          )}
+
+          {editandoTiempo ? (
+            <input
+              type="number"
+              value={tiempo}
+              onChange={(e) => setTiempo(e.target.value)}
+              onBlur={commitTiempo}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
+                if (e.key === 'Escape') {
+                  setTiempo(
+                    producto.tiempo_preparacion_min !== null
+                      ? producto.tiempo_preparacion_min.toString()
+                      : '',
+                  );
+                  setEditandoTiempo(false);
+                }
+              }}
+              placeholder="vacio = global"
+              autoFocus
+              className="w-28 text-xs px-2 py-0.5 rounded border focus:outline-none focus:ring-1 focus:ring-[var(--color-ink)]"
+              style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)' }}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setEditandoTiempo(true)}
+              className="text-xs hover:underline"
+              style={{
+                color:
+                  producto.tiempo_preparacion_min !== null
+                    ? 'var(--color-ink-soft)'
+                    : 'var(--color-muted)',
+              }}
+              title="Tiempo de preparacion (opcional)"
+            >
+              {producto.tiempo_preparacion_min !== null
+                ? `${producto.tiempo_preparacion_min} min`
+                : '— min'}
             </button>
           )}
 
