@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -15,6 +15,7 @@ import {
   inicializarAudio,
   reproducir,
 } from '../../lib/sonido-mesero';
+import { NotificacionesPush } from '../../components/notificaciones-push';
 import {
   atenderLlamado,
   cerrarSesion,
@@ -645,6 +646,8 @@ function Header({
               )}
             </button>
           ) : null}
+
+          <NotificacionesPush colorMarca={colorMarca} />
 
           <form action={cerrarSesion}>
             <button type="submit" className="text-xs underline shrink-0" style={{ color: 'var(--color-muted)' }}>

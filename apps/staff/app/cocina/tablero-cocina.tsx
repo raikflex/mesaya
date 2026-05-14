@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { createClient } from '@mesaya/database/client';
@@ -11,6 +11,7 @@ import {
   inicializarAudio,
   reproducirDing,
 } from '../../lib/sonido-cocina';
+import { NotificacionesPush } from '../../components/notificaciones-push';
 
 export type ItemComanda = {
   id: string;
@@ -373,6 +374,8 @@ function Header({
               {sonidoOn ? <IconCampana /> : <IconCampanaTachada />}
             </button>
           ) : null}
+
+          <NotificacionesPush colorMarca={colorMarca} />
 
           <form action={cerrarSesion}>
             <button
