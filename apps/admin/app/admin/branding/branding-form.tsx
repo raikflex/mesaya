@@ -1,7 +1,13 @@
 'use client';
 
 import { useRef, useState, useTransition } from 'react';
-import { subirLogo, eliminarLogo, actualizarTiempoEstimado } from './actions';
+import {
+  subirLogo,
+  eliminarLogo,
+  actualizarTiempoEstimado,
+  actualizarNombre,
+  actualizarColorMarca,
+} from './actions';
 
 const TIPOS_PERMITIDOS = [
   'image/png',
@@ -11,6 +17,8 @@ const TIPOS_PERMITIDOS = [
 ];
 
 const TAMANO_MAX = 2 * 1024 * 1024;
+
+const HEX_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 export function BrandingForm({
   logoInicial,
@@ -22,6 +30,162 @@ export function BrandingForm({
   nombreNegocio: string;
   colorMarca: string;
   tiempoEstimadoInicial: number | null;
+}) {
+  const [nombreActual, setNombreActual] = useState(nombreNegocio);
+  const [colorActual, setColorActual] = useState(colorMarca);
+
+  return (
+    <>
+      <SeccionNombre
+        nombreInicial={nombreNegocio}
+        onCambiarNombre={setNombreActual}
+      />
+      <SeccionLogo
+        logoInicial={logoInicial}
+        nombreNegocio={nombreActual}
+        colorMarca={colorActual}
+      />
+      <SeccionColorMarca
+        colorInicial={colorMarca}
+        onCambiarColor={setColorActual}
+      />
+      <SeccionTiempoEstimado tiempoInicial={tiempoEstimadoInicial} />
+    </>
+  );
+}
+
+function SeccionNombre({
+  nombreInicial,
+  onCambiarNombre,
+}: {
+  nombreInicial: string;
+  onCambiarNombre: (nombre: string) => void;
+}) {
+  const [valor, setValor] = useState(nombreInicial);
+  const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function handleGuardar() {
+    setError(null);
+    setExito(null);
+    const limpio = valor.trim();
+
+    if (limpio.length === 0) {
+      setError('El nombre no puede estar vacio.');
+      return;
+    }
+    if (limpio.length > 60) {
+      setError('El nombre es muy largo (max 60 caracteres).');
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await actualizarNombre(limpio);
+      if (!res.ok) {
+        setError(res.error);
+      } else {
+        setExito('Nombre guardado.');
+        onCambiarNombre(limpio);
+        setTimeout(() => setExito(null), 3000);
+      }
+    });
+  }
+
+  return (
+    <section
+      className="rounded-[var(--radius-lg)] border bg-white p-5 sm:p-7 mb-6"
+      style={{ borderColor: 'var(--color-border)' }}
+    >
+      <h2
+        className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-1"
+        style={{ color: 'var(--color-ink)' }}
+      >
+        Nombre del restaurante
+      </h2>
+      <p className="text-sm mb-5" style={{ color: 'var(--color-ink-soft)' }}>
+        Es lo que tus clientes ven cuando escanean el QR.
+      </p>
+
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+        <div className="flex-1">
+          <label
+            htmlFor="nombre"
+            className="block text-xs uppercase tracking-[0.12em] mb-1.5"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Nombre publico
+          </label>
+          <input
+            id="nombre"
+            type="text"
+            value={valor}
+            maxLength={60}
+            onChange={(e) => {
+              setValor(e.target.value);
+              setError(null);
+              setExito(null);
+            }}
+            placeholder="Ej: Cafe cumbre"
+            className="w-full h-11 px-3 rounded-[var(--radius-md)] border text-base"
+            style={{
+              borderColor: 'var(--color-border-strong)',
+              color: 'var(--color-ink)',
+              background: 'var(--color-paper)',
+            }}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleGuardar}
+          disabled={pending || valor.trim() === nombreInicial}
+          className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-50"
+          style={{
+            background: 'var(--color-ink)',
+            color: 'var(--color-paper)',
+          }}
+        >
+          {pending ? 'Guardando...' : 'Guardar'}
+        </button>
+      </div>
+
+      {error ? (
+        <div
+          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+          style={{
+            borderColor: '#fecaca',
+            background: '#fef2f2',
+            color: '#b91c1c',
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {exito ? (
+        <div
+          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+          style={{
+            borderColor: '#bbf7d0',
+            background: '#f0fdf4',
+            color: '#166534',
+          }}
+        >
+          {exito}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function SeccionLogo({
+  logoInicial,
+  nombreNegocio,
+  colorMarca,
+}: {
+  logoInicial: string | null;
+  nombreNegocio: string;
+  colorMarca: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(logoInicial);
@@ -84,133 +248,274 @@ export function BrandingForm({
   }
 
   return (
-    <>
-      <section
-        className="rounded-[var(--radius-lg)] border bg-white p-5 sm:p-7 mb-6"
-        style={{ borderColor: 'var(--color-border)' }}
+    <section
+      className="rounded-[var(--radius-lg)] border bg-white p-5 sm:p-7 mb-6"
+      style={{ borderColor: 'var(--color-border)' }}
+    >
+      <h2
+        className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-1"
+        style={{ color: 'var(--color-ink)' }}
       >
-        <h2
-          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-1"
-          style={{ color: 'var(--color-ink)' }}
+        Logo
+      </h2>
+      <p className="text-sm mb-6" style={{ color: 'var(--color-ink-soft)' }}>
+        Aparece en la pantalla de bienvenida cuando un cliente escanea el QR.
+        Recomendado: cuadrado, PNG con fondo transparente.
+      </p>
+
+      <div className="mb-6">
+        <div
+          className="size-32 sm:size-40 rounded-[var(--radius-lg)] border-2 border-dashed grid place-items-center mx-auto sm:mx-0 overflow-hidden"
+          style={{
+            borderColor: 'var(--color-border-strong)',
+            background: 'var(--color-paper)',
+          }}
         >
-          Logo
-        </h2>
-        <p className="text-sm mb-6" style={{ color: 'var(--color-ink-soft)' }}>
-          Aparece en la pantalla de bienvenida cuando un cliente escanea el QR.
-          Recomendado: cuadrado, PNG con fondo transparente.
-        </p>
-
-        <div className="mb-6">
-          <div
-            className="size-32 sm:size-40 rounded-[var(--radius-lg)] border-2 border-dashed grid place-items-center mx-auto sm:mx-0 overflow-hidden"
-            style={{
-              borderColor: 'var(--color-border-strong)',
-              background: 'var(--color-paper)',
-            }}
-          >
-            {logoUrl ? (
-              <img
-                src={logoUrl}
-                alt={`Logo de ${nombreNegocio}`}
-                className="size-full object-contain p-2"
-              />
-            ) : (
-              <PlaceholderLogo nombre={nombreNegocio} colorMarca={colorMarca} />
-            )}
-          </div>
-          {!logoUrl ? (
-            <p
-              className="text-[0.7rem] mt-2 text-center sm:text-left"
-              style={{ color: 'var(--color-muted)' }}
-            >
-              Sin logo - mostramos las iniciales por ahora
-            </p>
-          ) : null}
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={`Logo de ${nombreNegocio}`}
+              className="size-full object-contain p-2"
+            />
+          ) : (
+            <PlaceholderLogo nombre={nombreNegocio} colorMarca={colorMarca} />
+          )}
         </div>
+        {!logoUrl ? (
+          <p
+            className="text-[0.7rem] mt-2 text-center sm:text-left"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Sin logo - mostramos las iniciales por ahora
+          </p>
+        ) : null}
+      </div>
 
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
-          onChange={onArchivoSeleccionado}
-          className="hidden"
-        />
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/png,image/jpeg,image/webp,image/svg+xml"
+        onChange={onArchivoSeleccionado}
+        className="hidden"
+      />
 
-        <div className="flex flex-col sm:flex-row gap-2">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          type="button"
+          onClick={elegirArchivo}
+          disabled={pending}
+          className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-50"
+          style={{
+            background: 'var(--color-ink)',
+            color: 'var(--color-paper)',
+          }}
+        >
+          {pending ? 'Subiendo...' : logoUrl ? 'Cambiar logo' : 'Subir logo'}
+        </button>
+
+        {logoUrl ? (
           <button
             type="button"
-            onClick={elegirArchivo}
+            onClick={() => setConfirmandoEliminar(true)}
             disabled={pending}
+            className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium border disabled:opacity-50"
+            style={{
+              background: 'white',
+              color: '#b91c1c',
+              borderColor: '#fecaca',
+            }}
+          >
+            Eliminar logo
+          </button>
+        ) : null}
+      </div>
+
+      <p
+        className="text-[0.7rem] mt-3"
+        style={{ color: 'var(--color-muted)' }}
+      >
+        Formatos: PNG, JPG, WebP, SVG. Tamano maximo: 2 MB.
+      </p>
+
+      {error ? (
+        <div
+          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+          style={{
+            borderColor: '#fecaca',
+            background: '#fef2f2',
+            color: '#b91c1c',
+          }}
+        >
+          {error}
+        </div>
+      ) : null}
+
+      {exito ? (
+        <div
+          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+          style={{
+            borderColor: '#bbf7d0',
+            background: '#f0fdf4',
+            color: '#166534',
+          }}
+        >
+          {exito}
+        </div>
+      ) : null}
+
+      {confirmandoEliminar ? (
+        <ModalConfirmar
+          onConfirmar={handleEliminar}
+          onCancelar={() => setConfirmandoEliminar(false)}
+          pending={pending}
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function SeccionColorMarca({
+  colorInicial,
+  onCambiarColor,
+}: {
+  colorInicial: string;
+  onCambiarColor: (color: string) => void;
+}) {
+  const [color, setColor] = useState(colorInicial);
+  const [error, setError] = useState<string | null>(null);
+  const [exito, setExito] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function handleGuardar() {
+    setError(null);
+    setExito(null);
+
+    if (!HEX_REGEX.test(color)) {
+      setError('Color invalido. Usa formato hex (ej: #9a3f6b).');
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await actualizarColorMarca(color);
+      if (!res.ok) {
+        setError(res.error);
+      } else {
+        setExito('Color guardado.');
+        onCambiarColor(color);
+        setTimeout(() => setExito(null), 3000);
+      }
+    });
+  }
+
+  return (
+    <section
+      className="rounded-[var(--radius-lg)] border bg-white p-5 sm:p-7 mb-6"
+      style={{ borderColor: 'var(--color-border)' }}
+    >
+      <h2
+        className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-1"
+        style={{ color: 'var(--color-ink)' }}
+      >
+        Color de marca
+      </h2>
+      <p className="text-sm mb-5" style={{ color: 'var(--color-ink-soft)' }}>
+        Se usa en acentos de la pantalla del cliente: botones, titulos, detalles.
+      </p>
+
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+        <div className="flex items-center gap-3">
+          <input
+            type="color"
+            value={HEX_REGEX.test(color) ? color : colorInicial}
+            onChange={(e) => {
+              setColor(e.target.value);
+              setError(null);
+              setExito(null);
+            }}
+            className="size-12 rounded-[var(--radius-md)] border cursor-pointer"
+            style={{ borderColor: 'var(--color-border-strong)' }}
+            aria-label="Selector de color"
+          />
+          <div>
+            <label
+              htmlFor="color-hex"
+              className="block text-xs uppercase tracking-[0.12em] mb-1.5"
+              style={{ color: 'var(--color-muted)' }}
+            >
+              Codigo hex
+            </label>
+            <input
+              id="color-hex"
+              type="text"
+              value={color}
+              onChange={(e) => {
+                setColor(e.target.value);
+                setError(null);
+                setExito(null);
+              }}
+              placeholder="#9a3f6b"
+              maxLength={7}
+              className="w-32 h-11 px-3 rounded-[var(--radius-md)] border text-base font-mono"
+              style={{
+                borderColor: 'var(--color-border-strong)',
+                color: 'var(--color-ink)',
+                background: 'var(--color-paper)',
+              }}
+            />
+          </div>
+        </div>
+
+        <div className="flex-1 flex items-end gap-3">
+          <div
+            className="flex-1 max-w-[12rem] h-11 rounded-[var(--radius-md)] flex items-center justify-center text-sm font-medium"
+            style={{
+              background: HEX_REGEX.test(color) ? color : colorInicial,
+              color: 'white',
+            }}
+          >
+            Vista previa
+          </div>
+          <button
+            type="button"
+            onClick={handleGuardar}
+            disabled={pending || color === colorInicial}
             className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-50"
             style={{
               background: 'var(--color-ink)',
               color: 'var(--color-paper)',
             }}
           >
-            {pending ? 'Subiendo...' : logoUrl ? 'Cambiar logo' : 'Subir logo'}
+            {pending ? 'Guardando...' : 'Guardar'}
           </button>
-
-          {logoUrl ? (
-            <button
-              type="button"
-              onClick={() => setConfirmandoEliminar(true)}
-              disabled={pending}
-              className="h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium border disabled:opacity-50"
-              style={{
-                background: 'white',
-                color: '#b91c1c',
-                borderColor: '#fecaca',
-              }}
-            >
-              Eliminar logo
-            </button>
-          ) : null}
         </div>
+      </div>
 
-        <p
-          className="text-[0.7rem] mt-3"
-          style={{ color: 'var(--color-muted)' }}
+      {error ? (
+        <div
+          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+          style={{
+            borderColor: '#fecaca',
+            background: '#fef2f2',
+            color: '#b91c1c',
+          }}
         >
-          Formatos: PNG, JPG, WebP, SVG. Tamano maximo: 2 MB.
-        </p>
+          {error}
+        </div>
+      ) : null}
 
-        {error ? (
-          <div
-            className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
-            style={{
-              borderColor: '#fecaca',
-              background: '#fef2f2',
-              color: '#b91c1c',
-            }}
-          >
-            {error}
-          </div>
-        ) : null}
-
-        {exito ? (
-          <div
-            className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
-            style={{
-              borderColor: '#bbf7d0',
-              background: '#f0fdf4',
-              color: '#166534',
-            }}
-          >
-            {exito}
-          </div>
-        ) : null}
-
-        {confirmandoEliminar ? (
-          <ModalConfirmar
-            onConfirmar={handleEliminar}
-            onCancelar={() => setConfirmandoEliminar(false)}
-            pending={pending}
-          />
-        ) : null}
-      </section>
-
-      <SeccionTiempoEstimado tiempoInicial={tiempoEstimadoInicial} />
-    </>
+      {exito ? (
+        <div
+          className="mt-4 px-3 py-2.5 rounded-[var(--radius-md)] border text-sm"
+          style={{
+            borderColor: '#bbf7d0',
+            background: '#f0fdf4',
+            color: '#166534',
+          }}
+        >
+          {exito}
+        </div>
+      ) : null}
+    </section>
   );
 }
 

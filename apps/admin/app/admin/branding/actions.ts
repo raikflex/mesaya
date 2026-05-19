@@ -1,4 +1,4 @@
-'use server';
+﻿'use server';
 
 import { revalidatePath } from 'next/cache';
 import { createClient } from '@mesaya/database/server';
@@ -13,6 +13,8 @@ const TIPOS_PERMITIDOS = [
 
 const TAMANO_MAX = 2 * 1024 * 1024; // 2 MB
 
+const HEX_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
+
 export type ResultadoLogo =
   | { ok: true; logoUrl: string }
   | { ok: false; error: string };
@@ -22,6 +24,14 @@ export type ResultadoEliminar =
   | { ok: false; error: string };
 
 export type ResultadoTiempo =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export type ResultadoNombre =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export type ResultadoColor =
   | { ok: true }
   | { ok: false; error: string };
 
@@ -156,7 +166,6 @@ export async function eliminarLogo(): Promise<ResultadoEliminar> {
   const admin = createServiceClient();
   const prefijo = `${auth.restauranteId}/`;
 
-  // Listar y borrar todos los archivos del restaurante
   const { data: archivos } = await admin.storage
     .from('logos')
     .list(auth.restauranteId);
@@ -174,7 +183,6 @@ export async function eliminarLogo(): Promise<ResultadoEliminar> {
     }
   }
 
-  // Nulear columna
   const { error: errorUpdate } = await admin
     .from('restaurantes')
     .update({ logo_url: null })
@@ -218,6 +226,80 @@ export async function actualizarTiempoEstimado(
   const { error } = await admin
     .from('restaurantes')
     .update({ tiempo_estimado_preparacion_min: minutos })
+    .eq('id', auth.restauranteId);
+
+  if (error) {
+    return {
+      ok: false,
+      error: 'No pudimos guardar: ' + error.message,
+    };
+  }
+
+  revalidatePath('/admin/branding');
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+/**
+ * Actualiza el nombre publico del restaurante.
+ * Limites: 1-60 caracteres despues de trim.
+ */
+export async function actualizarNombre(
+  nombre: string,
+): Promise<ResultadoNombre> {
+  const limpio = (nombre ?? '').trim();
+
+  if (limpio.length === 0) {
+    return { ok: false, error: 'El nombre no puede estar vacio.' };
+  }
+  if (limpio.length > 60) {
+    return { ok: false, error: 'El nombre es muy largo (max 60 caracteres).' };
+  }
+
+  const auth = await verificarDueno();
+  if (!auth.ok) return auth;
+
+  const admin = createServiceClient();
+  const { error } = await admin
+    .from('restaurantes')
+    .update({ nombre_publico: limpio })
+    .eq('id', auth.restauranteId);
+
+  if (error) {
+    return {
+      ok: false,
+      error: 'No pudimos guardar: ' + error.message,
+    };
+  }
+
+  revalidatePath('/admin/branding');
+  revalidatePath('/admin');
+  return { ok: true };
+}
+
+/**
+ * Actualiza el color de marca del restaurante.
+ * Acepta hex de 3 o 6 caracteres con # inicial (ej: #fff o #9a3f6b).
+ */
+export async function actualizarColorMarca(
+  color: string,
+): Promise<ResultadoColor> {
+  const limpio = (color ?? '').trim();
+
+  if (!HEX_REGEX.test(limpio)) {
+    return {
+      ok: false,
+      error: 'Color invalido. Usa formato hex (ej: #9a3f6b).',
+    };
+  }
+
+  const auth = await verificarDueno();
+  if (!auth.ok) return auth;
+
+  const admin = createServiceClient();
+  const { error } = await admin
+    .from('restaurantes')
+    .update({ color_marca: limpio })
     .eq('id', auth.restauranteId);
 
   if (error) {
