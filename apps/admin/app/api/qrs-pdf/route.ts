@@ -46,9 +46,7 @@ export async function GET() {
     return NextResponse.json({ error: 'Sin mesas' }, { status: 400 });
   }
 
-  const baseUrl =
-    process.env.NEXT_PUBLIC_CLIENTE_URL ??
-    'http://localhost:3002';
+  const baseUrl = process.env.NEXT_PUBLIC_CLIENTE_URL ?? 'http://localhost:3002';
 
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
   const colorMarca = parseHexColor((restaurante?.color_marca as string) ?? '#1a1814');

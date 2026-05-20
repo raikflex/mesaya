@@ -56,8 +56,26 @@ export function ToggleEstadoRestaurante({
             style={{ background: '#f59e0b', color: 'white' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <rect x="6" y="5" width="4" height="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              <rect x="14" y="5" width="4" height="14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <rect
+                x="6"
+                y="5"
+                width="4"
+                height="14"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <rect
+                x="14"
+                y="5"
+                width="4"
+                height="14"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
           </span>
           <div className="flex-1 min-w-0">
@@ -65,8 +83,7 @@ export function ToggleEstadoRestaurante({
               Pedidos en pausa
             </p>
             <p className="text-xs mt-0.5 leading-relaxed" style={{ color: '#92400e' }}>
-              Los clientes no pueden hacer pedidos nuevos. Las sesiones abiertas
-              siguen su curso.
+              Los clientes no pueden hacer pedidos nuevos. Las sesiones abiertas siguen su curso.
             </p>
           </div>
           <button
@@ -104,10 +121,7 @@ export function ToggleEstadoRestaurante({
           <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
             Recibiendo pedidos
           </p>
-          <p
-            className="text-xs mt-0.5"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
             Los clientes pueden escanear los QRs y hacer pedidos.
           </p>
         </div>

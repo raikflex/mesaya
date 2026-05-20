@@ -152,12 +152,7 @@ function ItemCategoria({
             <Button type="submit" size="sm">
               Guardar
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setEditando(false)}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={() => setEditando(false)}>
               Cancelar
             </Button>
           </form>

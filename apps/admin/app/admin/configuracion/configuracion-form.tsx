@@ -60,10 +60,7 @@ export function ConfiguracionForm({
         >
           Color de marca
         </label>
-        <p
-          className="text-xs mb-3 leading-relaxed"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
           Tiñe los botones, headers y acentos de la app que ven tus clientes.
         </p>
 
@@ -117,10 +114,7 @@ export function ConfiguracionForm({
         </div>
 
         {state.fieldErrors?.color_marca ? (
-          <p
-            className="text-xs leading-relaxed mt-2"
-            style={{ color: 'var(--color-danger)' }}
-          >
+          <p className="text-xs leading-relaxed mt-2" style={{ color: 'var(--color-danger)' }}>
             {state.fieldErrors.color_marca}
           </p>
         ) : null}
@@ -155,32 +149,22 @@ export function ConfiguracionForm({
             />
           </button>
           {/* Hidden input para que el form lo envíe */}
-          <input
-            type="hidden"
-            name="cocina_activa"
-            value={cocinaActiva ? 'on' : 'off'}
-          />
+          <input type="hidden" name="cocina_activa" value={cocinaActiva ? 'on' : 'off'} />
           <div className="flex-1 min-w-0">
-            <p
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-ink)' }}
-            >
+            <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
               Pantalla de cocina activa
             </p>
-            <p
-              className="text-xs mt-1 leading-relaxed"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
               {cocinaActiva ? (
                 <>
-                  La cocina ve los pedidos en una pantalla y marca cuándo están
-                  listos. Necesitás una cuenta de cocina creada en Equipo.
+                  La cocina ve los pedidos en una pantalla y marca cuándo están listos. Necesitás
+                  una cuenta de cocina creada en Equipo.
                 </>
               ) : (
                 <>
-                  El mesero imprime o anota la comanda y se la pasa al chef
-                  físicamente. Después marca cuándo está lista para entregar.
-                  Recomendado para la mayoría de restaurantes.
+                  El mesero imprime o anota la comanda y se la pasa al chef físicamente. Después
+                  marca cuándo está lista para entregar. Recomendado para la mayoría de
+                  restaurantes.
                 </>
               )}
             </p>
@@ -222,8 +206,8 @@ export function ConfiguracionForm({
             background: '#dcfce7',
           }}
         >
-          ✓ Cambios guardados. Recarga las apps abiertas (cliente, mesero,
-          cocina) para ver los cambios.
+          ✓ Cambios guardados. Recarga las apps abiertas (cliente, mesero, cocina) para ver los
+          cambios.
         </div>
       ) : null}
 

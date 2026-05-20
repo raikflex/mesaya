@@ -57,24 +57,28 @@ export default async function ReviewsPage() {
     )
     .order('creada_en', { ascending: false });
 
-  const reviews: ReviewFila[] = ((reviewsRaw ?? []) as unknown as Array<{
-    id: string;
-    estrellas: number;
-    comentario: string | null;
-    creada_en: string;
-    sesion_id: string;
-    sesiones: {
-      total_facturado: number | null;
-      cerrada_en: string | null;
-      restaurante_id: string;
-      mesas: { numero: string } | { numero: string }[] | null;
-    } | Array<{
-      total_facturado: number | null;
-      cerrada_en: string | null;
-      restaurante_id: string;
-      mesas: { numero: string } | { numero: string }[] | null;
-    }>;
-  }>)
+  const reviews: ReviewFila[] = (
+    (reviewsRaw ?? []) as unknown as Array<{
+      id: string;
+      estrellas: number;
+      comentario: string | null;
+      creada_en: string;
+      sesion_id: string;
+      sesiones:
+        | {
+            total_facturado: number | null;
+            cerrada_en: string | null;
+            restaurante_id: string;
+            mesas: { numero: string } | { numero: string }[] | null;
+          }
+        | Array<{
+            total_facturado: number | null;
+            cerrada_en: string | null;
+            restaurante_id: string;
+            mesas: { numero: string } | { numero: string }[] | null;
+          }>;
+    }>
+  )
     .map((r) => {
       const sesion = Array.isArray(r.sesiones) ? r.sesiones[0] : r.sesiones;
       if (!sesion || sesion.restaurante_id !== restauranteId) return null;
@@ -92,11 +96,7 @@ export default async function ReviewsPage() {
 
   return (
     <PanelShell currentPage="reviews" nombreNegocio={nombreNegocio}>
-      <ReviewsManager
-        reviews={reviews}
-        colorMarca={colorMarca}
-        nombreNegocio={nombreNegocio}
-      />
+      <ReviewsManager reviews={reviews} colorMarca={colorMarca} nombreNegocio={nombreNegocio} />
     </PanelShell>
   );
 }

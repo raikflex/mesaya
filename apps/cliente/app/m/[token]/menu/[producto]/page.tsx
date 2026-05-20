@@ -27,9 +27,9 @@ export default async function ProductoPage({ params }: PageProps) {
 
   if (!mesa) notFound();
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as { estado: string; color_marca: string } | null;
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as { estado: string; color_marca: string } | null;
 
   if (!restaurante || restaurante.estado !== 'activo' || !mesa.activa) {
     notFound();

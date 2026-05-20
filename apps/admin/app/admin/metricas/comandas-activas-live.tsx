@@ -16,14 +16,12 @@ export type ComandaActiva = {
   clienteNombre: string;
 };
 
-const ETIQUETAS_ESTADO: Record<
-  ComandaActiva['estado'],
-  { label: string; bg: string; fg: string }
-> = {
-  pendiente: { label: 'En cola', bg: 'var(--color-paper-deep)', fg: 'var(--color-ink-soft)' },
-  en_preparacion: { label: 'Preparando', bg: '#fef3c7', fg: '#92400e' },
-  lista: { label: 'Lista', bg: '#dcfce7', fg: '#166534' },
-};
+const ETIQUETAS_ESTADO: Record<ComandaActiva['estado'], { label: string; bg: string; fg: string }> =
+  {
+    pendiente: { label: 'En cola', bg: 'var(--color-paper-deep)', fg: 'var(--color-ink-soft)' },
+    en_preparacion: { label: 'Preparando', bg: '#fef3c7', fg: '#92400e' },
+    lista: { label: 'Lista', bg: '#dcfce7', fg: '#166534' },
+  };
 
 /**
  * Lista de comandas activas en cocina (pendientes/preparando/listas) con
@@ -85,28 +83,24 @@ export function ComandasActivasLive({
           .in('estado', ['pendiente', 'en_preparacion', 'lista'])
           .order('creada_en', { ascending: true });
 
-        const lista: ComandaActiva[] = ((data ?? []) as Array<{
-          id: string;
-          numero_diario: number;
-          estado: string;
-          total: number;
-          creada_en: string;
-          mesero_atendiendo_nombre: string | null;
-          sesiones:
-            | { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null }
-            | { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null }[]
-            | null;
-          sesion_clientes: { nombre: string } | { nombre: string }[] | null;
-        }>).map((c) => {
+        const lista: ComandaActiva[] = (
+          (data ?? []) as Array<{
+            id: string;
+            numero_diario: number;
+            estado: string;
+            total: number;
+            creada_en: string;
+            mesero_atendiendo_nombre: string | null;
+            sesiones:
+              | { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null }
+              | { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null }[]
+              | null;
+            sesion_clientes: { nombre: string } | { nombre: string }[] | null;
+          }>
+        ).map((c) => {
           const ses = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
-          const mesa = ses?.mesas
-            ? Array.isArray(ses.mesas)
-              ? ses.mesas[0]
-              : ses.mesas
-            : null;
-          const sc = Array.isArray(c.sesion_clientes)
-            ? c.sesion_clientes[0]
-            : c.sesion_clientes;
+          const mesa = ses?.mesas ? (Array.isArray(ses.mesas) ? ses.mesas[0] : ses.mesas) : null;
+          const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
           return {
             id: c.id,
             numeroDiario: c.numero_diario,
@@ -124,20 +118,16 @@ export function ComandasActivasLive({
 
       const canal = supabase
         .channel(canalNombre)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'comandas' },
-          (payload) => {
-            const fila = payload.new as { restaurante_id?: string } | null;
-            const filaVieja = payload.old as { restaurante_id?: string } | null;
-            if (
-              fila?.restaurante_id === restauranteId ||
-              filaVieja?.restaurante_id === restauranteId
-            ) {
-              refetchComandas();
-            }
-          },
-        );
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comandas' }, (payload) => {
+          const fila = payload.new as { restaurante_id?: string } | null;
+          const filaVieja = payload.old as { restaurante_id?: string } | null;
+          if (
+            fila?.restaurante_id === restauranteId ||
+            filaVieja?.restaurante_id === restauranteId
+          ) {
+            refetchComandas();
+          }
+        });
 
       if (cancelado) {
         supabase.removeChannel(canal);
@@ -187,21 +177,12 @@ export function ComandasActivasLive({
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-3">
-        <h2
-          className="text-xs uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <h2 className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
           Comandas en cocina - {comandas.length}
         </h2>
         <div className="flex items-center gap-1.5">
-          <span
-            className="size-1.5 rounded-full animate-pulse"
-            style={{ background: '#22c55e' }}
-          />
-          <span
-            className="text-[0.65rem] uppercase tracking-[0.14em]"
-            style={{ color: '#22c55e' }}
-          >
+          <span className="size-1.5 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
+          <span className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: '#22c55e' }}>
             En vivo
           </span>
         </div>
@@ -219,12 +200,7 @@ export function ComandasActivasLive({
       >
         <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
           {comandas.map((c) => (
-            <ItemComanda
-              key={c.id}
-              comanda={c}
-              colorMarca={colorMarca}
-              tick={tick}
-            />
+            <ItemComanda key={c.id} comanda={c} colorMarca={colorMarca} tick={tick} />
           ))}
         </ul>
       </div>
@@ -243,10 +219,7 @@ function ItemComanda({
 }) {
   const [confirmando, setConfirmando] = useState(false);
 
-  const minutos = Math.max(
-    0,
-    Math.floor((Date.now() - new Date(c.creadaEn).getTime()) / 60000),
-  );
+  const minutos = Math.max(0, Math.floor((Date.now() - new Date(c.creadaEn).getTime()) / 60000));
   const tiempoFmt =
     minutos < 1
       ? 'recien'
@@ -271,14 +244,9 @@ function ItemComanda({
           <p className="text-sm" style={{ color: 'var(--color-ink)' }}>
             Mesa {c.mesaNumero} - {c.clienteNombre}
           </p>
-          <p
-            className="text-[0.7rem]"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <p className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
             {tiempoFmt}
-            {c.meseroAtendiendoNombre
-              ? ` - ${c.meseroAtendiendoNombre} la lleva`
-              : ''}
+            {c.meseroAtendiendoNombre ? ` - ${c.meseroAtendiendoNombre} la lleva` : ''}
           </p>
         </div>
       </div>
@@ -309,10 +277,7 @@ function ItemComanda({
       </div>
 
       {confirmando ? (
-        <ModalCancelarComanda
-          comanda={c}
-          onCancelar={() => setConfirmando(false)}
-        />
+        <ModalCancelarComanda comanda={c} onCancelar={() => setConfirmando(false)} />
       ) : null}
     </li>
   );
@@ -377,13 +342,10 @@ function ModalCancelarComanda({
         >
           Cancelar comanda #{comanda.numeroDiario.toString().padStart(3, '0')}?
         </h3>
-        <p
-          className="text-sm mt-3 leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="text-sm mt-3 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
           Mesa {comanda.mesaNumero} - {comanda.clienteNombre} - $
-          {comanda.total.toLocaleString('es-CO')}. La cocina/staff sabran que
-          ya no deben prepararlo. No cuenta en tus metricas.
+          {comanda.total.toLocaleString('es-CO')}. La cocina/staff sabran que ya no deben
+          prepararlo. No cuenta en tus metricas.
         </p>
 
         {error ? (
@@ -442,10 +404,7 @@ function ResumenEstado({
       className="rounded-[var(--radius-md)] border bg-white px-3 py-2"
       style={{ borderColor: 'var(--color-border)' }}
     >
-      <p
-        className="text-[0.6rem] uppercase tracking-[0.1em]"
-        style={{ color: c.fg }}
-      >
+      <p className="text-[0.6rem] uppercase tracking-[0.1em]" style={{ color: c.fg }}>
         {label}
       </p>
       <p

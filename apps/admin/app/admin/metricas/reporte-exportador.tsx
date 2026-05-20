@@ -90,28 +90,19 @@ export function ReporteExportador() {
         Exportar reporte
       </h2>
       <p className="text-sm mb-5" style={{ color: 'var(--color-ink-soft)' }}>
-        Descarga el detalle de ventas para tu contabilidad. Incluye sesiones
-        cerradas y comandas detalladas con items.
+        Descarga el detalle de ventas para tu contabilidad. Incluye sesiones cerradas y comandas
+        detalladas con items.
       </p>
 
       {/* Presets de rango */}
       <div className="flex flex-wrap gap-2 mb-4">
-        <PresetButton
-          activo={preset === 'hoy'}
-          onClick={() => elegirPreset('hoy')}
-        >
+        <PresetButton activo={preset === 'hoy'} onClick={() => elegirPreset('hoy')}>
           Hoy
         </PresetButton>
-        <PresetButton
-          activo={preset === 'semana'}
-          onClick={() => elegirPreset('semana')}
-        >
+        <PresetButton activo={preset === 'semana'} onClick={() => elegirPreset('semana')}>
           Esta semana
         </PresetButton>
-        <PresetButton
-          activo={preset === 'mes'}
-          onClick={() => elegirPreset('mes')}
-        >
+        <PresetButton activo={preset === 'mes'} onClick={() => elegirPreset('mes')}>
           Este mes
         </PresetButton>
         <PresetButton
@@ -201,10 +192,7 @@ export function ReporteExportador() {
       </div>
 
       {pending ? (
-        <p
-          className="mt-4 text-xs"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="mt-4 text-xs" style={{ color: 'var(--color-ink-soft)' }}>
           Generando reporte...
         </p>
       ) : null}
@@ -242,9 +230,7 @@ function PresetButton({
       style={{
         background: activo ? 'var(--color-ink)' : 'transparent',
         color: activo ? 'var(--color-paper)' : 'var(--color-ink-soft)',
-        border: activo
-          ? '1px solid var(--color-ink)'
-          : '1px solid var(--color-border-strong)',
+        border: activo ? '1px solid var(--color-ink)' : '1px solid var(--color-border-strong)',
       }}
     >
       {children}

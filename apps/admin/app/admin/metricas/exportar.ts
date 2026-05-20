@@ -309,16 +309,7 @@ export function exportarCSV(data: DatosReporte): void {
     [`Reporte: ${data.restaurante.nombre} - Pedidos por sesion`],
     [`Periodo: ${data.rango.desde} a ${data.rango.hasta}`],
     [],
-    [
-      'Fecha',
-      'Mesa',
-      'Cliente',
-      'Comandas',
-      'Total sesion',
-      'Producto',
-      'Cantidad',
-      'Subtotal',
-    ],
+    ['Fecha', 'Mesa', 'Cliente', 'Comandas', 'Total sesion', 'Producto', 'Cantidad', 'Subtotal'],
   ];
 
   if (sesionesConPedidos.length === 0) {
@@ -504,16 +495,7 @@ export function exportarExcel(data: DatosReporte): void {
   // Hoja 4: Pedidos por sesion (timeline con items agregados)
   const sesionesConPedidos = calcularPedidosPorSesion(data);
   const hojaPedidosSesionData: (string | number)[][] = [
-    [
-      'Fecha',
-      'Mesa',
-      'Cliente',
-      'Comandas',
-      'Total sesion',
-      'Producto',
-      'Cantidad',
-      'Subtotal',
-    ],
+    ['Fecha', 'Mesa', 'Cliente', 'Comandas', 'Total sesion', 'Producto', 'Cantidad', 'Subtotal'],
   ];
 
   if (sesionesConPedidos.length === 0) {
@@ -551,7 +533,7 @@ export function exportarExcel(data: DatosReporte): void {
   const hojaPedidosSesion = XLSX.utils.aoa_to_sheet(hojaPedidosSesionData);
   hojaPedidosSesion['!cols'] = [
     { wch: 18 }, // Fecha
-    { wch: 8 },  // Mesa
+    { wch: 8 }, // Mesa
     { wch: 18 }, // Cliente
     { wch: 10 }, // Comandas
     { wch: 14 }, // Total sesion
@@ -584,18 +566,10 @@ export function exportarPDF(data: DatosReporte): void {
   yPos += 18;
   doc.setFontSize(11);
   doc.setTextColor(100);
-  doc.text(
-    `Reporte del ${data.rango.desde} al ${data.rango.hasta}`,
-    margenIzq,
-    yPos,
-  );
+  doc.text(`Reporte del ${data.rango.desde} al ${data.rango.hasta}`, margenIzq, yPos);
   yPos += 14;
   doc.setFontSize(9);
-  doc.text(
-    `Generado: ${formatearFechaCorta(new Date().toISOString())}`,
-    margenIzq,
-    yPos,
-  );
+  doc.text(`Generado: ${formatearFechaCorta(new Date().toISOString())}`, margenIzq, yPos);
   yPos += 24;
   doc.setTextColor(0);
 
@@ -652,16 +626,17 @@ export function exportarPDF(data: DatosReporte): void {
   yPos += 8;
 
   const ranking = calcularRankingProductos(data);
-  const filasProductos: string[][] = ranking.length === 0
-    ? [['', '(sin productos vendidos en el periodo)', '', '', '', '']]
-    : ranking.map((p, idx) => [
-        String(idx + 1),
-        p.nombre,
-        String(p.unidades),
-        `$${p.ingresos.toLocaleString('es-CO')}`,
-        `${p.pctUnidades.toFixed(1)}%`,
-        `${p.pctIngresos.toFixed(1)}%`,
-      ]);
+  const filasProductos: string[][] =
+    ranking.length === 0
+      ? [['', '(sin productos vendidos en el periodo)', '', '', '', '']]
+      : ranking.map((p, idx) => [
+          String(idx + 1),
+          p.nombre,
+          String(p.unidades),
+          `$${p.ingresos.toLocaleString('es-CO')}`,
+          `${p.pctUnidades.toFixed(1)}%`,
+          `${p.pctIngresos.toFixed(1)}%`,
+        ]);
 
   autoTable(doc, {
     startY: yPos,
@@ -701,10 +676,7 @@ export function exportarPDF(data: DatosReporte): void {
       // Sub-header de la sesion
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      const partes = [
-        formatearFechaCorta(s.fecha),
-        `Mesa ${s.mesaNumero}`,
-      ];
+      const partes = [formatearFechaCorta(s.fecha), `Mesa ${s.mesaNumero}`];
       if (s.cliente) partes.push(s.cliente);
       partes.push(`${s.cantidadComandas} ${s.cantidadComandas === 1 ? 'comanda' : 'comandas'}`);
       partes.push(`Total $${s.totalSesion.toLocaleString('es-CO')}`);
@@ -713,13 +685,14 @@ export function exportarPDF(data: DatosReporte): void {
       yPos += 6;
 
       // Tabla de items de la sesion
-      const filasItems = s.items.length === 0
-        ? [['(sin items)', '', '']]
-        : s.items.map((it) => [
-            it.nombre,
-            String(it.cantidad),
-            `$${it.subtotal.toLocaleString('es-CO')}`,
-          ]);
+      const filasItems =
+        s.items.length === 0
+          ? [['(sin items)', '', '']]
+          : s.items.map((it) => [
+              it.nombre,
+              String(it.cantidad),
+              `$${it.subtotal.toLocaleString('es-CO')}`,
+            ]);
 
       autoTable(doc, {
         startY: yPos,
@@ -774,18 +747,7 @@ export function exportarPDF(data: DatosReporte): void {
 
   autoTable(doc, {
     startY: yPos,
-    head: [
-      [
-        'Fecha',
-        'No.',
-        'Mesa',
-        'Cliente',
-        'Producto',
-        'Cant',
-        'Subtotal',
-        'Total',
-      ],
-    ],
+    head: [['Fecha', 'No.', 'Mesa', 'Cliente', 'Producto', 'Cant', 'Subtotal', 'Total']],
     body: filasComandas,
     theme: 'striped',
     headStyles: { fillColor: [60, 60, 60] },

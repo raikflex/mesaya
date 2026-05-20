@@ -5,7 +5,17 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { logout } from '../actions/auth';
 
-type CurrentPage = 'inicio' | 'menu' | 'mesas' | 'equipo' | 'reviews' | 'metricas' | 'horarios' | 'branding' | 'configuracion' | 'perfil';
+type CurrentPage =
+  | 'inicio'
+  | 'menu'
+  | 'mesas'
+  | 'equipo'
+  | 'reviews'
+  | 'metricas'
+  | 'horarios'
+  | 'branding'
+  | 'configuracion'
+  | 'perfil';
 
 const ITEMS: {
   id: CurrentPage;
@@ -73,11 +83,7 @@ function useIndicadoresAdmin(): Indicadores | null {
       const hace24h = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
 
       const [restResp, sesResp, comandasResp, reviewsResp] = await Promise.all([
-        supabase
-          .from('restaurantes')
-          .select('estado')
-          .eq('id', restauranteId)
-          .maybeSingle(),
+        supabase.from('restaurantes').select('estado').eq('id', restauranteId).maybeSingle(),
         supabase
           .from('sesiones')
           .select('id', { count: 'exact', head: true })
@@ -160,10 +166,7 @@ export function PanelShell({
           background: 'white',
         }}
       >
-        <div
-          className="px-5 py-4 border-b"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
+        <div className="px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <Link href="/admin" className="inline-flex items-center gap-2">
             <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden>
               <rect
@@ -184,10 +187,7 @@ export function PanelShell({
               MesaYA
             </span>
           </Link>
-          <p
-            className="text-[0.7rem] truncate mt-1"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <p className="text-[0.7rem] truncate mt-1" style={{ color: 'var(--color-muted)' }}>
             {nombreNegocio}
           </p>
         </div>
@@ -230,10 +230,7 @@ export function PanelShell({
 
         {/* Footer: estado del restaurante con dot pulsante */}
         {indicadores ? (
-          <div
-            className="px-3 py-3 border-t"
-            style={{ borderColor: 'var(--color-border)' }}
-          >
+          <div className="px-3 py-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
             <div
               className="flex items-center gap-2 px-2 py-1.5 rounded-[var(--radius-md)]"
               style={{
@@ -258,18 +255,10 @@ export function PanelShell({
                 <p
                   className="text-[0.65rem] uppercase tracking-[0.1em] leading-tight"
                   style={{
-                    color: estaPausado
-                      ? '#92400e'
-                      : estaActivo
-                        ? '#15803d'
-                        : 'var(--color-muted)',
+                    color: estaPausado ? '#92400e' : estaActivo ? '#15803d' : 'var(--color-muted)',
                   }}
                 >
-                  {estaPausado
-                    ? 'Pausado'
-                    : estaActivo
-                      ? 'Recibiendo'
-                      : 'Sin activar'}
+                  {estaPausado ? 'Pausado' : estaActivo ? 'Recibiendo' : 'Sin activar'}
                 </p>
                 {indicadores.mesasActivas > 0 ? (
                   <p
@@ -285,10 +274,7 @@ export function PanelShell({
           </div>
         ) : null}
 
-        <div
-          className="p-3 border-t space-y-0.5"
-          style={{ borderColor: 'var(--color-border)' }}
-        >
+        <div className="p-3 border-t space-y-0.5" style={{ borderColor: 'var(--color-border)' }}>
           <Link
             href="/admin/perfil"
             onClick={() => setMobileOpen(false)}
@@ -308,13 +294,7 @@ export function PanelShell({
               className="w-full flex items-center gap-3 px-3 py-2 rounded-[var(--radius-md)] text-sm transition-colors hover:bg-[var(--color-paper-deep)]"
               style={{ color: 'var(--color-ink-soft)' }}
             >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                aria-hidden
-              >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
                 <path
                   d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"
                   stroke="currentColor"
@@ -393,10 +373,7 @@ function ItemIcon({ name }: { name: string }) {
     case 'menu':
       return (
         <svg {...props}>
-          <path
-            d="M4 4h16v3H4zM4 10h16v3H4zM4 16h16v3H4z"
-            {...stroke}
-          />
+          <path d="M4 4h16v3H4zM4 10h16v3H4zM4 16h16v3H4z" {...stroke} />
         </svg>
       );
     case 'mesas':

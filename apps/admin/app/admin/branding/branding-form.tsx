@@ -9,12 +9,7 @@ import {
   actualizarColorMarca,
 } from './actions';
 
-const TIPOS_PERMITIDOS = [
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-  'image/svg+xml',
-];
+const TIPOS_PERMITIDOS = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
 const TAMANO_MAX = 2 * 1024 * 1024;
 
@@ -36,19 +31,13 @@ export function BrandingForm({
 
   return (
     <>
-      <SeccionNombre
-        nombreInicial={nombreNegocio}
-        onCambiarNombre={setNombreActual}
-      />
+      <SeccionNombre nombreInicial={nombreNegocio} onCambiarNombre={setNombreActual} />
       <SeccionLogo
         logoInicial={logoInicial}
         nombreNegocio={nombreActual}
         colorMarca={colorActual}
       />
-      <SeccionColorMarca
-        colorInicial={colorMarca}
-        onCambiarColor={setColorActual}
-      />
+      <SeccionColorMarca colorInicial={colorMarca} onCambiarColor={setColorActual} />
       <SeccionTiempoEstimado tiempoInicial={tiempoEstimadoInicial} />
     </>
   );
@@ -259,8 +248,8 @@ function SeccionLogo({
         Logo
       </h2>
       <p className="text-sm mb-6" style={{ color: 'var(--color-ink-soft)' }}>
-        Aparece en la pantalla de bienvenida cuando un cliente escanea el QR.
-        Recomendado: cuadrado, PNG con fondo transparente.
+        Aparece en la pantalla de bienvenida cuando un cliente escanea el QR. Recomendado: cuadrado,
+        PNG con fondo transparente.
       </p>
 
       <div className="mb-6">
@@ -330,10 +319,7 @@ function SeccionLogo({
         ) : null}
       </div>
 
-      <p
-        className="text-[0.7rem] mt-3"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-[0.7rem] mt-3" style={{ color: 'var(--color-muted)' }}>
         Formatos: PNG, JPG, WebP, SVG. Tamano maximo: 2 MB.
       </p>
 
@@ -519,13 +505,7 @@ function SeccionColorMarca({
   );
 }
 
-function PlaceholderLogo({
-  nombre,
-  colorMarca,
-}: {
-  nombre: string;
-  colorMarca: string;
-}) {
+function PlaceholderLogo({ nombre, colorMarca }: { nombre: string; colorMarca: string }) {
   const iniciales = nombre
     .split(/\s+/)
     .filter(Boolean)
@@ -566,12 +546,8 @@ function ModalConfirmar({
         >
           Eliminar logo?
         </h3>
-        <p
-          className="text-sm mb-5"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          Tus clientes veran las iniciales del nombre del restaurante hasta que
-          subas otro.
+        <p className="text-sm mb-5" style={{ color: 'var(--color-ink-soft)' }}>
+          Tus clientes veran las iniciales del nombre del restaurante hasta que subas otro.
         </p>
         <div className="flex gap-2">
           <button
@@ -602,14 +578,8 @@ function ModalConfirmar({
   );
 }
 
-function SeccionTiempoEstimado({
-  tiempoInicial,
-}: {
-  tiempoInicial: number | null;
-}) {
-  const [valor, setValor] = useState<string>(
-    tiempoInicial !== null ? String(tiempoInicial) : '',
-  );
+function SeccionTiempoEstimado({ tiempoInicial }: { tiempoInicial: number | null }) {
+  const [valor, setValor] = useState<string>(tiempoInicial !== null ? String(tiempoInicial) : '');
   const [error, setError] = useState<string | null>(null);
   const [exito, setExito] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -620,10 +590,7 @@ function SeccionTiempoEstimado({
     const trim = valor.trim();
     const minutos = trim === '' ? null : Number(trim);
 
-    if (
-      minutos !== null &&
-      (!Number.isInteger(minutos) || minutos < 1 || minutos > 240)
-    ) {
+    if (minutos !== null && (!Number.isInteger(minutos) || minutos < 1 || minutos > 240)) {
       setError('Ingresa un numero entero entre 1 y 240.');
       return;
     }
@@ -655,8 +622,8 @@ function SeccionTiempoEstimado({
         Tiempo estimado de preparacion
       </h2>
       <p className="text-sm mb-5" style={{ color: 'var(--color-ink-soft)' }}>
-        Cuando un cliente hace un pedido, ve &quot;Estara listo en ~X
-        minutos&quot;. Deja vacio si no quieres mostrar nada.
+        Cuando un cliente hace un pedido, ve &quot;Estara listo en ~X minutos&quot;. Deja vacio si
+        no quieres mostrar nada.
       </p>
 
       <div className="flex items-end gap-3">

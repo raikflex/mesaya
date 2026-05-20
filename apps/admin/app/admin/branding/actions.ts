@@ -4,36 +4,21 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@mesaya/database/server';
 import { createServiceClient } from '@mesaya/database/service';
 
-const TIPOS_PERMITIDOS = [
-  'image/png',
-  'image/jpeg',
-  'image/webp',
-  'image/svg+xml',
-];
+const TIPOS_PERMITIDOS = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
 
 const TAMANO_MAX = 2 * 1024 * 1024; // 2 MB
 
 const HEX_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
-export type ResultadoLogo =
-  | { ok: true; logoUrl: string }
-  | { ok: false; error: string };
+export type ResultadoLogo = { ok: true; logoUrl: string } | { ok: false; error: string };
 
-export type ResultadoEliminar =
-  | { ok: true }
-  | { ok: false; error: string };
+export type ResultadoEliminar = { ok: true } | { ok: false; error: string };
 
-export type ResultadoTiempo =
-  | { ok: true }
-  | { ok: false; error: string };
+export type ResultadoTiempo = { ok: true } | { ok: false; error: string };
 
-export type ResultadoNombre =
-  | { ok: true }
-  | { ok: false; error: string };
+export type ResultadoNombre = { ok: true } | { ok: false; error: string };
 
-export type ResultadoColor =
-  | { ok: true }
-  | { ok: false; error: string };
+export type ResultadoColor = { ok: true } | { ok: false; error: string };
 
 function extensionDe(mime: string): string {
   switch (mime) {
@@ -102,9 +87,7 @@ export async function subirLogo(formData: FormData): Promise<ResultadoLogo> {
   const prefijo = `${auth.restauranteId}/`;
 
   // 1. Borrar archivos viejos del prefijo
-  const { data: archivosViejos } = await admin.storage
-    .from('logos')
-    .list(auth.restauranteId);
+  const { data: archivosViejos } = await admin.storage.from('logos').list(auth.restauranteId);
 
   if (archivosViejos && archivosViejos.length > 0) {
     const paths = archivosViejos.map((a) => `${prefijo}${a.name}`);
@@ -116,13 +99,11 @@ export async function subirLogo(formData: FormData): Promise<ResultadoLogo> {
   const nombreArchivo = `logo-${Date.now()}.${ext}`;
   const pathCompleto = `${prefijo}${nombreArchivo}`;
 
-  const { error: errorUpload } = await admin.storage
-    .from('logos')
-    .upload(pathCompleto, file, {
-      contentType: file.type,
-      cacheControl: '31536000',
-      upsert: false,
-    });
+  const { error: errorUpload } = await admin.storage.from('logos').upload(pathCompleto, file, {
+    contentType: file.type,
+    cacheControl: '31536000',
+    upsert: false,
+  });
 
   if (errorUpload) {
     return {
@@ -132,9 +113,7 @@ export async function subirLogo(formData: FormData): Promise<ResultadoLogo> {
   }
 
   // 3. Obtener URL publica
-  const { data: urlData } = admin.storage
-    .from('logos')
-    .getPublicUrl(pathCompleto);
+  const { data: urlData } = admin.storage.from('logos').getPublicUrl(pathCompleto);
 
   const logoUrl = urlData.publicUrl;
 
@@ -166,15 +145,11 @@ export async function eliminarLogo(): Promise<ResultadoEliminar> {
   const admin = createServiceClient();
   const prefijo = `${auth.restauranteId}/`;
 
-  const { data: archivos } = await admin.storage
-    .from('logos')
-    .list(auth.restauranteId);
+  const { data: archivos } = await admin.storage.from('logos').list(auth.restauranteId);
 
   if (archivos && archivos.length > 0) {
     const paths = archivos.map((a) => `${prefijo}${a.name}`);
-    const { error: errorRemove } = await admin.storage
-      .from('logos')
-      .remove(paths);
+    const { error: errorRemove } = await admin.storage.from('logos').remove(paths);
     if (errorRemove) {
       return {
         ok: false,
@@ -204,9 +179,7 @@ export async function eliminarLogo(): Promise<ResultadoEliminar> {
  * Actualiza el tiempo estimado de preparacion (en minutos).
  * Pasar null para limpiar (no mostrar nada al cliente).
  */
-export async function actualizarTiempoEstimado(
-  minutos: number | null,
-): Promise<ResultadoTiempo> {
+export async function actualizarTiempoEstimado(minutos: number | null): Promise<ResultadoTiempo> {
   if (minutos !== null) {
     if (!Number.isInteger(minutos)) {
       return { ok: false, error: 'El tiempo debe ser un numero entero.' };
@@ -244,9 +217,7 @@ export async function actualizarTiempoEstimado(
  * Actualiza el nombre publico del restaurante.
  * Limites: 1-60 caracteres despues de trim.
  */
-export async function actualizarNombre(
-  nombre: string,
-): Promise<ResultadoNombre> {
+export async function actualizarNombre(nombre: string): Promise<ResultadoNombre> {
   const limpio = (nombre ?? '').trim();
 
   if (limpio.length === 0) {
@@ -281,9 +252,7 @@ export async function actualizarNombre(
  * Actualiza el color de marca del restaurante.
  * Acepta hex de 3 o 6 caracteres con # inicial (ej: #fff o #9a3f6b).
  */
-export async function actualizarColorMarca(
-  color: string,
-): Promise<ResultadoColor> {
+export async function actualizarColorMarca(color: string): Promise<ResultadoColor> {
   const limpio = (color ?? '').trim();
 
   if (!HEX_REGEX.test(limpio)) {

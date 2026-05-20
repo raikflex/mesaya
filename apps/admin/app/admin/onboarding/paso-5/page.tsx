@@ -60,8 +60,8 @@ export default async function Paso5Page() {
           className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Agrega los platos y bebidas de tu carta. Empieza con los más populares; siempre
-          puedes agregar más después.
+          Agrega los platos y bebidas de tu carta. Empieza con los más populares; siempre puedes
+          agregar más después.
         </p>
       </header>
 

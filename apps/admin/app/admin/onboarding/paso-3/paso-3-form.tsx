@@ -56,11 +56,7 @@ export function Paso3Form({ initial }: { initial: Initial }) {
       ))}
 
       <div className="grid sm:grid-cols-2 gap-5 max-w-md">
-        <Field
-          id="horario_apertura"
-          label="Abre a las"
-          error={state.fieldErrors?.horario_apertura}
-        >
+        <Field id="horario_apertura" label="Abre a las" error={state.fieldErrors?.horario_apertura}>
           <Input
             id="horario_apertura"
             name="horario_apertura"
@@ -70,11 +66,7 @@ export function Paso3Form({ initial }: { initial: Initial }) {
           />
         </Field>
 
-        <Field
-          id="horario_cierre"
-          label="Cierra a las"
-          error={state.fieldErrors?.horario_cierre}
-        >
+        <Field id="horario_cierre" label="Cierra a las" error={state.fieldErrors?.horario_cierre}>
           <Input
             id="horario_cierre"
             name="horario_cierre"
@@ -128,10 +120,7 @@ export function Paso3Form({ initial }: { initial: Initial }) {
         </div>
 
         {state.fieldErrors?.dias_operacion ? (
-          <p
-            className="text-xs leading-relaxed mt-2"
-            style={{ color: 'var(--color-danger)' }}
-          >
+          <p className="text-xs leading-relaxed mt-2" style={{ color: 'var(--color-danger)' }}>
             {state.fieldErrors.dias_operacion}
           </p>
         ) : null}

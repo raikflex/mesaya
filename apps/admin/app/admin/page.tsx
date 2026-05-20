@@ -132,20 +132,25 @@ export default async function AdminHome({
     total: number;
     creada_en: string;
     estado: string;
-    sesiones: { mesas: { numero: string } | { numero: string }[] | null } | { mesas: { numero: string } | { numero: string }[] | null }[] | null;
+    sesiones:
+      | { mesas: { numero: string } | { numero: string }[] | null }
+      | { mesas: { numero: string } | { numero: string }[] | null }[]
+      | null;
   };
-  const pedidosLargos: PedidoLargo[] = ((pedidosLargosResp.data ?? []) as PedidoLargoRaw[]).map((p) => {
-    const sesion = Array.isArray(p.sesiones) ? p.sesiones[0] : p.sesiones;
-    const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
-    return {
-      id: p.id,
-      numeroDiario: p.numero_diario,
-      total: p.total ?? 0,
-      creadaEn: p.creada_en,
-      estado: p.estado,
-      mesaNumero: mesa?.numero ?? '?',
-    };
-  });
+  const pedidosLargos: PedidoLargo[] = ((pedidosLargosResp.data ?? []) as PedidoLargoRaw[]).map(
+    (p) => {
+      const sesion = Array.isArray(p.sesiones) ? p.sesiones[0] : p.sesiones;
+      const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
+      return {
+        id: p.id,
+        numeroDiario: p.numero_diario,
+        total: p.total ?? 0,
+        creadaEn: p.creada_en,
+        estado: p.estado,
+        mesaNumero: mesa?.numero ?? '?',
+      };
+    },
+  );
 
   const estado = (restaurante?.estado as string) ?? 'archivado';
   const trialTermina = restaurante?.trial_termina_en as string | null;
@@ -163,8 +168,7 @@ export default async function AdminHome({
       ? null
       : {
           total: reviews.length,
-          promedio:
-            reviews.reduce((acc, r) => acc + r.estrellas, 0) / reviews.length,
+          promedio: reviews.reduce((acc, r) => acc + r.estrellas, 0) / reviews.length,
           ultimas: reviews.slice(0, 2),
         };
 
@@ -234,10 +238,7 @@ function ResumenHoy({
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <h2
-          className="text-xs uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <h2 className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
           Hoy
         </h2>
         <Link
@@ -303,10 +304,7 @@ function CardHoy({
       }}
     >
       <div className="flex items-center gap-1.5 mb-1">
-        <p
-          className="text-xs uppercase tracking-[0.12em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-xs uppercase tracking-[0.12em]" style={{ color: 'var(--color-muted)' }}>
           {label}
         </p>
         {puslante ? (
@@ -322,10 +320,7 @@ function CardHoy({
       >
         {valor}
       </p>
-      <p
-        className="text-[0.7rem] mt-1 leading-relaxed"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-[0.7rem] mt-1 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
         {detalle}
       </p>
     </div>
@@ -411,24 +406,13 @@ function Resumen({
   );
 }
 
-function Stat({
-  label,
-  valor,
-  detalle,
-}: {
-  label: string;
-  valor: number;
-  detalle?: string;
-}) {
+function Stat({ label, valor, detalle }: { label: string; valor: number; detalle?: string }) {
   return (
     <li
       className="p-5 sm:rounded-[var(--radius-lg)] sm:border sm:bg-[var(--color-paper)]"
       style={{ borderColor: 'var(--color-border)' }}
     >
-      <p
-        className="text-xs uppercase tracking-[0.12em]"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-xs uppercase tracking-[0.12em]" style={{ color: 'var(--color-muted)' }}>
         {label}
       </p>
       <p
@@ -460,10 +444,7 @@ function SeccionResenas({
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
-        <h2
-          className="text-xs uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <h2 className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
           Reseñas de clientes
         </h2>
         <Link
@@ -483,13 +464,9 @@ function SeccionResenas({
             background: 'var(--color-paper)',
           }}
         >
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
-            Aquí verás las opiniones que dejen tus clientes después de cada
-            visita. Cuando recibas la primera, aparecerá un resumen con
-            estrellas promedio y los comentarios más recientes.
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+            Aquí verás las opiniones que dejen tus clientes después de cada visita. Cuando recibas
+            la primera, aparecerá un resumen con estrellas promedio y los comentarios más recientes.
           </p>
         </div>
       ) : (
@@ -502,7 +479,13 @@ function SeccionResenas({
             style={{ borderColor: 'var(--color-border)' }}
           >
             <div className="flex items-center gap-1">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill={colorMarca} style={{ color: colorMarca }}>
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill={colorMarca}
+                style={{ color: colorMarca }}
+              >
                 <polygon
                   points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
                   stroke="currentColor"
@@ -549,8 +532,7 @@ function SeccionResenas({
                       viewBox="0 0 24 24"
                       fill={r.estrellas >= n ? colorMarca : 'none'}
                       style={{
-                        color:
-                          r.estrellas >= n ? colorMarca : 'var(--color-border-strong)',
+                        color: r.estrellas >= n ? colorMarca : 'var(--color-border-strong)',
                       }}
                     >
                       <polygon
@@ -564,17 +546,11 @@ function SeccionResenas({
                   ))}
                 </div>
                 {r.comentario ? (
-                  <p
-                    className="text-sm leading-relaxed"
-                    style={{ color: 'var(--color-ink)' }}
-                  >
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink)' }}>
                     "{r.comentario}"
                   </p>
                 ) : (
-                  <p
-                    className="text-xs italic"
-                    style={{ color: 'var(--color-muted)' }}
-                  >
+                  <p className="text-xs italic" style={{ color: 'var(--color-muted)' }}>
                     Sin comentario
                   </p>
                 )}

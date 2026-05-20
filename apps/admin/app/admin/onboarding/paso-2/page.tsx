@@ -50,8 +50,8 @@ export default async function Paso2Page() {
           className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Esto cambia cómo MesaYA atiende los pedidos. Lo puedes cambiar después si la
-          operación de tu restaurante evoluciona.
+          Esto cambia cómo MesaYA atiende los pedidos. Lo puedes cambiar después si la operación de
+          tu restaurante evoluciona.
         </p>
       </header>
 

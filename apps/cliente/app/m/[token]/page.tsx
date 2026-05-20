@@ -2,11 +2,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { EstadoRestauranteScreen } from './estado-restaurante';
 import { FormularioNombre } from './formulario-nombre';
-import {
-  estaAbiertoAhora,
-  type HorarioDia,
-  type ExcepcionDia,
-} from '../../../lib/horarios';
+import { estaAbiertoAhora, type HorarioDia, type ExcepcionDia } from '../../../lib/horarios';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,9 +24,9 @@ export async function generateMetadata({ params }: PageProps) {
     return { title: 'MesaYA' };
   }
 
-  const rest = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as { nombre_publico?: string } | null;
+  const rest = (Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes) as {
+    nombre_publico?: string;
+  } | null;
   const nombre = rest?.nombre_publico ?? 'Restaurante';
   return {
     title: `Mesa ${mesa.numero as string} - ${nombre}`,
@@ -66,9 +62,9 @@ export default async function MesaQRPage({ params }: PageProps) {
     notFound();
   }
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as {
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as {
     id: string;
     nombre_publico: string;
     color_marca: string;
@@ -123,9 +119,7 @@ export default async function MesaQRPage({ params }: PageProps) {
 
   // Verificar horario considerando excepciones
   const hoy = new Date().toISOString().slice(0, 10);
-  const en30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const en30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const [{ data: horariosRaw }, { data: excepcionesRaw }] = await Promise.all([
     supabase

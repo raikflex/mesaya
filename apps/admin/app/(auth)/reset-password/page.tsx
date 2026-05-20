@@ -106,15 +106,7 @@ export default async function ResetPasswordPage() {
 function Mark() {
   return (
     <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden className="shrink-0">
-      <rect
-        x="4"
-        y="4"
-        width="24"
-        height="24"
-        rx="6"
-        stroke="var(--color-ink)"
-        strokeWidth="1.5"
-      />
+      <rect x="4" y="4" width="24" height="24" rx="6" stroke="var(--color-ink)" strokeWidth="1.5" />
       <circle cx="22" cy="22" r="3" fill="var(--color-accent)" />
     </svg>
   );

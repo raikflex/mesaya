@@ -2,11 +2,7 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { EstadoRestauranteScreen } from '../estado-restaurante';
 import { MenuCliente } from './menu-cliente';
-import {
-  estaAbiertoAhora,
-  type HorarioDia,
-  type ExcepcionDia,
-} from '../../../../lib/horarios';
+import { estaAbiertoAhora, type HorarioDia, type ExcepcionDia } from '../../../../lib/horarios';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,9 +52,9 @@ export default async function MenuPage({ params }: PageProps) {
     notFound();
   }
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as {
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as {
     id: string;
     nombre_publico: string;
     color_marca: string;
@@ -88,9 +84,7 @@ export default async function MenuPage({ params }: PageProps) {
 
   // Defense in depth: chequear horario aqui con excepciones
   const hoy = new Date().toISOString().slice(0, 10);
-  const en30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const en30Dias = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const [{ data: horariosRaw }, { data: excepcionesRaw }] = await Promise.all([
     supabase
@@ -153,14 +147,16 @@ export default async function MenuPage({ params }: PageProps) {
     id: c.id as string,
     nombre: c.nombre as string,
     orden: c.orden as number,
-    productos: ((productos ?? []) as {
-      id: string;
-      nombre: string;
-      descripcion: string | null;
-      precio: number;
-      disponible: boolean;
-      categoria_id: string;
-    }[])
+    productos: (
+      (productos ?? []) as {
+        id: string;
+        nombre: string;
+        descripcion: string | null;
+        precio: number;
+        disponible: boolean;
+        categoria_id: string;
+      }[]
+    )
       .filter((p) => p.categoria_id === c.id)
       .map(({ id, nombre, descripcion, precio, disponible }) => ({
         id,

@@ -27,10 +27,7 @@ export function PerfilForm({
   initialEmail: string;
   rol: 'dueno' | 'mesero' | 'cocina';
 }) {
-  const [perfilState, perfilAction, perfilPending] = useActionState(
-    updatePerfil,
-    initialUpdate,
-  );
+  const [perfilState, perfilAction, perfilPending] = useActionState(updatePerfil, initialUpdate);
   const [resetState, resetAction, resetPending] = useActionState(
     triggerPasswordReset,
     initialReset,
@@ -74,13 +71,7 @@ export function PerfilForm({
           hint="Si lo cambiás, te mandamos un email al nuevo correo para confirmar el cambio."
           error={perfilState.fieldErrors?.email}
         >
-          <Input
-            id="email"
-            name="email"
-            type="email"
-            required
-            defaultValue={initialEmail}
-          />
+          <Input id="email" name="email" type="email" required defaultValue={initialEmail} />
         </Field>
 
         {perfilState.error ? (
@@ -112,8 +103,8 @@ export function PerfilForm({
               <>
                 {' '}
                 Te mandamos un email a{' '}
-                <span className="font-medium">{perfilState.emailChangePending}</span>{' '}
-                para confirmar el nuevo correo.
+                <span className="font-medium">{perfilState.emailChangePending}</span> para confirmar
+                el nuevo correo.
               </>
             ) : null}
           </div>
@@ -151,9 +142,8 @@ export function PerfilForm({
               background: '#dcfce7',
             }}
           >
-            ✓ Te mandamos un email a{' '}
-            <span className="font-medium">{resetState.email}</span>. Revisá tu bandeja para
-            continuar.
+            ✓ Te mandamos un email a <span className="font-medium">{resetState.email}</span>. Revisá
+            tu bandeja para continuar.
           </div>
         ) : null}
 

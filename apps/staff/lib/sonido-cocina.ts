@@ -75,12 +75,7 @@ export function reproducirDing(): void {
   }
 }
 
-function crearNota(
-  ctx: AudioContext,
-  frecuencia: number,
-  inicio: number,
-  duracion: number,
-): void {
+function crearNota(ctx: AudioContext, frecuencia: number, inicio: number, duracion: number): void {
   const oscilador = ctx.createOscillator();
   const ganancia = ctx.createGain();
 

@@ -12,9 +12,7 @@ export type ExcepcionInput = {
   nota: string | null;
 };
 
-export type ResultadoExcepcion =
-  | { ok: true }
-  | { ok: false; error: string };
+export type ResultadoExcepcion = { ok: true } | { ok: false; error: string };
 
 function validarInput(input: ExcepcionInput): string | null {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(input.fecha)) {
@@ -65,9 +63,7 @@ async function verificarDueno(): Promise<
  * Crea o actualiza una excepcion (upsert por fecha).
  * Si ya existe una excepcion para esa fecha, la sobreescribe.
  */
-export async function guardarExcepcion(
-  input: ExcepcionInput,
-): Promise<ResultadoExcepcion> {
+export async function guardarExcepcion(input: ExcepcionInput): Promise<ResultadoExcepcion> {
   const errorValidacion = validarInput(input);
   if (errorValidacion) return { ok: false, error: errorValidacion };
 
@@ -101,9 +97,7 @@ export async function guardarExcepcion(
 /**
  * Elimina una excepcion. La fecha vuelve a usar el horario base.
  */
-export async function eliminarExcepcion(
-  fecha: string,
-): Promise<ResultadoExcepcion> {
+export async function eliminarExcepcion(fecha: string): Promise<ResultadoExcepcion> {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
     return { ok: false, error: 'Fecha invalida.' };
   }

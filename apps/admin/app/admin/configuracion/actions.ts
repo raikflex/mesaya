@@ -5,11 +5,7 @@ import { z } from 'zod';
 import { createClient } from '@mesaya/database/server';
 
 const configSchema = z.object({
-  nombre_publico: z
-    .string()
-    .trim()
-    .min(2, 'Mínimo 2 caracteres')
-    .max(80, 'Máximo 80 caracteres'),
+  nombre_publico: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80 caracteres'),
   color_marca: z
     .string()
     .trim()
@@ -24,9 +20,7 @@ const configSchema = z.object({
 export type GuardarConfigState = {
   ok: boolean;
   error?: string;
-  fieldErrors?: Partial<
-    Record<'nombre_publico' | 'color_marca' | 'cocina_activa', string>
-  >;
+  fieldErrors?: Partial<Record<'nombre_publico' | 'color_marca' | 'cocina_activa', string>>;
 };
 
 export async function guardarConfig(
@@ -42,9 +36,7 @@ export async function guardarConfig(
   if (!parsed.success) {
     const fieldErrors: GuardarConfigState['fieldErrors'] = {};
     for (const issue of parsed.error.issues) {
-      const key = issue.path[0] as keyof NonNullable<
-        GuardarConfigState['fieldErrors']
-      >;
+      const key = issue.path[0] as keyof NonNullable<GuardarConfigState['fieldErrors']>;
       if (key) fieldErrors[key] = issue.message;
     }
     return { ok: false, fieldErrors };

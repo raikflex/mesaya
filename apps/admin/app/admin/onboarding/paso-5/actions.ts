@@ -102,11 +102,7 @@ export async function borrarProducto(formData: FormData) {
 
   // Hard delete acá porque productos no tiene FKs históricas en MVP.
   // Si después rastreamos pedidos que apuntan a productos, cambiar a soft delete.
-  await supabase
-    .from('productos')
-    .delete()
-    .eq('id', id)
-    .eq('restaurante_id', restauranteId);
+  await supabase.from('productos').delete().eq('id', id).eq('restaurante_id', restauranteId);
 
   revalidatePath('/admin/onboarding/paso-5');
 }

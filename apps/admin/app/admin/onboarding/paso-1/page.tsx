@@ -50,8 +50,7 @@ export default async function Paso1Page() {
           className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Esto es lo que verá tu cliente cuando escanee el QR de la mesa. Lo puedes cambiar
-          después.
+          Esto es lo que verá tu cliente cuando escanee el QR de la mesa. Lo puedes cambiar después.
         </p>
       </header>
 
@@ -63,8 +62,8 @@ export default async function Paso1Page() {
             direccion: null,
             color_marca: '#c0432e',
             cocina_activa: false,
-      }
-  }
+          }
+        }
         nombreDueno={perfil?.nombre ?? null}
       />
     </main>

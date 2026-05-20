@@ -50,8 +50,7 @@ export function EstadoRestauranteScreen(props: EstadoProps) {
           className="mt-12 text-[0.7rem] uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
-          Servido con{' '}
-          <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
+          Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
         </p>
       </div>
     </main>
@@ -70,12 +69,9 @@ function Mensaje(props: EstadoProps) {
         >
           Aún no abrimos.
         </h2>
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          Estamos terminando de preparar todo. Vuelve a escanear este código
-          cuando vengas en horario, y podrás pedir desde tu mesa.
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+          Estamos terminando de preparar todo. Vuelve a escanear este código cuando vengas en
+          horario, y podrás pedir desde tu mesa.
         </p>
       </Card>
     );
@@ -91,17 +87,11 @@ function Mensaje(props: EstadoProps) {
           Estamos cerrados ahora.
         </h2>
         {props.proximaApertura ? (
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
             {props.proximaApertura}.
           </p>
         ) : (
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
             Vuelve a escanear cuando estemos en horario.
           </p>
         )}
@@ -118,12 +108,9 @@ function Mensaje(props: EstadoProps) {
         >
           Servicio temporalmente pausado.
         </h2>
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          El restaurante no está atendiendo en este momento. Si quieres pedir,
-          llama al mesero o pide directamente en la barra.
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+          El restaurante no está atendiendo en este momento. Si quieres pedir, llama al mesero o
+          pide directamente en la barra.
         </p>
       </Card>
     );
@@ -138,12 +125,9 @@ function Mensaje(props: EstadoProps) {
         >
           Estamos en pausa.
         </h2>
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          Volvemos a recibir pedidos en un momento. Mientras tanto, podés
-          llamar al mesero o pedir directo en la barra.
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+          Volvemos a recibir pedidos en un momento. Mientras tanto, podés llamar al mesero o pedir
+          directo en la barra.
         </p>
       </Card>
     );
@@ -158,12 +142,8 @@ function Mensaje(props: EstadoProps) {
         >
           Esta mesa no está disponible.
         </h2>
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          Por favor llama al mesero. Es posible que estemos reorganizando el
-          salón.
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+          Por favor llama al mesero. Es posible que estemos reorganizando el salón.
         </p>
       </Card>
     );
@@ -178,12 +158,9 @@ function Mensaje(props: EstadoProps) {
       >
         Tu menú está casi listo.
       </h2>
-      <p
-        className="text-sm leading-relaxed"
-        style={{ color: 'var(--color-ink-soft)' }}
-      >
-        El sistema de pedidos se enciende muy pronto. Por ahora, llama al
-        mesero o pide directo en la barra.
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+        El sistema de pedidos se enciende muy pronto. Por ahora, llama al mesero o pide directo en
+        la barra.
       </p>
     </Card>
   );
@@ -271,12 +248,7 @@ function IconMenu() {
         strokeWidth="1.5"
         strokeLinejoin="round"
       />
-      <path
-        d="M9 13h6M9 17h6"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
+      <path d="M9 13h6M9 17h6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   );
 }

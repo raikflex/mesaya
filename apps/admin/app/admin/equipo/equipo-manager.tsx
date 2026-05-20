@@ -129,10 +129,7 @@ function FormularioAgregar() {
             />
           </div>
           {state.fieldErrors?.rol ? (
-            <p
-              className="text-xs leading-relaxed mt-2"
-              style={{ color: 'var(--color-danger)' }}
-            >
+            <p className="text-xs leading-relaxed mt-2" style={{ color: 'var(--color-danger)' }}>
               {state.fieldErrors.rol}
             </p>
           ) : null}
@@ -202,12 +199,14 @@ function CredencialesCard({
             className="size-7 rounded-full grid place-items-center shrink-0"
             style={{ background: 'var(--color-ink)', color: 'var(--color-paper)' }}
           >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="size-4">
-              <polyline
-                points="5 12 10 17 19 8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="3"
+              className="size-4"
+            >
+              <polyline points="5 12 10 17 19 8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </span>
           <div>
@@ -257,21 +256,12 @@ function CredencialesCard({
         </div>
       </dl>
 
-      <p
-        className="text-[0.7rem] mb-3 leading-relaxed"
-        style={{ color: 'var(--color-ink-soft)' }}
-      >
-        ⚠️ No tipees la clave a mano. Usa los botones de abajo para evitar errores
-        de copia.
+      <p className="text-[0.7rem] mb-3 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+        ⚠️ No tipees la clave a mano. Usa los botones de abajo para evitar errores de copia.
       </p>
 
       <div className="grid grid-cols-2 gap-2">
-        <Button
-          type="button"
-          onClick={copiarSoloPassword}
-          variant="ghost"
-          size="sm"
-        >
+        <Button type="button" onClick={copiarSoloPassword} variant="ghost" size="sm">
           {copiadoPass ? '¡Copiada!' : 'Copiar solo clave'}
         </Button>
         <Button type="button" onClick={copiarMensaje} variant="ghost" size="sm">
@@ -324,10 +314,7 @@ function RolCard({
           <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
             {titulo}
           </p>
-          <p
-            className="text-xs mt-0.5 leading-relaxed"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
             {descripcion}
           </p>
         </div>
@@ -395,10 +382,7 @@ function ItemMiembro({ miembro }: { miembro: Miembro }) {
         {miembro.nombre.charAt(0).toUpperCase()}
       </div>
       <div className="flex-1 min-w-0">
-        <p
-          className="text-sm font-medium truncate"
-          style={{ color: 'var(--color-ink)' }}
-        >
+        <p className="text-sm font-medium truncate" style={{ color: 'var(--color-ink)' }}>
           {miembro.nombre}
         </p>
         <p className="text-xs" style={{ color: 'var(--color-muted)' }}>

@@ -1,12 +1,6 @@
 'use client';
 
-import {
-  useActionState,
-  useEffect,
-  useRef,
-  useState,
-  type ChangeEvent,
-} from 'react';
+import { useActionState, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Button, Field, Input, cn } from '@mesaya/ui';
 import {
   agregarCategoria,
@@ -284,9 +278,7 @@ function TabProductos({
     productos: productos.filter((p) => p.categoria_id === cat.id),
   }));
 
-  const huerfanos = productos.filter(
-    (p) => !categorias.some((c) => c.id === p.categoria_id),
-  );
+  const huerfanos = productos.filter((p) => !categorias.some((c) => c.id === p.categoria_id));
 
   if (categorias.length === 0) {
     return (
@@ -365,10 +357,7 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
       className="rounded-[var(--radius-lg)] border p-5 space-y-4"
       style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
     >
-      <p
-        className="text-xs uppercase tracking-[0.14em]"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
         Agregar producto
       </p>
       <div className="grid sm:grid-cols-2 gap-3">
@@ -505,22 +494,14 @@ function SeccionCategoria({
   );
 }
 
-function ItemProducto({
-  producto,
-  categorias,
-}: {
-  producto: Producto;
-  categorias: Categoria[];
-}) {
+function ItemProducto({ producto, categorias }: { producto: Producto; categorias: Categoria[] }) {
   const [editandoNombre, setEditandoNombre] = useState(false);
   const [nombre, setNombre] = useState(producto.nombre);
   const [editandoPrecio, setEditandoPrecio] = useState(false);
   const [precio, setPrecio] = useState(producto.precio.toString());
   const [editandoTiempo, setEditandoTiempo] = useState(false);
   const [tiempo, setTiempo] = useState(
-    producto.tiempo_preparacion_min !== null
-      ? producto.tiempo_preparacion_min.toString()
-      : '',
+    producto.tiempo_preparacion_min !== null ? producto.tiempo_preparacion_min.toString() : '',
   );
 
   function guardarCampo(campo: 'nombre' | 'precio' | 'tiempo_preparacion_min', valor: string) {
@@ -560,12 +541,7 @@ function ItemProducto({
   }
 
   return (
-    <li
-      className={cn(
-        'flex items-start gap-3 px-4 py-3',
-        !producto.disponible && 'opacity-60',
-      )}
-    >
+    <li className={cn('flex items-start gap-3 px-4 py-3', !producto.disponible && 'opacity-60')}>
       <div className="flex-1 min-w-0 space-y-1">
         {editandoNombre ? (
           <input
@@ -701,11 +677,7 @@ function ItemProducto({
       <div className="flex items-center gap-2 shrink-0">
         <form action={toggleDisponible}>
           <input type="hidden" name="id" value={producto.id} />
-          <input
-            type="hidden"
-            name="disponible"
-            value={producto.disponible ? 'false' : 'true'}
-          />
+          <input type="hidden" name="disponible" value={producto.disponible ? 'false' : 'true'} />
           <button
             type="submit"
             className={cn(
@@ -714,9 +686,7 @@ function ItemProducto({
             )}
             style={{
               borderColor: 'var(--color-border-strong)',
-              color: producto.disponible
-                ? 'var(--color-ink-soft)'
-                : 'var(--color-danger)',
+              color: producto.disponible ? 'var(--color-ink-soft)' : 'var(--color-danger)',
             }}
           >
             {producto.disponible ? 'Disponible' : 'Sin stock'}

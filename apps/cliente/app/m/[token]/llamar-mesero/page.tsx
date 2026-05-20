@@ -27,9 +27,9 @@ export default async function LlamarMeseroPage({ params }: PageProps) {
 
   if (!mesa) notFound();
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as {
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as {
     nombre_publico: string;
     color_marca: string;
     estado: string;
@@ -57,8 +57,7 @@ export default async function LlamarMeseroPage({ params }: PageProps) {
       .eq('sesion_id', sesion.id as string)
       .neq('estado', 'cancelada');
     todasEntregadas =
-      (comandas?.length ?? 0) > 0 &&
-      (comandas ?? []).every((c) => c.estado === 'entregada');
+      (comandas?.length ?? 0) > 0 && (comandas ?? []).every((c) => c.estado === 'entregada');
   }
 
   // Si hay sesion, ver si ya hay llamados pendientes (incluyendo nombre del

@@ -52,10 +52,7 @@ export function GraciasCliente({
   }
 
   return (
-    <main
-      className="min-h-screen flex flex-col"
-      style={{ background: 'var(--color-paper)' }}
-    >
+    <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
       <div className="flex-1 px-5 py-10 max-w-md mx-auto w-full">
         {/* Hero gracias */}
         <div
@@ -82,9 +79,7 @@ export function GraciasCliente({
           <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] mt-1">
             ¡Gracias por tu visita!
           </h1>
-          <p className="text-sm mt-2 opacity-90">
-            {nombreNegocio} te espera de vuelta.
-          </p>
+          <p className="text-sm mt-2 opacity-90">{nombreNegocio} te espera de vuelta.</p>
         </div>
 
         {/* Total pagado */}
@@ -133,10 +128,7 @@ export function GraciasCliente({
             >
               ¿Cómo estuvo todo?
             </h2>
-            <p
-              className="text-xs mb-4"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
+            <p className="text-xs mb-4" style={{ color: 'var(--color-ink-soft)' }}>
               Tu opinión ayuda a {nombreNegocio} a mejorar.
             </p>
 
@@ -180,8 +172,7 @@ export function GraciasCliente({
               className="text-xs uppercase tracking-[0.14em] mb-2 block"
               style={{ color: 'var(--color-muted)' }}
             >
-              Comentario{' '}
-              <span className="lowercase tracking-normal">(opcional)</span>
+              Comentario <span className="lowercase tracking-normal">(opcional)</span>
             </label>
             <textarea
               id="comentario"
@@ -196,10 +187,7 @@ export function GraciasCliente({
                 background: 'var(--color-paper)',
               }}
             />
-            <p
-              className="text-[0.7rem] mt-1 text-right"
-              style={{ color: 'var(--color-muted)' }}
-            >
+            <p className="text-[0.7rem] mt-1 text-right" style={{ color: 'var(--color-muted)' }}>
               {comentario.length} / 500
             </p>
 
@@ -223,10 +211,7 @@ export function GraciasCliente({
               {pending ? 'Enviando…' : 'Enviar reseña'}
             </button>
 
-            <p
-              className="text-[0.7rem] text-center mt-3"
-              style={{ color: 'var(--color-muted)' }}
-            >
+            <p className="text-[0.7rem] text-center mt-3" style={{ color: 'var(--color-muted)' }}>
               <button
                 type="button"
                 onClick={saltar}
@@ -267,13 +252,7 @@ export function GraciasCliente({
   );
 }
 
-function PantallaFinal({
-  titulo,
-  mensaje,
-}: {
-  titulo: string;
-  mensaje: string;
-}) {
+function PantallaFinal({ titulo, mensaje }: { titulo: string; mensaje: string }) {
   return (
     <section
       className="rounded-[var(--radius-lg)] border bg-white p-6 text-center"
@@ -299,10 +278,7 @@ function PantallaFinal({
       >
         {titulo}
       </h2>
-      <p
-        className="text-sm"
-        style={{ color: 'var(--color-ink-soft)' }}
-      >
+      <p className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
         {mensaje}
       </p>
     </section>

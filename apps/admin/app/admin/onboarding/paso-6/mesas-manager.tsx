@@ -68,7 +68,11 @@ function BulkForm({ tieneAlguna }: { tieneAlguna: boolean }) {
         <Field
           id="cantidad"
           label={tieneAlguna ? 'Agregar más mesas' : '¿Cuántas mesas tienes?'}
-          hint={tieneAlguna ? 'Se añadirán al final con números secuenciales.' : 'Capacidad por defecto: 4 comensales (la cambias abajo).'}
+          hint={
+            tieneAlguna
+              ? 'Se añadirán al final con números secuenciales.'
+              : 'Capacidad por defecto: 4 comensales (la cambias abajo).'
+          }
           error={state.fieldError}
           className="flex-1"
         >
@@ -158,10 +162,7 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p
-          className="text-sm font-medium"
-          style={{ color: 'var(--color-ink)' }}
-        >
+        <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
           Mesa {mesa.numero}
         </p>
         {editando ? (
@@ -189,12 +190,7 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
             <Button type="submit" size="sm">
               OK
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setEditando(false)}
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={() => setEditando(false)}>
               Cancelar
             </Button>
           </form>

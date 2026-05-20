@@ -23,11 +23,7 @@ async function getRestauranteId() {
 /* ============ CREAR CUENTA EQUIPO ============ */
 
 const cuentaSchema = z.object({
-  nombre: z
-    .string()
-    .trim()
-    .min(2, 'Mínimo 2 caracteres')
-    .max(80, 'Máximo 80 caracteres'),
+  nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80 caracteres'),
   email: z.string().trim().toLowerCase().email('Correo inválido'),
   rol: z.enum(['mesero', 'cocina'], { message: 'Rol inválido' }),
 });

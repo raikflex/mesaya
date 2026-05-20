@@ -74,7 +74,10 @@ export default async function MeseroPage() {
     doc_nombre: string | null;
     forma_pago_preferida: string | null;
     nota: string | null;
-    sesiones: { mesas: { numero: string } | { numero: string }[] | null } | { mesas: { numero: string } | { numero: string }[] | null }[] | null;
+    sesiones:
+      | { mesas: { numero: string } | { numero: string }[] | null }
+      | { mesas: { numero: string } | { numero: string }[] | null }[]
+      | null;
   }[];
 
   const llamadosNoPago = llamadosArr.filter((l) => l.motivo !== 'pago');
@@ -87,9 +90,7 @@ export default async function MeseroPage() {
   // Si la cocina está inactiva, el mesero ve TODAS las comandas en estados
   // activos (pendiente, en_preparacion, lista) para manejarlas manualmente.
   // Si la cocina está activa, solo ve las que ya están listas para entregar.
-  const estadosFiltro = cocinaActiva
-    ? ['lista']
-    : ['pendiente', 'en_preparacion', 'lista'];
+  const estadosFiltro = cocinaActiva ? ['lista'] : ['pendiente', 'en_preparacion', 'lista'];
 
   const { data: comandasListasRaw } = await supabase
     .from('comandas')
@@ -120,22 +121,28 @@ export default async function MeseroPage() {
     mesero_atendiendo_id: string | null;
     sesion_id: string;
     sesion_clientes: { nombre: string } | { nombre: string }[] | null;
-    sesiones: { mesas: { numero: string } | { numero: string }[] | null } | { mesas: { numero: string } | { numero: string }[] | null }[] | null;
+    sesiones:
+      | { mesas: { numero: string } | { numero: string }[] | null }
+      | { mesas: { numero: string } | { numero: string }[] | null }[]
+      | null;
   }[];
 
   const idsComandasListas = comandasListasArr.map((c) => c.id);
   const itemsComandasListas =
     idsComandasListas.length > 0
-      ? (
+      ? ((
           await supabase
             .from('comanda_items')
             .select('id, comanda_id, nombre_snapshot, cantidad, nota')
             .in('comanda_id', idsComandasListas)
             .order('id', { ascending: true })
-        ).data ?? []
+        ).data ?? [])
       : [];
 
-  const itemsPorComanda = new Map<string, { id: string; nombre: string; cantidad: number; nota: string | null }[]>();
+  const itemsPorComanda = new Map<
+    string,
+    { id: string; nombre: string; cantidad: number; nota: string | null }[]
+  >();
   for (const c of comandasListasArr) {
     itemsPorComanda.set(c.id, []);
   }
@@ -154,27 +161,27 @@ export default async function MeseroPage() {
   const sesionesPago = llamadosPago.map((l) => l.sesion_id);
   const comandasDeSesionesPago =
     sesionesPago.length > 0
-      ? (
+      ? ((
           await supabase
             .from('comandas')
             .select('id, sesion_id, numero_diario, total, estado, creada_en')
             .in('sesion_id', sesionesPago)
             .neq('estado', 'cancelada')
             .order('creada_en', { ascending: true })
-        ).data ?? []
+        ).data ?? [])
       : [];
 
   // Traer items de TODAS las comandas de pago en una sola query
   const idsComandasPago = comandasDeSesionesPago.map((c) => c.id as string);
   const itemsDeComandasPago =
     idsComandasPago.length > 0
-      ? (
+      ? ((
           await supabase
             .from('comanda_items')
             .select('comanda_id, nombre_snapshot, cantidad, precio_snapshot, nota')
             .in('comanda_id', idsComandasPago)
             .order('id', { ascending: true })
-        ).data ?? []
+        ).data ?? [])
       : [];
 
   const itemsPorComandaPago = new Map<
@@ -253,9 +260,7 @@ export default async function MeseroPage() {
     // Comandas en pendiente o en_preparacion — solo se llenan cuando
     // cocinaActiva = false. Si está activa, este array queda vacío.
     comandasEnPreparacion: comandasListasArr
-      .filter(
-        (c) => c.estado === 'pendiente' || c.estado === 'en_preparacion',
-      )
+      .filter((c) => c.estado === 'pendiente' || c.estado === 'en_preparacion')
       .map((c) => {
         const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
         const sesion = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
@@ -312,8 +317,7 @@ export default async function MeseroPage() {
     .sort((a, b) => {
       const na = parseInt(a.numero, 10);
       const nb = parseInt(b.numero, 10);
-      if (Number.isNaN(na) || Number.isNaN(nb))
-        return a.numero.localeCompare(b.numero);
+      if (Number.isNaN(na) || Number.isNaN(nb)) return a.numero.localeCompare(b.numero);
       return na - nb;
     })
     .map((m) => ({ id: m.id, numero: m.numero, capacidad: m.capacidad ?? 0 }));
@@ -325,16 +329,11 @@ export default async function MeseroPage() {
       comandas: { total: number; estado: string }[] | null;
     }>
   ).map((s) => {
-    const comandasNoCanceladas = (s.comandas ?? []).filter(
-      (c) => c.estado !== 'cancelada',
-    );
+    const comandasNoCanceladas = (s.comandas ?? []).filter((c) => c.estado !== 'cancelada');
     return {
       mesaId: s.mesa_id,
       abiertaEn: s.abierta_en,
-      totalAcumulado: comandasNoCanceladas.reduce(
-        (acc, c) => acc + (c.total ?? 0),
-        0,
-      ),
+      totalAcumulado: comandasNoCanceladas.reduce((acc, c) => acc + (c.total ?? 0), 0),
       comandasCount: comandasNoCanceladas.length,
     };
   });

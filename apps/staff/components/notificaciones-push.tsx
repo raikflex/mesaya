@@ -1,17 +1,9 @@
 ﻿'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  guardarSuscripcionPush,
-  eliminarSuscripcionPush,
-} from '../lib/push-actions';
+import { guardarSuscripcionPush, eliminarSuscripcionPush } from '../lib/push-actions';
 
-type Estado =
-  | 'cargando'
-  | 'no_soportado'
-  | 'desactivadas'
-  | 'denegadas'
-  | 'activas';
+type Estado = 'cargando' | 'no_soportado' | 'desactivadas' | 'denegadas' | 'activas';
 
 /**
  * Boton redondo (mismo tamano que el de sonido) que muestra el estado de
@@ -163,15 +155,31 @@ export function NotificacionesPush({ colorMarca }: { colorMarca: string }) {
       {denegadas ? (
         // Smartphone tachado (notificaciones bloqueadas)
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <rect x="6" y="2" width="12" height="20" rx="2" stroke="currentColor" strokeWidth="1.75"/>
-          <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
+          <rect
+            x="6"
+            y="2"
+            width="12"
+            height="20"
+            rx="2"
+            stroke="currentColor"
+            strokeWidth="1.75"
+          />
+          <path d="M3 3l18 18" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
         </svg>
       ) : (
         // Smartphone con dot (notificacion al dispositivo)
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <rect x="6" y="2" width="12" height="20" rx="2" stroke="currentColor" strokeWidth="1.75"/>
-          <path d="M10 18h4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"/>
-          <circle cx="18.5" cy="5.5" r="2.5" fill="currentColor"/>
+          <rect
+            x="6"
+            y="2"
+            width="12"
+            height="20"
+            rx="2"
+            stroke="currentColor"
+            strokeWidth="1.75"
+          />
+          <path d="M10 18h4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+          <circle cx="18.5" cy="5.5" r="2.5" fill="currentColor" />
         </svg>
       )}
     </button>

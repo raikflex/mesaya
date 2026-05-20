@@ -25,11 +25,7 @@ export default async function EquipoPage() {
   const restauranteId = perfil.restaurante_id as string;
 
   const [{ data: restaurante }, { data: miembrosRaw }] = await Promise.all([
-    supabase
-      .from('restaurantes')
-      .select('nombre_publico')
-      .eq('id', restauranteId)
-      .single(),
+    supabase.from('restaurantes').select('nombre_publico').eq('id', restauranteId).single(),
     supabase
       .from('perfiles')
       .select('id, nombre, rol')
@@ -53,10 +49,7 @@ export default async function EquipoPage() {
             style={{ color: 'var(--color-ink)' }}
           >
             Tu{' '}
-            <em
-              className="not-italic"
-              style={{ fontStyle: 'italic', fontWeight: 400 }}
-            >
+            <em className="not-italic" style={{ fontStyle: 'italic', fontWeight: 400 }}>
               equipo
             </em>
             .
@@ -65,9 +58,8 @@ export default async function EquipoPage() {
             className="mt-3 text-[0.95rem] leading-relaxed max-w-xl"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Agrega cocineros y meseros cuando entren a trabajar, o quita cuentas
-            cuando alguien deje el equipo. Cada cuenta tiene acceso a la app de
-            cocina o mesero según su rol.
+            Agrega cocineros y meseros cuando entren a trabajar, o quita cuentas cuando alguien deje
+            el equipo. Cada cuenta tiene acceso a la app de cocina o mesero según su rol.
           </p>
         </header>
 

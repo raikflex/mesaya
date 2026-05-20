@@ -44,9 +44,9 @@ export default async function PedirCuentaPage({ params }: PageProps) {
 
   if (!mesa) notFound();
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as {
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as {
     nombre_publico: string;
     color_marca: string;
     estado: string;
@@ -64,9 +64,11 @@ export default async function PedirCuentaPage({ params }: PageProps) {
     .maybeSingle();
 
   let comandas: ComandaPorCliente[] = [];
-  let llamadoPagoPendiente:
-    | { id: string; creado_en: string; mesero_atendiendo_nombre: string | null }
-    | null = null;
+  let llamadoPagoPendiente: {
+    id: string;
+    creado_en: string;
+    mesero_atendiendo_nombre: string | null;
+  } | null = null;
 
   if (sesion) {
     const sesionId = sesion.id as string;
@@ -123,9 +125,7 @@ export default async function PedirCuentaPage({ params }: PageProps) {
       }
 
       comandas = comandasArr.map((c) => {
-        const sc = Array.isArray(c.sesion_clientes)
-          ? c.sesion_clientes[0]
-          : c.sesion_clientes;
+        const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
         return {
           comandaId: c.id,
           numeroDiario: c.numero_diario,
@@ -150,8 +150,7 @@ export default async function PedirCuentaPage({ params }: PageProps) {
       llamadoPagoPendiente = {
         id: llamado.id as string,
         creado_en: llamado.creado_en as string,
-        mesero_atendiendo_nombre:
-          (llamado.mesero_atendiendo_nombre as string) ?? null,
+        mesero_atendiendo_nombre: (llamado.mesero_atendiendo_nombre as string) ?? null,
       };
     }
   }

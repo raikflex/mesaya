@@ -32,9 +32,9 @@ export default async function GraciasPage({ params, searchParams }: PageProps) {
 
   if (!mesa) notFound();
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as {
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as {
     nombre_publico: string;
     color_marca: string;
   } | null;
@@ -61,10 +61,7 @@ export default async function GraciasPage({ params, searchParams }: PageProps) {
     .limit(1)
     .maybeSingle();
 
-  const totalPagado =
-    (pagoData?.monto_total as number) ??
-    (sesion.total_facturado as number) ??
-    0;
+  const totalPagado = (pagoData?.monto_total as number) ?? (sesion.total_facturado as number) ?? 0;
 
   return (
     <GraciasCliente

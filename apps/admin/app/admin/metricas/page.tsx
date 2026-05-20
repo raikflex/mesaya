@@ -65,7 +65,9 @@ export default async function MetricasPage() {
     // Pagos confirmados hoy
     supabase
       .from('pagos')
-      .select('monto_total, propina, metodo, confirmado_en, sesion_id, sesiones!inner(restaurante_id)')
+      .select(
+        'monto_total, propina, metodo, confirmado_en, sesion_id, sesiones!inner(restaurante_id)',
+      )
       .eq('estado', 'confirmado')
       .gte('confirmado_en', inicioHoyIso)
       .lte('confirmado_en', ahoraIso),
@@ -193,36 +195,31 @@ export default async function MetricasPage() {
       | null;
   };
 
-  const pagosHoy = ((pagosHoyResp.data ?? []) as PagoRow[])
-    .filter((p) => {
-      const ses = Array.isArray(p.sesiones) ? p.sesiones[0] : p.sesiones;
-      return ses?.restaurante_id === restauranteId;
-    });
+  const pagosHoy = ((pagosHoyResp.data ?? []) as PagoRow[]).filter((p) => {
+    const ses = Array.isArray(p.sesiones) ? p.sesiones[0] : p.sesiones;
+    return ses?.restaurante_id === restauranteId;
+  });
 
   const ventasHoy = pagosHoy.reduce((acc, p) => acc + (p.monto_total ?? 0), 0);
   const propinasHoy = pagosHoy.reduce((acc, p) => acc + (p.propina ?? 0), 0);
   const cantidadPagosHoy = pagosHoy.length;
-  const ticketPromedio =
-    cantidadPagosHoy > 0 ? Math.round(ventasHoy / cantidadPagosHoy) : 0;
+  const ticketPromedio = cantidadPagosHoy > 0 ? Math.round(ventasHoy / cantidadPagosHoy) : 0;
 
   const comandasHoy = comandasHoyResp.count ?? 0;
   const sesionesActivasCount = sesionesActivasResp.count ?? 0;
 
-  const sesionesActivas: SesionActiva[] = ((sesionesActivasResp.data ?? []) as Array<{
-    id: string;
-    abierta_en: string;
-    mesa_id: string;
-    mesas: { numero: string } | { numero: string }[] | null;
-    comandas: { total: number; estado: string }[] | null;
-  }>).map((s) => {
+  const sesionesActivas: SesionActiva[] = (
+    (sesionesActivasResp.data ?? []) as Array<{
+      id: string;
+      abierta_en: string;
+      mesa_id: string;
+      mesas: { numero: string } | { numero: string }[] | null;
+      comandas: { total: number; estado: string }[] | null;
+    }>
+  ).map((s) => {
     const m = Array.isArray(s.mesas) ? s.mesas[0] : s.mesas;
-    const comandasNoCanceladas = (s.comandas ?? []).filter(
-      (c) => c.estado !== 'cancelada',
-    );
-    const total = comandasNoCanceladas.reduce(
-      (acc, c) => acc + (c.total ?? 0),
-      0,
-    );
+    const comandasNoCanceladas = (s.comandas ?? []).filter((c) => c.estado !== 'cancelada');
+    const total = comandasNoCanceladas.reduce((acc, c) => acc + (c.total ?? 0), 0);
     return {
       id: s.id,
       mesaNumero: m?.numero ?? '?',
@@ -233,25 +230,24 @@ export default async function MetricasPage() {
   });
 
   // Comandas activas (cocina/mesero trabajando ahora)
-  const comandasActivas: ComandaActiva[] = ((comandasActivasResp.data ?? []) as Array<{
-    id: string;
-    numero_diario: number;
-    estado: string;
-    total: number;
-    creada_en: string;
-    mesero_atendiendo_nombre: string | null;
-    sesiones: { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null } | { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null }[] | null;
-    sesion_clientes: { nombre: string } | { nombre: string }[] | null;
-  }>).map((c) => {
+  const comandasActivas: ComandaActiva[] = (
+    (comandasActivasResp.data ?? []) as Array<{
+      id: string;
+      numero_diario: number;
+      estado: string;
+      total: number;
+      creada_en: string;
+      mesero_atendiendo_nombre: string | null;
+      sesiones:
+        | { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null }
+        | { mesa_id: string; mesas: { numero: string } | { numero: string }[] | null }[]
+        | null;
+      sesion_clientes: { nombre: string } | { nombre: string }[] | null;
+    }>
+  ).map((c) => {
     const ses = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
-    const mesa = ses?.mesas
-      ? Array.isArray(ses.mesas)
-        ? ses.mesas[0]
-        : ses.mesas
-      : null;
-    const sc = Array.isArray(c.sesion_clientes)
-      ? c.sesion_clientes[0]
-      : c.sesion_clientes;
+    const mesa = ses?.mesas ? (Array.isArray(ses.mesas) ? ses.mesas[0] : ses.mesas) : null;
+    const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
     return {
       id: c.id,
       numeroDiario: c.numero_diario,
@@ -291,10 +287,7 @@ export default async function MetricasPage() {
   type PagoSemanaRow = {
     monto_total: number;
     confirmado_en: string;
-    sesiones:
-      | { restaurante_id: string }
-      | { restaurante_id: string }[]
-      | null;
+    sesiones: { restaurante_id: string } | { restaurante_id: string }[] | null;
   };
 
   const pagosSemana = ((pagosSemanaResp.data ?? []) as PagoSemanaRow[]).filter((p) => {
@@ -332,17 +325,12 @@ export default async function MetricasPage() {
       | null;
   };
 
-  const itemsSemana = ((itemsSemanaResp.data ?? []) as ItemSemanaRow[]).filter(
-    (i) => {
-      const c = Array.isArray(i.comandas) ? i.comandas[0] : i.comandas;
-      return c?.restaurante_id === restauranteId;
-    },
-  );
+  const itemsSemana = ((itemsSemanaResp.data ?? []) as ItemSemanaRow[]).filter((i) => {
+    const c = Array.isArray(i.comandas) ? i.comandas[0] : i.comandas;
+    return c?.restaurante_id === restauranteId;
+  });
 
-  const productosAgrupados = new Map<
-    string,
-    { nombre: string; cantidad: number; monto: number }
-  >();
+  const productosAgrupados = new Map<string, { nombre: string; cantidad: number; monto: number }>();
   for (const it of itemsSemana) {
     const nombre = it.nombre_snapshot;
     const actual = productosAgrupados.get(nombre);
@@ -410,10 +398,7 @@ export default async function MetricasPage() {
         >
           Métricas
         </h1>
-        <p
-          className="text-sm mb-8"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="text-sm mb-8" style={{ color: 'var(--color-ink-soft)' }}>
           Lo que pasa en {nombreNegocio} hoy.
         </p>
 
@@ -435,9 +420,7 @@ export default async function MetricasPage() {
           <CardMetrica
             label="Pedidos hoy"
             valor={comandasHoy}
-            detalle={
-              comandasHoy === 0 ? 'Sin pedidos aún' : 'comandas no canceladas'
-            }
+            detalle={comandasHoy === 0 ? 'Sin pedidos aún' : 'comandas no canceladas'}
           />
           <CardMetrica
             label="Mesas ocupadas"
@@ -525,9 +508,7 @@ export default async function MetricasPage() {
                   className="font-[family-name:var(--font-display)] text-2xl mt-0.5"
                   style={{ color: 'var(--color-ink)' }}
                 >
-                  {cantidadPagosHoy > 0
-                    ? (comandasHoy / cantidadPagosHoy).toFixed(1)
-                    : '—'}
+                  {cantidadPagosHoy > 0 ? (comandasHoy / cantidadPagosHoy).toFixed(1) : '—'}
                 </p>
               </div>
             </div>
@@ -560,9 +541,7 @@ export default async function MetricasPage() {
               <CardSemana
                 label="Mejor día"
                 valor={diaTopFmt}
-                detalle={
-                  diaTop ? `$${diaTop.monto.toLocaleString('es-CO')}` : 'sin datos'
-                }
+                detalle={diaTop ? `$${diaTop.monto.toLocaleString('es-CO')}` : 'sin datos'}
               />
               <CardSemana
                 label="Días con ventas"
@@ -586,17 +565,11 @@ export default async function MetricasPage() {
                   </h3>
                   <ul className="space-y-3">
                     {topProductos.map((p, i) => (
-                      <li
-                        key={p.nombre}
-                        className="flex items-center gap-3"
-                      >
+                      <li key={p.nombre} className="flex items-center gap-3">
                         <span
                           className="size-8 rounded-full grid place-items-center shrink-0 text-sm font-medium"
                           style={{
-                            background:
-                              i === 0
-                                ? colorMarca
-                                : 'var(--color-paper-deep)',
+                            background: i === 0 ? colorMarca : 'var(--color-paper-deep)',
                             color: i === 0 ? 'white' : 'var(--color-ink-soft)',
                           }}
                         >
@@ -609,12 +582,9 @@ export default async function MetricasPage() {
                           >
                             {p.nombre}
                           </p>
-                          <p
-                            className="text-[0.7rem]"
-                            style={{ color: 'var(--color-muted)' }}
-                          >
-                            {p.cantidad} {p.cantidad === 1 ? 'unidad' : 'unidades'}{' '}
-                            · ${p.monto.toLocaleString('es-CO')}
+                          <p className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
+                            {p.cantidad} {p.cantidad === 1 ? 'unidad' : 'unidades'} · $
+                            {p.monto.toLocaleString('es-CO')}
                           </p>
                         </div>
                       </li>
@@ -637,35 +607,23 @@ export default async function MetricasPage() {
                   </h3>
                   <ul className="space-y-3">
                     {topMesas.map((m, i) => (
-                      <li
-                        key={m.mesaId}
-                        className="flex items-center gap-3"
-                      >
+                      <li key={m.mesaId} className="flex items-center gap-3">
                         <span
                           className="size-8 rounded-full grid place-items-center shrink-0 text-sm font-medium"
                           style={{
-                            background:
-                              i === 0
-                                ? colorMarca
-                                : 'var(--color-paper-deep)',
+                            background: i === 0 ? colorMarca : 'var(--color-paper-deep)',
                             color: i === 0 ? 'white' : 'var(--color-ink-soft)',
                           }}
                         >
                           {i + 1}
                         </span>
                         <div className="flex-1 min-w-0">
-                          <p
-                            className="text-sm font-medium"
-                            style={{ color: 'var(--color-ink)' }}
-                          >
+                          <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
                             Mesa {m.numero}
                           </p>
-                          <p
-                            className="text-[0.7rem]"
-                            style={{ color: 'var(--color-muted)' }}
-                          >
-                            {m.sesiones} {m.sesiones === 1 ? 'visita' : 'visitas'}{' '}
-                            · ${m.monto.toLocaleString('es-CO')}
+                          <p className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
+                            {m.sesiones} {m.sesiones === 1 ? 'visita' : 'visitas'} · $
+                            {m.monto.toLocaleString('es-CO')}
                           </p>
                         </div>
                       </li>
@@ -703,25 +661,14 @@ export default async function MetricasPage() {
                     month: 'short',
                   });
                   return (
-                    <li
-                      key={i}
-                      className="px-5 py-3 flex items-center justify-between gap-3"
-                    >
+                    <li key={i} className="px-5 py-3 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <p
-                          className="text-sm"
-                          style={{ color: 'var(--color-ink)' }}
-                        >
+                        <p className="text-sm" style={{ color: 'var(--color-ink)' }}>
                           Mesa {p.mesaNumero}
                         </p>
-                        <p
-                          className="text-[0.7rem]"
-                          style={{ color: 'var(--color-muted)' }}
-                        >
+                        <p className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
                           {fechaFmt} · {horaFmt} · {etiquetaMetodo(p.metodo)}
-                          {p.propina > 0
-                            ? ` · propina $${p.propina.toLocaleString('es-CO')}`
-                            : ''}
+                          {p.propina > 0 ? ` · propina $${p.propina.toLocaleString('es-CO')}` : ''}
                         </p>
                       </div>
                       <span
@@ -752,12 +699,9 @@ export default async function MetricasPage() {
             >
               El día empieza con calma
             </h2>
-            <p
-              className="text-sm max-w-sm mx-auto"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
-              Cuando lleguen los primeros clientes, aquí verás ventas, pedidos y
-              mesas ocupadas en tiempo real.
+            <p className="text-sm max-w-sm mx-auto" style={{ color: 'var(--color-ink-soft)' }}>
+              Cuando lleguen los primeros clientes, aquí verás ventas, pedidos y mesas ocupadas en
+              tiempo real.
             </p>
           </section>
         ) : null}
@@ -783,8 +727,7 @@ function CardSemana({
     <div
       className="rounded-[var(--radius-lg)] border bg-white p-4"
       style={{
-        borderColor:
-          destacado && colorMarca ? colorMarca : 'var(--color-border)',
+        borderColor: destacado && colorMarca ? colorMarca : 'var(--color-border)',
         borderWidth: destacado ? 1.5 : 1,
       }}
     >
@@ -802,10 +745,7 @@ function CardSemana({
       >
         {valor}
       </p>
-      <p
-        className="text-[0.7rem] mt-1 leading-relaxed"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-[0.7rem] mt-1 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
         {detalle}
       </p>
     </div>

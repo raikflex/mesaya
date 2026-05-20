@@ -48,12 +48,9 @@ export function CocinaInactiva({
         >
           La pantalla de cocina está desactivada.
         </h1>
-        <p
-          className="text-sm leading-relaxed mb-8"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          El dueño configuró que los meseros manejen los pedidos manualmente.
-          Te van a entregar las comandas impresas o anotadas físicamente.
+        <p className="text-sm leading-relaxed mb-8" style={{ color: 'var(--color-ink-soft)' }}>
+          El dueño configuró que los meseros manejen los pedidos manualmente. Te van a entregar las
+          comandas impresas o anotadas físicamente.
         </p>
 
         <div
@@ -69,22 +66,15 @@ export function CocinaInactiva({
           >
             ¿Esto es un error?
           </p>
-          <p
-            className="text-xs leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
-            Si crees que la cocina debería estar activa, pídele al dueño que
-            entre a <strong>Configuración</strong> en su panel y active la
-            opción <em>"Pantalla de cocina activa"</em>.
+          <p className="text-xs leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+            Si crees que la cocina debería estar activa, pídele al dueño que entre a{' '}
+            <strong>Configuración</strong> en su panel y active la opción{' '}
+            <em>"Pantalla de cocina activa"</em>.
           </p>
         </div>
 
         <form action={cerrarSesion}>
-          <button
-            type="submit"
-            className="text-sm underline"
-            style={{ color: colorMarca }}
-          >
+          <button type="submit" className="text-sm underline" style={{ color: colorMarca }}>
             Cerrar sesión
           </button>
         </form>

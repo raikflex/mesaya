@@ -17,10 +17,7 @@ export type SignupState = {
   fieldErrors?: Partial<Record<'email' | 'password' | 'nombre', string>>;
 };
 
-export async function signupOwner(
-  _prev: SignupState,
-  formData: FormData,
-): Promise<SignupState> {
+export async function signupOwner(_prev: SignupState, formData: FormData): Promise<SignupState> {
   const parsed = signupSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),
@@ -77,10 +74,7 @@ export type LoginState = {
   fieldErrors?: Partial<Record<'email' | 'password', string>>;
 };
 
-export async function loginOwner(
-  _prev: LoginState,
-  formData: FormData,
-): Promise<LoginState> {
+export async function loginOwner(_prev: LoginState, formData: FormData): Promise<LoginState> {
   const parsed = loginSchema.safeParse({
     email: formData.get('email'),
     password: formData.get('password'),

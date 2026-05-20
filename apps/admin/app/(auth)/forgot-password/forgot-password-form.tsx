@@ -20,8 +20,8 @@ export function ForgotPasswordForm() {
           background: '#dcfce7',
         }}
       >
-        ✓ Listo. Si esa cuenta existe, te mandamos un email con instrucciones. Revisá tu bandeja
-        (y la carpeta de spam por las dudas).
+        ✓ Listo. Si esa cuenta existe, te mandamos un email con instrucciones. Revisá tu bandeja (y
+        la carpeta de spam por las dudas).
       </div>
     );
   }

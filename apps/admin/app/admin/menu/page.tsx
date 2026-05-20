@@ -40,27 +40,20 @@ export default async function MenuPage({
   if (!perfil?.restaurante_id) redirect('/admin/onboarding/paso-1');
   if (perfil.rol !== 'dueno') redirect('/login?error=acceso-denegado');
   const restauranteId = perfil.restaurante_id as string;
-  const [{ data: categorias }, { data: productos }, { data: restaurante }] =
-    await Promise.all([
-      supabase
-        .from('categorias')
-        .select('id, nombre, orden, activa')
-        .eq('restaurante_id', restauranteId)
-        .eq('activa', true)
-        .order('orden', { ascending: true }),
-      supabase
-        .from('productos')
-        .select(
-          'id, nombre, precio, categoria_id, descripcion, disponible, tiempo_preparacion_min',
-        )
-        .eq('restaurante_id', restauranteId)
-        .order('nombre', { ascending: true }),
-      supabase
-        .from('restaurantes')
-        .select('nombre_publico')
-        .eq('id', restauranteId)
-        .single(),
-    ]);
+  const [{ data: categorias }, { data: productos }, { data: restaurante }] = await Promise.all([
+    supabase
+      .from('categorias')
+      .select('id, nombre, orden, activa')
+      .eq('restaurante_id', restauranteId)
+      .eq('activa', true)
+      .order('orden', { ascending: true }),
+    supabase
+      .from('productos')
+      .select('id, nombre, precio, categoria_id, descripcion, disponible, tiempo_preparacion_min')
+      .eq('restaurante_id', restauranteId)
+      .order('nombre', { ascending: true }),
+    supabase.from('restaurantes').select('nombre_publico').eq('id', restauranteId).single(),
+  ]);
   const params = await searchParams;
   const tabActiva: 'categorias' | 'productos' =
     params.tab === 'categorias' ? 'categorias' : 'productos';
@@ -74,10 +67,7 @@ export default async function MenuPage({
             style={{ color: 'var(--color-ink)' }}
           >
             Tu{' '}
-            <em
-              className="not-italic"
-              style={{ fontStyle: 'italic', fontWeight: 400 }}
-            >
+            <em className="not-italic" style={{ fontStyle: 'italic', fontWeight: 400 }}>
               menu
             </em>
             .
@@ -86,8 +76,7 @@ export default async function MenuPage({
             className="mt-3 text-[0.95rem] leading-relaxed max-w-xl"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Edita precios, marca productos como sin stock cuando se acaben, o
-            agrega novedades.
+            Edita precios, marca productos como sin stock cuando se acaben, o agrega novedades.
           </p>
         </header>
         <MenuManager

@@ -47,7 +47,8 @@ export default function SignupPage() {
               Tu mesero
             </em>
             <br />
-            ya no es el<br />
+            ya no es el
+            <br />
             cuello de botella.
           </p>
           <p
@@ -58,7 +59,10 @@ export default function SignupPage() {
           </p>
         </div>
 
-        <div className="relative flex items-center gap-6 text-sm" style={{ color: 'var(--color-muted)' }}>
+        <div
+          className="relative flex items-center gap-6 text-sm"
+          style={{ color: 'var(--color-muted)' }}
+        >
           <span>15 días gratis</span>
           <span aria-hidden>·</span>
           <span>Sin tarjeta</span>
@@ -117,23 +121,8 @@ export default function SignupPage() {
  */
 function Mark() {
   return (
-    <svg
-      width="32"
-      height="32"
-      viewBox="0 0 32 32"
-      fill="none"
-      aria-hidden
-      className="shrink-0"
-    >
-      <rect
-        x="4"
-        y="4"
-        width="24"
-        height="24"
-        rx="6"
-        stroke="var(--color-ink)"
-        strokeWidth="1.5"
-      />
+    <svg width="32" height="32" viewBox="0 0 32 32" fill="none" aria-hidden className="shrink-0">
+      <rect x="4" y="4" width="24" height="24" rx="6" stroke="var(--color-ink)" strokeWidth="1.5" />
       <circle cx="22" cy="22" r="3" fill="var(--color-accent)" />
     </svg>
   );

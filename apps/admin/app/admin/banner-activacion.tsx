@@ -2,10 +2,7 @@
 
 import { useActionState } from 'react';
 import { Button } from '@mesaya/ui';
-import {
-  empezarAOperar,
-  type EmpezarAOperarState,
-} from './actions/empezar-a-operar';
+import { empezarAOperar, type EmpezarAOperarState } from './actions/empezar-a-operar';
 
 const initialState: EmpezarAOperarState = { ok: false };
 
@@ -50,13 +47,7 @@ function BannerArchivado() {
           className="size-11 rounded-full grid place-items-center shrink-0"
           style={{ background: '#b07a2e', color: '#fff' }}
         >
-          <svg
-            width="22"
-            height="22"
-            viewBox="0 0 24 24"
-            fill="none"
-            aria-hidden
-          >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
             <path
               d="M12 9v4M12 17h.01M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
               stroke="currentColor"
@@ -73,13 +64,9 @@ function BannerArchivado() {
           >
             Aún no has abierto al público.
           </h2>
-          <p
-            className="mt-2 text-sm leading-relaxed max-w-xl"
-            style={{ color: '#7a4f0d' }}
-          >
-            Tu restaurante está configurado pero los QRs no funcionan todavía.
-            Cuando estés listo, click "Empezar a operar". Empieza tu trial gratuito
-            de 15 días desde ese momento.
+          <p className="mt-2 text-sm leading-relaxed max-w-xl" style={{ color: '#7a4f0d' }}>
+            Tu restaurante está configurado pero los QRs no funcionan todavía. Cuando estés listo,
+            click "Empezar a operar". Empieza tu trial gratuito de 15 días desde ese momento.
           </p>
 
           {state.error ? (
@@ -133,8 +120,7 @@ function BannerActivo({ trialTerminaEn }: { trialTerminaEn: string | null }) {
 
   if (dias <= 0) {
     titulo = 'Trial vencido';
-    mensaje =
-      'Tu trial terminó. Pronto tu restaurante pasará a suspendido si no activas el pago.';
+    mensaje = 'Tu trial terminó. Pronto tu restaurante pasará a suspendido si no activas el pago.';
     urgente = true;
   } else if (dias <= 3) {
     titulo = `Operando · trial vence pronto`;
@@ -201,10 +187,7 @@ function SimpleBanner({
           >
             {titulo}
           </h2>
-          <p
-            className="mt-1.5 text-sm leading-relaxed max-w-2xl"
-            style={{ color: textColor }}
-          >
+          <p className="mt-1.5 text-sm leading-relaxed max-w-2xl" style={{ color: textColor }}>
             {mensaje}
           </p>
         </div>

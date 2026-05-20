@@ -133,10 +133,7 @@ export function FormularioNombre({
         {pending ? 'Un momento…' : `Ver menú · Mesa ${numeroMesa}`}
       </button>
 
-      <p
-        className="text-[0.7rem] mt-4 text-center"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-[0.7rem] mt-4 text-center" style={{ color: 'var(--color-muted)' }}>
         Tu nombre solo lo verá el restaurante.
       </p>
     </form>

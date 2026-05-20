@@ -82,7 +82,9 @@ export function CarritoCliente({
   async function obtenerAuthUserId(): Promise<string | null> {
     const supabase = createClient();
 
-    const { data: { user: existente } } = await supabase.auth.getUser();
+    const {
+      data: { user: existente },
+    } = await supabase.auth.getUser();
     if (existente) {
       guardarAuthUserId(qrToken, existente.id);
       return existente.id;
@@ -208,13 +210,7 @@ export function CarritoCliente({
   }
 
   if (envio.fase === 'error') {
-    return (
-      <PantallaError
-        mensaje={envio.mensaje}
-        onReintentar={reintentar}
-        qrToken={qrToken}
-      />
-    );
+    return <PantallaError mensaje={envio.mensaje} onReintentar={reintentar} qrToken={qrToken} />;
   }
 
   return (
@@ -232,7 +228,7 @@ export function CarritoCliente({
           background: 'rgba(250, 246, 241, 0.92)',
         }}
       >
-          <BotonVolverCarrito qrToken={qrToken} />
+        <BotonVolverCarrito qrToken={qrToken} />
       </header>
 
       <div className="flex-1 px-5 py-6 max-w-md mx-auto w-full">
@@ -284,10 +280,7 @@ export function CarritoCliente({
                   >
                     Total de este pedido
                   </p>
-                  <p
-                    className="text-[0.7rem] mt-0.5"
-                    style={{ color: 'var(--color-muted)' }}
-                  >
+                  <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-muted)' }}>
                     {unidades} producto{unidades === 1 ? '' : 's'}
                   </p>
                 </div>
@@ -304,8 +297,8 @@ export function CarritoCliente({
               className="text-[0.7rem] text-center px-2 leading-relaxed"
               style={{ color: 'var(--color-muted)' }}
             >
-              La propina y el pago final se gestionan al pedir la cuenta.
-              Por ahora, este pedido pasa a la cocina.
+              La propina y el pago final se gestionan al pedir la cuenta. Por ahora, este pedido
+              pasa a la cocina.
             </p>
           </>
         )}
@@ -376,10 +369,7 @@ function PantallaCuentaRegresiva({
         >
           Enviando tu pedido…
         </h2>
-        <p
-          className="text-sm leading-relaxed mb-6"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-ink-soft)' }}>
           Si quieres cambiar algo, cancela ahora. En {segundosRestantes} segundo
           {segundosRestantes === 1 ? '' : 's'} pasa a la cocina.
         </p>
@@ -454,10 +444,7 @@ function PantallaEnviando({ colorMarca }: { colorMarca: string }) {
         >
           Enviando a cocina…
         </h2>
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
           Un momento, estamos avisando.
         </p>
       </div>
@@ -500,10 +487,7 @@ function PantallaError({
         >
           No pudimos enviar tu pedido.
         </h2>
-        <p
-          className="text-sm leading-relaxed mb-8"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="text-sm leading-relaxed mb-8" style={{ color: 'var(--color-ink-soft)' }}>
           {mensaje}
         </p>
         <div className="flex flex-col gap-2">
@@ -618,7 +602,12 @@ function ItemFila({
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path
+                d="M12 5v14M5 12h14"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -634,13 +623,7 @@ function ItemFila({
   );
 }
 
-function EstadoVacio({
-  qrToken,
-  colorMarca,
-}: {
-  qrToken: string;
-  colorMarca: string;
-}) {
+function EstadoVacio({ qrToken, colorMarca }: { qrToken: string; colorMarca: string }) {
   return (
     <div className="text-center py-12">
       <div

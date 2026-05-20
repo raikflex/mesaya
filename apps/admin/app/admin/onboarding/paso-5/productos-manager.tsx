@@ -2,12 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { Button, Field, Input, cn } from '@mesaya/ui';
-import {
-  agregarProducto,
-  avanzarAPaso6,
-  borrarProducto,
-  type AddProductoState,
-} from './actions';
+import { agregarProducto, avanzarAPaso6, borrarProducto, type AddProductoState } from './actions';
 
 type Producto = {
   id: string;
@@ -107,11 +102,7 @@ function FormularioAgregar({ categorias }: { categorias: Categoria[] }) {
         </Field>
       </div>
 
-      <Field
-        id="categoria_id"
-        label="Categoría"
-        error={state.fieldErrors?.categoria_id}
-      >
+      <Field id="categoria_id" label="Categoría" error={state.fieldErrors?.categoria_id}>
         <select
           id="categoria_id"
           name="categoria_id"
@@ -234,10 +225,7 @@ function ItemProducto({ producto }: { producto: Producto }) {
     <li className="flex items-start gap-3 px-4 py-3">
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline justify-between gap-3">
-          <p
-            className="text-base font-medium truncate"
-            style={{ color: 'var(--color-ink)' }}
-          >
+          <p className="text-base font-medium truncate" style={{ color: 'var(--color-ink)' }}>
             {producto.nombre}
           </p>
           <p
@@ -248,10 +236,7 @@ function ItemProducto({ producto }: { producto: Producto }) {
           </p>
         </div>
         {producto.descripcion ? (
-          <p
-            className="text-xs mt-0.5 leading-relaxed"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
             {producto.descripcion}
           </p>
         ) : null}

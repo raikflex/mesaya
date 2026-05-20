@@ -31,9 +31,9 @@ export default async function CarritoPage({ params }: PageProps) {
 
   if (!mesa) notFound();
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as {
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as {
     nombre_publico: string;
     color_marca: string;
     estado: string;

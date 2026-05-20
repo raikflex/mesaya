@@ -14,9 +14,7 @@ import { createServiceClient } from '@mesaya/database/service';
  *   al usuario autenticado.
  */
 
-export type ResultadoSuscripcion =
-  | { ok: true }
-  | { ok: false; error: string };
+export type ResultadoSuscripcion = { ok: true } | { ok: false; error: string };
 
 export async function guardarSuscripcionPush(input: {
   endpoint: string;
@@ -49,22 +47,20 @@ export async function guardarSuscripcionPush(input: {
 
   // Upsert por endpoint: si ya existe, actualizar keys + timestamps.
   // Si no existe, insertar nuevo. Reactiva las marcadas como invalidas.
-  const { error } = await admin
-    .from('push_subscriptions')
-    .upsert(
-      {
-        usuario_id: user.id,
-        restaurante_id: perfil.restaurante_id as string,
-        rol,
-        endpoint: input.endpoint,
-        p256dh: input.p256dh,
-        auth_key: input.authKey,
-        device_label: input.deviceLabel ?? null,
-        usada_en: new Date().toISOString(),
-        invalida_en: null,
-      },
-      { onConflict: 'endpoint' },
-    );
+  const { error } = await admin.from('push_subscriptions').upsert(
+    {
+      usuario_id: user.id,
+      restaurante_id: perfil.restaurante_id as string,
+      rol,
+      endpoint: input.endpoint,
+      p256dh: input.p256dh,
+      auth_key: input.authKey,
+      device_label: input.deviceLabel ?? null,
+      usada_en: new Date().toISOString(),
+      invalida_en: null,
+    },
+    { onConflict: 'endpoint' },
+  );
 
   if (error) {
     return { ok: false, error: 'No se pudo guardar: ' + error.message };

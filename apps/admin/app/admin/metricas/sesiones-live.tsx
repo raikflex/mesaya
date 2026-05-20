@@ -59,21 +59,18 @@ export function SesionesLive({
           .eq('restaurante_id', restauranteId)
           .eq('estado', 'abierta');
 
-        const lista: SesionActiva[] = ((data ?? []) as Array<{
-          id: string;
-          abierta_en: string;
-          mesa_id: string;
-          mesas: { numero: string } | { numero: string }[] | null;
-          comandas: { total: number; estado: string }[] | null;
-        }>).map((s) => {
+        const lista: SesionActiva[] = (
+          (data ?? []) as Array<{
+            id: string;
+            abierta_en: string;
+            mesa_id: string;
+            mesas: { numero: string } | { numero: string }[] | null;
+            comandas: { total: number; estado: string }[] | null;
+          }>
+        ).map((s) => {
           const mesa = Array.isArray(s.mesas) ? s.mesas[0] : s.mesas;
-          const comandasNoCanceladas = (s.comandas ?? []).filter(
-            (c) => c.estado !== 'cancelada',
-          );
-          const total = comandasNoCanceladas.reduce(
-            (acc, c) => acc + (c.total ?? 0),
-            0,
-          );
+          const comandasNoCanceladas = (s.comandas ?? []).filter((c) => c.estado !== 'cancelada');
+          const total = comandasNoCanceladas.reduce((acc, c) => acc + (c.total ?? 0), 0);
           return {
             id: s.id,
             mesaNumero: mesa?.numero ?? '?',
@@ -88,30 +85,22 @@ export function SesionesLive({
 
       const canal = supabase
         .channel(canalNombre)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'sesiones' },
-          (payload) => {
-            const fila = payload.new as { restaurante_id?: string } | null;
-            const filaVieja = payload.old as { restaurante_id?: string } | null;
-            if (
-              fila?.restaurante_id === restauranteId ||
-              filaVieja?.restaurante_id === restauranteId
-            ) {
-              refetchSesiones();
-            }
-          },
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'comandas' },
-          (payload) => {
-            const fila = payload.new as { restaurante_id?: string } | null;
-            if (fila?.restaurante_id === restauranteId) {
-              refetchSesiones();
-            }
-          },
-        );
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sesiones' }, (payload) => {
+          const fila = payload.new as { restaurante_id?: string } | null;
+          const filaVieja = payload.old as { restaurante_id?: string } | null;
+          if (
+            fila?.restaurante_id === restauranteId ||
+            filaVieja?.restaurante_id === restauranteId
+          ) {
+            refetchSesiones();
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comandas' }, (payload) => {
+          const fila = payload.new as { restaurante_id?: string } | null;
+          if (fila?.restaurante_id === restauranteId) {
+            refetchSesiones();
+          }
+        });
 
       if (cancelado) {
         supabase.removeChannel(canal);
@@ -155,21 +144,12 @@ export function SesionesLive({
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-3">
-        <h2
-          className="text-xs uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <h2 className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
           Mesas en vivo
         </h2>
         <div className="flex items-center gap-1.5">
-          <span
-            className="size-1.5 rounded-full animate-pulse"
-            style={{ background: '#22c55e' }}
-          />
-          <span
-            className="text-[0.65rem] uppercase tracking-[0.14em]"
-            style={{ color: '#22c55e' }}
-          >
+          <span className="size-1.5 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
+          <span className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: '#22c55e' }}>
             En vivo
           </span>
         </div>
@@ -195,10 +175,7 @@ export function SesionesLive({
             void tick;
 
             return (
-              <li
-                key={s.id}
-                className="px-5 py-3 flex items-center justify-between gap-3"
-              >
+              <li key={s.id} className="px-5 py-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3 min-w-0">
                   <div
                     className="size-9 rounded-full grid place-items-center shrink-0"
@@ -210,13 +187,8 @@ export function SesionesLive({
                     <p className="text-sm" style={{ color: 'var(--color-ink)' }}>
                       Mesa {s.mesaNumero}
                     </p>
-                    <p
-                      className="text-[0.7rem]"
-                      style={{ color: 'var(--color-muted)' }}
-                    >
-                      {s.comandasCount}{' '}
-                      {s.comandasCount === 1 ? 'pedido' : 'pedidos'} ·{' '}
-                      {tiempoFmt}
+                    <p className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
+                      {s.comandasCount} {s.comandasCount === 1 ? 'pedido' : 'pedidos'} · {tiempoFmt}
                     </p>
                   </div>
                 </div>

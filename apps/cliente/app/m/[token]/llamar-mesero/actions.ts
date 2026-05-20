@@ -23,7 +23,9 @@ export type CrearLlamadoResultado =
 
 type MotivoLlamado = 'campana' | 'pago' | 'otro';
 
-async function obtenerSesionAbiertaMesa(qrToken: string): Promise<
+async function obtenerSesionAbiertaMesa(
+  qrToken: string,
+): Promise<
   | { ok: true; sesionId: string; mesaId: string; restauranteId: string }
   | { ok: false; error: string }
 > {
@@ -39,9 +41,9 @@ async function obtenerSesionAbiertaMesa(qrToken: string): Promise<
     return { ok: false, error: 'Esta mesa ya no estÃ¡ disponible.' };
   }
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as { estado: string } | null;
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as { estado: string } | null;
 
   if (!restaurante || restaurante.estado !== 'activo') {
     return {
@@ -60,8 +62,7 @@ async function obtenerSesionAbiertaMesa(qrToken: string): Promise<
   if (!sesion) {
     return {
       ok: false,
-      error:
-        'AÃºn no has hecho ningÃºn pedido. Pide algo primero y luego puedes llamar al mesero.',
+      error: 'AÃºn no has hecho ningÃºn pedido. Pide algo primero y luego puedes llamar al mesero.',
     };
   }
 
@@ -120,10 +121,7 @@ export async function crearLlamado(input: {
   // quÃ© pidiÃ³ el cliente sin tener que ir fÃ­sicamente a preguntar (ej:
   // "necesito otra cuchara", "mÃ¡s servilletas", etc.).
   const notaLimpia = input.nota?.trim();
-  const notaParaGuardar =
-    notaLimpia && notaLimpia.length > 0
-      ? notaLimpia.slice(0, 200)
-      : null;
+  const notaParaGuardar = notaLimpia && notaLimpia.length > 0 ? notaLimpia.slice(0, 200) : null;
 
   const { data: nuevo, error } = await admin
     .from('llamados_mesero')

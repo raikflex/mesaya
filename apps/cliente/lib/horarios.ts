@@ -22,19 +22,9 @@ export type ExcepcionDia = {
   nota?: string | null;
 };
 
-export type EstadoApertura =
-  | { abierto: true }
-  | { abierto: false; proximoTexto: string };
+export type EstadoApertura = { abierto: true } | { abierto: false; proximoTexto: string };
 
-const NOMBRES_DIA = [
-  'domingo',
-  'lunes',
-  'martes',
-  'miercoles',
-  'jueves',
-  'viernes',
-  'sabado',
-];
+const NOMBRES_DIA = ['domingo', 'lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'];
 
 export function nombreDia(dia: number): string {
   return NOMBRES_DIA[dia] ?? '';
@@ -66,9 +56,7 @@ export function formatearHora(hora: string): string {
 /** Devuelve la fecha actual en Colombia como "YYYY-MM-DD". */
 function fechaColombia(offsetDias: number = 0): string {
   const ahora = new Date();
-  const colombia = new Date(
-    ahora.toLocaleString('en-US', { timeZone: 'America/Bogota' }),
-  );
+  const colombia = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
   if (offsetDias !== 0) {
     colombia.setDate(colombia.getDate() + offsetDias);
   }
@@ -85,9 +73,7 @@ function ahoraColombia(): {
   fecha: string;
 } {
   const ahora = new Date();
-  const colombia = new Date(
-    ahora.toLocaleString('en-US', { timeZone: 'America/Bogota' }),
-  );
+  const colombia = new Date(ahora.toLocaleString('en-US', { timeZone: 'America/Bogota' }));
   const y = colombia.getFullYear();
   const m = (colombia.getMonth() + 1).toString().padStart(2, '0');
   const d = colombia.getDate().toString().padStart(2, '0');
@@ -111,11 +97,7 @@ export function estaAbiertoAhora(
   // 1. Si hay excepcion para hoy, gana sobre el horario base
   const excepcionHoy = excepciones.find((e) => e.fecha === fecha);
   if (excepcionHoy) {
-    if (
-      excepcionHoy.abierto &&
-      excepcionHoy.hora_apertura &&
-      excepcionHoy.hora_cierre
-    ) {
+    if (excepcionHoy.abierto && excepcionHoy.hora_apertura && excepcionHoy.hora_cierre) {
       const apertura = parseHora(excepcionHoy.hora_apertura);
       const cierre = parseHora(excepcionHoy.hora_cierre);
       if (cierre > apertura && minutos >= apertura && minutos < cierre) {
@@ -134,11 +116,7 @@ export function estaAbiertoAhora(
 
   // 2. Sin excepcion: usar horario base por dia de semana
   const horarioHoy = horarios.find((h) => h.dia_semana === diaSemana);
-  if (
-    horarioHoy?.abierto &&
-    horarioHoy.hora_apertura &&
-    horarioHoy.hora_cierre
-  ) {
+  if (horarioHoy?.abierto && horarioHoy.hora_apertura && horarioHoy.hora_cierre) {
     const apertura = parseHora(horarioHoy.hora_apertura);
     const cierre = parseHora(horarioHoy.hora_cierre);
     if (cierre > apertura && minutos >= apertura && minutos < cierre) {
@@ -159,10 +137,7 @@ export function estaAbiertoAhora(
  * Calcula el texto de proxima apertura considerando excepciones.
  * Mira hoy primero (puede abrir mas tarde) y despues hasta 30 dias adelante.
  */
-function textoProximaApertura(
-  horarios: HorarioDia[],
-  excepciones: ExcepcionDia[],
-): string {
+function textoProximaApertura(horarios: HorarioDia[], excepciones: ExcepcionDia[]): string {
   const { diaSemana, minutos } = ahoraColombia();
 
   // Verificar HOY: con excepcion o sin

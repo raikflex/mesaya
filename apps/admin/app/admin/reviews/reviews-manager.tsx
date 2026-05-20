@@ -33,10 +33,7 @@ export function ReviewsManager({
       return {
         total: 0,
         promedio: 0,
-        distribucion: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<
-          1 | 2 | 3 | 4 | 5,
-          number
-        >,
+        distribucion: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 } as Record<1 | 2 | 3 | 4 | 5, number>,
       };
     }
     const distribucion: Record<1 | 2 | 3 | 4 | 5, number> = {
@@ -78,10 +75,7 @@ export function ReviewsManager({
   }, [reviews, filtroEstrella, filtroFecha]);
 
   return (
-    <main
-      className="min-h-screen"
-      style={{ background: 'var(--color-paper)' }}
-    >
+    <main className="min-h-screen" style={{ background: 'var(--color-paper)' }}>
       <div className="max-w-4xl mx-auto px-5 py-8">
         <Link
           href="/admin"
@@ -150,12 +144,9 @@ function CardResumen({
         className="rounded-[var(--radius-lg)] border bg-white p-6 mb-6"
         style={{ borderColor: 'var(--color-border)' }}
       >
-        <p
-          className="text-sm text-center"
-          style={{ color: 'var(--color-muted)' }}
-        >
-          Aún no hay reseñas. Cuando los clientes terminen su visita podrán
-          dejar su opinión, y aparecerán aquí.
+        <p className="text-sm text-center" style={{ color: 'var(--color-muted)' }}>
+          Aún no hay reseñas. Cuando los clientes terminen su visita podrán dejar su opinión, y
+          aparecerán aquí.
         </p>
       </section>
     );
@@ -171,9 +162,18 @@ function CardResumen({
     >
       <div className="grid grid-cols-1 md:grid-cols-[auto_1fr] gap-6 md:gap-8 items-center">
         {/* Big number */}
-        <div className="text-center md:text-left md:border-r md:pr-8" style={{ borderColor: 'var(--color-border)' }}>
+        <div
+          className="text-center md:text-left md:border-r md:pr-8"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <div className="flex items-center justify-center md:justify-start gap-1 mb-1">
-            <svg width="28" height="28" viewBox="0 0 24 24" fill={colorMarca} style={{ color: colorMarca }}>
+            <svg
+              width="28"
+              height="28"
+              viewBox="0 0 24 24"
+              fill={colorMarca}
+              style={{ color: colorMarca }}
+            >
               <polygon
                 points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
                 stroke="currentColor"
@@ -190,8 +190,7 @@ function CardResumen({
             </span>
           </div>
           <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-            promedio · {resumen.total}{' '}
-            {resumen.total === 1 ? 'reseña' : 'reseñas'}
+            promedio · {resumen.total} {resumen.total === 1 ? 'reseña' : 'reseñas'}
           </p>
         </div>
 
@@ -211,9 +210,7 @@ function CardResumen({
                     fill={colorMarca}
                     style={{ color: colorMarca }}
                   >
-                    <polygon
-                      points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-                    />
+                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                 </div>
                 <div
@@ -335,13 +332,7 @@ function FiltroGrupo<T extends string | number>({
   );
 }
 
-function ListaReviews({
-  reviews,
-  colorMarca,
-}: {
-  reviews: ReviewFila[];
-  colorMarca: string;
-}) {
+function ListaReviews({ reviews, colorMarca }: { reviews: ReviewFila[]; colorMarca: string }) {
   if (reviews.length === 0) {
     return (
       <section
@@ -364,13 +355,7 @@ function ListaReviews({
   );
 }
 
-function ReviewCard({
-  review,
-  colorMarca,
-}: {
-  review: ReviewFila;
-  colorMarca: string;
-}) {
+function ReviewCard({ review, colorMarca }: { review: ReviewFila; colorMarca: string }) {
   const fecha = new Date(review.creadaEn);
   const fechaFmt = fecha.toLocaleDateString('es-CO', {
     day: 'numeric',
@@ -411,10 +396,7 @@ function ReviewCard({
             </svg>
           ))}
         </div>
-        <p
-          className="text-[0.7rem] text-right"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-[0.7rem] text-right" style={{ color: 'var(--color-muted)' }}>
           {fechaFmt} · {horaFmt}
         </p>
       </header>
@@ -431,17 +413,11 @@ function ReviewCard({
       </div>
 
       {review.comentario ? (
-        <p
-          className="text-sm leading-relaxed"
-          style={{ color: 'var(--color-ink)' }}
-        >
+        <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink)' }}>
           {review.comentario}
         </p>
       ) : (
-        <p
-          className="text-xs italic"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-xs italic" style={{ color: 'var(--color-muted)' }}>
           Sin comentario
         </p>
       )}
@@ -477,12 +453,8 @@ function EmptyState() {
       >
         Aún no hay reseñas
       </h2>
-      <p
-        className="text-sm max-w-xs mx-auto"
-        style={{ color: 'var(--color-ink-soft)' }}
-      >
-        Cuando los clientes terminen su visita y dejen su opinión,
-        aparecerá aquí.
+      <p className="text-sm max-w-xs mx-auto" style={{ color: 'var(--color-ink-soft)' }}>
+        Cuando los clientes terminen su visita y dejen su opinión, aparecerá aquí.
       </p>
     </section>
   );

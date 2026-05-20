@@ -35,7 +35,7 @@ export function BusinessInfoForm({
   const [state, formAction, pending] = useActionState(guardarDatosNegocio, initialState);
   const [nombre, setNombre] = useState(initial.nombre_publico);
   const [color, setColor] = useState(initial.color_marca);
-const [cocinaActiva, setCocinaActiva] = useState(initial.cocina_activa);
+  const [cocinaActiva, setCocinaActiva] = useState(initial.cocina_activa);
 
   return (
     <form action={formAction} className="grid gap-10 lg:grid-cols-[1fr_320px]">
@@ -95,11 +95,11 @@ const [cocinaActiva, setCocinaActiva] = useState(initial.cocina_activa);
         </div>
 
         <ColorMarcaPicker
-        value={color}
-        onChange={setColor}
-        error={state.fieldErrors?.color_marca}
-      />
-      <CocinaToggle value={cocinaActiva} onChange={setCocinaActiva} />
+          value={color}
+          onChange={setColor}
+          error={state.fieldErrors?.color_marca}
+        />
+        <CocinaToggle value={cocinaActiva} onChange={setCocinaActiva} />
 
         {state.error ? (
           <div
@@ -332,13 +332,8 @@ function ArrowRight() {
       />
     </svg>
   );
-}function CocinaToggle({
-  value,
-  onChange,
-}: {
-  value: boolean;
-  onChange: (v: boolean) => void;
-}) {
+}
+function CocinaToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
   return (
     <div
       className="rounded-[var(--radius-md)] border p-4"
@@ -347,10 +342,7 @@ function ArrowRight() {
         background: value ? 'var(--color-paper)' : 'transparent',
       }}
     >
-      <label
-        htmlFor="cocina_activa"
-        className="flex items-start gap-3 cursor-pointer select-none"
-      >
+      <label htmlFor="cocina_activa" className="flex items-start gap-3 cursor-pointer select-none">
         <button
           type="button"
           role="switch"
@@ -372,21 +364,16 @@ function ArrowRight() {
           <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
             ¿Tu cocina usa pantalla para ver comandas?
           </p>
-          <p
-            className="text-xs mt-1 leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
             {value ? (
               <>
-                La cocina ve los pedidos en una pantalla y los marca como listos.
-                Vas a poder agregar cuentas de cocina más adelante en el paso de
-                Equipo.
+                La cocina ve los pedidos en una pantalla y los marca como listos. Vas a poder
+                agregar cuentas de cocina más adelante en el paso de Equipo.
               </>
             ) : (
               <>
-                El mesero imprime o anota la comanda y se la pasa al chef
-                físicamente. Es el modelo de la mayoría de restaurantes pequeños
-                — no necesita pantalla extra.
+                El mesero imprime o anota la comanda y se la pasa al chef físicamente. Es el modelo
+                de la mayoría de restaurantes pequeños — no necesita pantalla extra.
               </>
             )}
           </p>

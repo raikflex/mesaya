@@ -71,7 +71,10 @@ export default async function CocinaPage() {
     creada_en: string;
     sesion_id: string;
     sesion_clientes: { nombre: string } | { nombre: string }[] | null;
-    sesiones: { mesas: { numero: string } | { numero: string }[] | null } | { mesas: { numero: string } | { numero: string }[] | null }[] | null;
+    sesiones:
+      | { mesas: { numero: string } | { numero: string }[] | null }
+      | { mesas: { numero: string } | { numero: string }[] | null }[]
+      | null;
   }[];
 
   let comandas: ComandaCocina[] = [];

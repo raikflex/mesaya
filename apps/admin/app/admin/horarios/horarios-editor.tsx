@@ -2,11 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { actualizarHorarios, type HorarioInput } from './actions';
-import {
-  guardarExcepcion,
-  eliminarExcepcion,
-  type ExcepcionInput,
-} from './excepciones-actions';
+import { guardarExcepcion, eliminarExcepcion, type ExcepcionInput } from './excepciones-actions';
 import { togglePausaForm } from './actions';
 import {
   estaAbiertoAhora,
@@ -44,10 +40,7 @@ export function HorariosEditor({
   const [exito, setExito] = useState(false);
   const [pending, startTransition] = useTransition();
 
-  const estadoApertura = estaAbiertoAhora(
-    horariosIniciales,
-    excepcionesIniciales,
-  );
+  const estadoApertura = estaAbiertoAhora(horariosIniciales, excepcionesIniciales);
 
   function actualizarDia(dia: number, cambios: Partial<HorarioDia>) {
     setError(null);
@@ -80,10 +73,7 @@ export function HorariosEditor({
 
   return (
     <>
-      <EstadoActual
-        estadoRestaurante={estadoRestaurante}
-        estadoApertura={estadoApertura}
-      />
+      <EstadoActual estadoRestaurante={estadoRestaurante} estadoApertura={estadoApertura} />
 
       <section
         className="rounded-[var(--radius-lg)] border bg-white p-5 sm:p-6 mb-6"
@@ -96,8 +86,7 @@ export function HorariosEditor({
           Horario semanal
         </h2>
         <p className="text-sm mb-6" style={{ color: 'var(--color-ink-soft)' }}>
-          Edita cuando estas abierto cada dia. Los cambios se aplican al
-          guardar.
+          Edita cuando estas abierto cada dia. Los cambios se aplican al guardar.
         </p>
 
         <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
@@ -169,10 +158,7 @@ function FilaDia({
     <li className="py-4 first:pt-0 last:pb-0">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="flex items-center justify-between sm:w-44 sm:shrink-0">
-          <span
-            className="text-sm font-medium"
-            style={{ color: 'var(--color-ink)' }}
-          >
+          <span className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
             {nombreDiaCapital(horario.dia_semana)}
           </span>
 
@@ -189,17 +175,13 @@ function FilaDia({
             }}
             className="relative w-10 h-6 rounded-full transition-colors shrink-0"
             style={{
-              background: horario.abierto
-                ? 'var(--color-ink)'
-                : 'var(--color-border-strong)',
+              background: horario.abierto ? 'var(--color-ink)' : 'var(--color-border-strong)',
             }}
           >
             <span
               className="absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform"
               style={{
-                transform: horario.abierto
-                  ? 'translateX(1rem)'
-                  : 'translateX(0)',
+                transform: horario.abierto ? 'translateX(1rem)' : 'translateX(0)',
               }}
             />
           </button>
@@ -238,10 +220,7 @@ function FilaDia({
             />
           </div>
         ) : (
-          <span
-            className="text-sm italic"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <span className="text-sm italic" style={{ color: 'var(--color-muted)' }}>
             Cerrado todo el dia
           </span>
         )}
@@ -347,13 +326,8 @@ function EstadoActual({
 
 /* ============= DIAS ESPECIALES (EXCEPCIONES) ============= */
 
-function DiasEspeciales({
-  excepcionesIniciales,
-}: {
-  excepcionesIniciales: ExcepcionDia[];
-}) {
-  const [excepciones, setExcepciones] =
-    useState<ExcepcionDia[]>(excepcionesIniciales);
+function DiasEspeciales({ excepcionesIniciales }: { excepcionesIniciales: ExcepcionDia[] }) {
+  const [excepciones, setExcepciones] = useState<ExcepcionDia[]>(excepcionesIniciales);
   const [editando, setEditando] = useState<string | null>(null); // fecha que se esta editando
   const [creando, setCreando] = useState(false);
 
@@ -365,9 +339,7 @@ function DiasEspeciales({
       }
       if (nueva) {
         const sinDuplicado = lista.filter((e) => e.fecha !== nueva.fecha);
-        lista = [...sinDuplicado, nueva].sort((a, b) =>
-          a.fecha.localeCompare(b.fecha),
-        );
+        lista = [...sinDuplicado, nueva].sort((a, b) => a.fecha.localeCompare(b.fecha));
       }
       return lista;
     });
@@ -385,15 +357,12 @@ function DiasEspeciales({
         Dias especiales
       </h2>
       <p className="text-sm mb-5" style={{ color: 'var(--color-ink-soft)' }}>
-        Excepciones para fechas concretas (festivos, cierres tempranos). Estos
-        sobreescriben el horario semanal solo ese dia.
+        Excepciones para fechas concretas (festivos, cierres tempranos). Estos sobreescriben el
+        horario semanal solo ese dia.
       </p>
 
       {excepciones.length === 0 ? (
-        <p
-          className="text-sm italic mb-5"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-sm italic mb-5" style={{ color: 'var(--color-muted)' }}>
           No tienes excepciones programadas para los proximos 90 dias.
         </p>
       ) : (
@@ -479,16 +448,10 @@ function FilaExcepcion({
     <li className="py-3 first:pt-0">
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p
-            className="text-sm font-medium"
-            style={{ color: 'var(--color-ink)' }}
-          >
+          <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
             {formatearFechaCorta(excepcion.fecha)}
             {excepcion.nota ? (
-              <span
-                className="ml-2 text-xs"
-                style={{ color: 'var(--color-muted)' }}
-              >
+              <span className="ml-2 text-xs" style={{ color: 'var(--color-muted)' }}>
                 · {excepcion.nota}
               </span>
             ) : null}
@@ -545,12 +508,8 @@ function FormExcepcion({
 
   const [fecha, setFecha] = useState(inicial?.fecha ?? hoy);
   const [abierto, setAbierto] = useState(inicial?.abierto ?? false);
-  const [horaApertura, setHoraApertura] = useState(
-    (inicial?.hora_apertura ?? '08:00').slice(0, 5),
-  );
-  const [horaCierre, setHoraCierre] = useState(
-    (inicial?.hora_cierre ?? '22:00').slice(0, 5),
-  );
+  const [horaApertura, setHoraApertura] = useState((inicial?.hora_apertura ?? '08:00').slice(0, 5));
+  const [horaCierre, setHoraCierre] = useState((inicial?.hora_cierre ?? '22:00').slice(0, 5));
   const [nota, setNota] = useState(inicial?.nota ?? '');
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -595,10 +554,7 @@ function FormExcepcion({
 
       <div className="space-y-3">
         <div>
-          <label
-            className="block text-xs mb-1"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <label className="block text-xs mb-1" style={{ color: 'var(--color-ink-soft)' }}>
             Fecha
           </label>
           <input
@@ -627,9 +583,7 @@ function FormExcepcion({
             onClick={() => setAbierto((v) => !v)}
             className="relative w-10 h-6 rounded-full transition-colors"
             style={{
-              background: abierto
-                ? 'var(--color-ink)'
-                : 'var(--color-border-strong)',
+              background: abierto ? 'var(--color-ink)' : 'var(--color-border-strong)',
             }}
           >
             <span
@@ -672,10 +626,7 @@ function FormExcepcion({
         ) : null}
 
         <div>
-          <label
-            className="block text-xs mb-1"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <label className="block text-xs mb-1" style={{ color: 'var(--color-ink-soft)' }}>
             Nota (opcional)
           </label>
           <input

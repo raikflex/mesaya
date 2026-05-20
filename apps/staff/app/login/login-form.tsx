@@ -94,11 +94,7 @@ export function LoginForm() {
       </div>
 
       {error ? (
-        <p
-          role="alert"
-          className="text-xs text-center"
-          style={{ color: 'var(--color-danger)' }}
-        >
+        <p role="alert" className="text-xs text-center" style={{ color: 'var(--color-danger)' }}>
           {error}
         </p>
       ) : null}
@@ -115,10 +111,7 @@ export function LoginForm() {
         {pending ? 'Entrando…' : 'Entrar'}
       </button>
 
-      <p
-        className="text-[0.7rem] text-center pt-2"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-[0.7rem] text-center pt-2" style={{ color: 'var(--color-muted)' }}>
         ¿Olvidaste tu contraseña? Pide ayuda al dueño del restaurante.
       </p>
     </form>

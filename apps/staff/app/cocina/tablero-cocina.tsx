@@ -63,7 +63,9 @@ export function TableroCocina({
     let cancelado = false;
 
     async function setupRealtime() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (cancelado) return;
 
       if (session?.access_token) {
@@ -101,10 +103,7 @@ export function TableroCocina({
               };
               if (actualizada.restaurante_id !== restauranteId) return;
 
-              if (
-                actualizada.estado === 'entregada' ||
-                actualizada.estado === 'cancelada'
-              ) {
+              if (actualizada.estado === 'entregada' || actualizada.estado === 'cancelada') {
                 idsRef.current.delete(actualizada.id);
                 setComandas((cs) => cs.filter((c) => c.id !== actualizada.id));
               } else {
@@ -139,9 +138,7 @@ export function TableroCocina({
             if (!idsRef.current.has(comandaId)) return;
 
             const items = await traerItemsDeComanda(comandaId);
-            setComandas((cs) =>
-              cs.map((c) => (c.id === comandaId ? { ...c, items } : c)),
-            );
+            setComandas((cs) => cs.map((c) => (c.id === comandaId ? { ...c, items } : c)));
           },
         );
 
@@ -166,9 +163,7 @@ export function TableroCocina({
   }, [restauranteId]);
 
   function moverComanda(comandaId: string, nuevoEstado: 'en_preparacion' | 'lista') {
-    setComandas((cs) =>
-      cs.map((c) => (c.id === comandaId ? { ...c, estado: nuevoEstado } : c)),
-    );
+    setComandas((cs) => cs.map((c) => (c.id === comandaId ? { ...c, estado: nuevoEstado } : c)));
   }
 
   const pendientes = comandas
@@ -182,10 +177,7 @@ export function TableroCocina({
     .sort((a, b) => a.creadaEn.localeCompare(b.creadaEn));
 
   return (
-    <main
-      className="min-h-screen flex flex-col"
-      style={{ background: 'var(--color-paper)' }}
-    >
+    <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
       <Header
         perfilNombre={perfilNombre}
         restauranteNombre={restauranteNombre}
@@ -512,8 +504,7 @@ function CardComanda({
   function avanzar() {
     setError(null);
     desbloquearAudio();
-    const nuevoEstado: 'en_preparacion' | 'lista' =
-      tono === 'pending' ? 'en_preparacion' : 'lista';
+    const nuevoEstado: 'en_preparacion' | 'lista' = tono === 'pending' ? 'en_preparacion' : 'lista';
 
     onMover(comanda.id, nuevoEstado);
 
@@ -533,11 +524,7 @@ function CardComanda({
       className="rounded-[var(--radius-lg)] border bg-white overflow-hidden transition-shadow"
       style={{
         borderColor:
-          tono === 'progress'
-            ? '#fde68a'
-            : tono === 'done'
-              ? '#bbf7d0'
-              : 'var(--color-border)',
+          tono === 'progress' ? '#fde68a' : tono === 'done' ? '#bbf7d0' : 'var(--color-border)',
         borderWidth: tono === 'pending' ? 1 : 1.5,
         opacity: pending ? 0.6 : 1,
       }}
@@ -584,10 +571,7 @@ function CardComanda({
                 >
                   {item.cantidad}×
                 </span>
-                <span
-                  className="font-medium leading-snug"
-                  style={{ color: 'var(--color-ink)' }}
-                >
+                <span className="font-medium leading-snug" style={{ color: 'var(--color-ink)' }}>
                   {item.nombre}
                 </span>
               </div>
@@ -626,10 +610,7 @@ function CardComanda({
         </span>
         <div className="flex items-center gap-3 shrink-0">
           {tono !== 'done' ? (
-            <BotonCancelarComanda
-              comandaId={comanda.id}
-              numeroComanda={comanda.numeroDiario}
-            />
+            <BotonCancelarComanda comandaId={comanda.id} numeroComanda={comanda.numeroDiario} />
           ) : null}
           {tono === 'done' ? (
             <span className="text-xs italic" style={{ color: 'var(--color-muted)' }}>
@@ -667,10 +648,7 @@ function TiempoTranscurrido({ creadaEn }: { creadaEn: string }) {
   }, [creadaEn]);
 
   return (
-    <span
-      className="text-[0.7rem] tabular-nums"
-      style={{ color: 'var(--color-muted)' }}
-    >
+    <span className="text-[0.7rem] tabular-nums" style={{ color: 'var(--color-muted)' }}>
       {texto}
     </span>
   );
@@ -712,12 +690,9 @@ function EstadoVacio({ colorMarca }: { colorMarca: string }) {
       >
         Todo en orden.
       </h2>
-      <p
-        className="text-sm leading-relaxed"
-        style={{ color: 'var(--color-ink-soft)' }}
-      >
-        No hay comandas activas en este momento. Cuando un cliente envíe un
-        pedido, aparecerá aquí automáticamente.
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+        No hay comandas activas en este momento. Cuando un cliente envíe un pedido, aparecerá aquí
+        automáticamente.
       </p>
     </div>
   );

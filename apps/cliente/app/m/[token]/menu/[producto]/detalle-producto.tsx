@@ -53,10 +53,7 @@ export function DetalleProducto({
   }
 
   return (
-    <main
-      className="min-h-screen flex flex-col"
-      style={{ background: 'var(--color-paper)' }}
-    >
+    <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
       {/* Header con botón volver */}
       <header
         className="sticky top-0 z-10 px-5 py-3 border-b backdrop-blur-sm"
@@ -92,10 +89,7 @@ export function DetalleProducto({
           {nombre}
         </h1>
         {descripcion ? (
-          <p
-            className="text-sm leading-relaxed mt-3"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <p className="text-sm leading-relaxed mt-3" style={{ color: 'var(--color-ink-soft)' }}>
             {descripcion}
           </p>
         ) : null}
@@ -114,16 +108,10 @@ export function DetalleProducto({
               background: 'var(--color-paper-deep)',
             }}
           >
-            <p
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-ink)' }}
-            >
+            <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
               Sin stock por hoy.
             </p>
-            <p
-              className="text-xs mt-1.5"
-              style={{ color: 'var(--color-muted)' }}
-            >
+            <p className="text-xs mt-1.5" style={{ color: 'var(--color-muted)' }}>
               Vuelve mañana o elige otra opción.
             </p>
             <Link
@@ -160,13 +148,7 @@ export function DetalleProducto({
                     background: 'white',
                   }}
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
                     <path
                       d="M5 12h14"
                       stroke="currentColor"
@@ -194,13 +176,7 @@ export function DetalleProducto({
                     background: 'white',
                   }}
                 >
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
                     <path
                       d="M12 5v14M5 12h14"
                       stroke="currentColor"
@@ -219,7 +195,8 @@ export function DetalleProducto({
                 className="text-xs uppercase tracking-[0.14em] mb-2.5 block"
                 style={{ color: 'var(--color-muted)' }}
               >
-                ¿Algo que debamos saber? <span className="lowercase tracking-normal">(opcional)</span>
+                ¿Algo que debamos saber?{' '}
+                <span className="lowercase tracking-normal">(opcional)</span>
               </label>
               <textarea
                 id="notas"
@@ -237,10 +214,7 @@ export function DetalleProducto({
               <p
                 className="text-[0.7rem] mt-1 text-right"
                 style={{
-                  color:
-                    restantes < 20
-                      ? 'var(--color-danger)'
-                      : 'var(--color-muted)',
+                  color: restantes < 20 ? 'var(--color-danger)' : 'var(--color-muted)',
                 }}
               >
                 {notas.length} / {limiteNotas}

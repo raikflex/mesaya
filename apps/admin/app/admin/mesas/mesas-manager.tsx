@@ -79,16 +79,10 @@ function FormAgregar() {
       }}
     >
       <div>
-        <p
-          className="text-xs uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
           Agregar mesas
         </p>
-        <p
-          className="text-xs mt-0.5"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
           Continuamos la numeracion desde la ultima.
         </p>
       </div>
@@ -124,16 +118,10 @@ function CardDescargarQRs({ disabled }: { disabled: boolean }) {
         background: 'var(--color-paper)',
       }}
     >
-      <p
-        className="text-xs uppercase tracking-[0.14em]"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
         Descargar QRs
       </p>
-      <p
-        className="text-xs mt-0.5"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
         PDF A4 con todas las mesas activas.
       </p>
       <div className="flex-1" />
@@ -212,18 +200,11 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
   }
 
   return (
-    <li
-      className={cn(
-        'flex items-center gap-3 px-4 py-3.5',
-        !mesa.activa && 'opacity-60',
-      )}
-    >
+    <li className={cn('flex items-center gap-3 px-4 py-3.5', !mesa.activa && 'opacity-60')}>
       <div
         className="size-11 rounded-[var(--radius-md)] grid place-items-center shrink-0 font-[family-name:var(--font-display)] text-lg"
         style={{
-          background: mesa.activa
-            ? 'var(--color-ink)'
-            : 'var(--color-paper-deep)',
+          background: mesa.activa ? 'var(--color-ink)' : 'var(--color-paper-deep)',
           color: mesa.activa ? 'var(--color-paper)' : 'var(--color-muted)',
         }}
       >
@@ -231,10 +212,7 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
       </div>
 
       <div className="flex-1 min-w-0">
-        <p
-          className="text-sm font-medium"
-          style={{ color: 'var(--color-ink)' }}
-        >
+        <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
           Mesa {mesa.numero}
         </p>
         {editando ? (
@@ -324,22 +302,13 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
       </div>
 
       {confirmandoEliminar ? (
-        <ModalEliminarMesa
-          mesa={mesa}
-          onCancelar={() => setConfirmandoEliminar(false)}
-        />
+        <ModalEliminarMesa mesa={mesa} onCancelar={() => setConfirmandoEliminar(false)} />
       ) : null}
     </li>
   );
 }
 
-function ModalEliminarMesa({
-  mesa,
-  onCancelar,
-}: {
-  mesa: Mesa;
-  onCancelar: () => void;
-}) {
+function ModalEliminarMesa({ mesa, onCancelar }: { mesa: Mesa; onCancelar: () => void }) {
   // El modal se renderea como hijo directo de <body> via Portal, evitando
   // problemas con ancestros que tengan transform, filter, will-change, etc.,
   // que harian que position: fixed se vuelva relativo a ese ancestro en lugar
@@ -382,14 +351,10 @@ function ModalEliminarMesa({
         >
           Eliminar Mesa {mesa.numero}?
         </h3>
-        <p
-          className="text-sm mt-3 leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          Esta accion no se puede deshacer. La mesa desaparecera del panel y
-          los QRs viejos dejaran de funcionar. Las comandas, sesiones y
-          resenas asociadas se preservan en la base para tus reportes
-          historicos.
+        <p className="text-sm mt-3 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+          Esta accion no se puede deshacer. La mesa desaparecera del panel y los QRs viejos dejaran
+          de funcionar. Las comandas, sesiones y resenas asociadas se preservan en la base para tus
+          reportes historicos.
         </p>
         <div className="flex gap-2 mt-6 justify-end">
           <button

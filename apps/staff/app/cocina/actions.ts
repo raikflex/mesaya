@@ -10,16 +10,9 @@ export async function cerrarSesion() {
   redirect('/login');
 }
 
-export type EstadoComanda =
-  | 'pendiente'
-  | 'en_preparacion'
-  | 'lista'
-  | 'entregada'
-  | 'cancelada';
+export type EstadoComanda = 'pendiente' | 'en_preparacion' | 'lista' | 'entregada' | 'cancelada';
 
-export type CambiarEstadoResultado =
-  | { ok: true }
-  | { ok: false; error: string };
+export type CambiarEstadoResultado = { ok: true } | { ok: false; error: string };
 
 const TRANSICIONES_VALIDAS: Record<EstadoComanda, EstadoComanda[]> = {
   pendiente: ['en_preparacion', 'lista', 'cancelada'],
@@ -29,18 +22,10 @@ const TRANSICIONES_VALIDAS: Record<EstadoComanda, EstadoComanda[]> = {
   cancelada: [],
 };
 
-const ROLES_COCINA = new Set([
-  'cocina',
-  'cocinero',
-  'chef',
-  'dueno',
-  'dueño',
-  'admin',
-]);
+const ROLES_COCINA = new Set(['cocina', 'cocinero', 'chef', 'dueno', 'dueño', 'admin']);
 
 async function validarStaffCocina(): Promise<
-  | { ok: true; perfilId: string; restauranteId: string }
-  | { ok: false; error: string }
+  { ok: true; perfilId: string; restauranteId: string } | { ok: false; error: string }
 > {
   const supabase = await createClient();
   const {

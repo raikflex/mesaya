@@ -65,9 +65,8 @@ export default async function Paso7Page() {
           className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Cada mesa tiene su QR único. Descarga el PDF, imprímelo en hojas A4, recorta
-          cada cuadro y ponlo en su mesa. Mientras llegan los laminados que pediste por
-          el servicio de impresión.
+          Cada mesa tiene su QR único. Descarga el PDF, imprímelo en hojas A4, recorta cada cuadro y
+          ponlo en su mesa. Mientras llegan los laminados que pediste por el servicio de impresión.
         </p>
       </header>
 
@@ -151,17 +150,18 @@ export default async function Paso7Page() {
           >
             Para probar desde tu celular
           </p>
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
-            Asegúrate de que tu celular esté en la misma red WiFi que esta computadora.
-            Descarga el PDF, ábrelo en pantalla, y escanea con la cámara. Te debe llevar
-            a la pantalla del cliente para hacer un pedido.
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+            Asegúrate de que tu celular esté en la misma red WiFi que esta computadora. Descarga el
+            PDF, ábrelo en pantalla, y escanea con la cámara. Te debe llevar a la pantalla del
+            cliente para hacer un pedido.
           </p>
         </div>
 
-        <PreviewMesas mesas={(mesas ?? []).slice(0, 8)} restauranteNombre={restaurante?.nombre_publico as string ?? ''} totalMesas={totalMesas} />
+        <PreviewMesas
+          mesas={(mesas ?? []).slice(0, 8)}
+          restauranteNombre={(restaurante?.nombre_publico as string) ?? ''}
+          totalMesas={totalMesas}
+        />
 
         <div className="pt-4 flex items-center justify-between gap-4 flex-wrap border-t border-[var(--color-border)]">
           <p className="text-xs pt-4" style={{ color: 'var(--color-muted)' }}>
@@ -189,8 +189,7 @@ function PreviewMesas({
   totalMesas: number;
 }) {
   const baseUrl =
-    (globalThis as any).process?.env?.['NEXT_PUBLIC_APP_URL_CLIENTE'] ??
-    'http://localhost:3002';
+    (globalThis as any).process?.env?.['NEXT_PUBLIC_APP_URL_CLIENTE'] ?? 'http://localhost:3002';
 
   return (
     <div>
@@ -221,10 +220,7 @@ function PreviewMesas({
           </li>
         ))}
         {totalMesas > 8 ? (
-          <li
-            className="px-4 py-2.5 text-xs"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <li className="px-4 py-2.5 text-xs" style={{ color: 'var(--color-muted)' }}>
             … y {totalMesas - 8} más en el PDF
           </li>
         ) : null}

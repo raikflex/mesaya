@@ -118,10 +118,7 @@ export type ProductoState = {
   ok: boolean;
   error?: string;
   fieldErrors?: Partial<
-    Record<
-      'nombre' | 'precio' | 'categoria_id' | 'descripcion' | 'tiempo_preparacion_min',
-      string
-    >
+    Record<'nombre' | 'precio' | 'categoria_id' | 'descripcion' | 'tiempo_preparacion_min', string>
   >;
 };
 
@@ -199,11 +196,7 @@ export async function actualizarProducto(formData: FormData) {
     return;
   }
 
-  await supabase
-    .from('productos')
-    .update(update)
-    .eq('id', id)
-    .eq('restaurante_id', restauranteId);
+  await supabase.from('productos').update(update).eq('id', id).eq('restaurante_id', restauranteId);
 
   revalidatePath('/admin/menu');
 }
@@ -233,11 +226,7 @@ export async function eliminarProducto(formData: FormData) {
   const { supabase, restauranteId } = await getRestauranteId();
   if (!restauranteId) return;
 
-  await supabase
-    .from('productos')
-    .delete()
-    .eq('id', id)
-    .eq('restaurante_id', restauranteId);
+  await supabase.from('productos').delete().eq('id', id).eq('restaurante_id', restauranteId);
 
   revalidatePath('/admin/menu');
 }

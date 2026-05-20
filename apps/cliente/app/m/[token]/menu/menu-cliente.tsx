@@ -146,9 +146,7 @@ export function MenuCliente({
 
   useEffect(() => {
     if (!categoriaActiva || !tabsRef.current) return;
-    const activa = tabsRef.current.querySelector<HTMLElement>(
-      `[data-tab-id="${categoriaActiva}"]`,
-    );
+    const activa = tabsRef.current.querySelector<HTMLElement>(`[data-tab-id="${categoriaActiva}"]`);
     if (activa) {
       activa.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
     }
@@ -270,10 +268,7 @@ export function MenuCliente({
                   Tienes pedidos en curso
                 </span>
               </span>
-              <span
-                className="text-xs font-medium shrink-0"
-                style={{ color: colorMarca }}
-              >
+              <span className="text-xs font-medium shrink-0" style={{ color: colorMarca }}>
                 Ver mi cuenta
               </span>
             </Link>
@@ -294,12 +289,8 @@ export function MenuCliente({
                 onClick={() => scrollACategoria(g.id)}
                 className="px-3.5 h-8 rounded-full text-xs whitespace-nowrap transition-all shrink-0"
                 style={{
-                  background:
-                    categoriaActiva === g.id ? 'var(--color-ink)' : 'transparent',
-                  color:
-                    categoriaActiva === g.id
-                      ? 'var(--color-paper)'
-                      : 'var(--color-ink-soft)',
+                  background: categoriaActiva === g.id ? 'var(--color-ink)' : 'transparent',
+                  color: categoriaActiva === g.id ? 'var(--color-paper)' : 'var(--color-ink-soft)',
                   border:
                     categoriaActiva === g.id
                       ? '1px solid var(--color-ink)'
@@ -358,10 +349,7 @@ export function MenuCliente({
                   {g.nombre}
                 </h2>
                 {g.productos.length === 0 ? (
-                  <p
-                    className="text-sm py-4 italic"
-                    style={{ color: 'var(--color-muted)' }}
-                  >
+                  <p className="text-sm py-4 italic" style={{ color: 'var(--color-muted)' }}>
                     Pronto hay novedades aqui.
                   </p>
                 ) : (
@@ -478,10 +466,7 @@ function ItemProducto({
             ) : null}
           </div>
           {producto.descripcion ? (
-            <p
-              className="text-xs mt-1 leading-relaxed"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
+            <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
               {producto.descripcion}
             </p>
           ) : null}
@@ -544,12 +529,8 @@ function EstadoVacio({ colorMarca }: { colorMarca: string }) {
       >
         El menu se esta actualizando.
       </h2>
-      <p
-        className="text-sm leading-relaxed"
-        style={{ color: 'var(--color-ink-soft)' }}
-      >
-        Llama al mesero para hacer tu pedido. Pronto el menu estara disponible
-        aqui.
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+        Llama al mesero para hacer tu pedido. Pronto el menu estara disponible aqui.
       </p>
     </div>
   );

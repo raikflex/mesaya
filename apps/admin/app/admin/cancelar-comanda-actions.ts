@@ -4,9 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@mesaya/database/server';
 import { createServiceClient } from '@mesaya/database/service';
 
-export type CancelarComandaResultado =
-  | { ok: true }
-  | { ok: false; error: string };
+export type CancelarComandaResultado = { ok: true } | { ok: false; error: string };
 
 /**
  * Cancela una comanda activa (pendiente, en_preparacion, lista).
@@ -17,9 +15,7 @@ export type CancelarComandaResultado =
  * - La sesion sigue abierta para no romper otras comandas
  * - Usa service client (RLS no permite UPDATE arbitrario al rol dueno)
  */
-export async function cancelarComanda(
-  formData: FormData,
-): Promise<CancelarComandaResultado> {
+export async function cancelarComanda(formData: FormData): Promise<CancelarComandaResultado> {
   const comandaId = String(formData.get('comandaId') ?? '');
   if (!comandaId) return { ok: false, error: 'Falta el ID de la comanda.' };
 

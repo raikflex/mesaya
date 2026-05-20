@@ -48,8 +48,8 @@ export default async function Paso6Page() {
           className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
           style={{ color: 'var(--color-ink-soft)' }}
         >
-          Cada mesa tendrá su propio QR. Empieza diciéndonos cuántas mesas hay; después
-          ajustas la capacidad de cada una si quieres.
+          Cada mesa tendrá su propio QR. Empieza diciéndonos cuántas mesas hay; después ajustas la
+          capacidad de cada una si quieres.
         </p>
       </header>
 

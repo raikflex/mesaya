@@ -3,11 +3,7 @@
 import { useState, useTransition } from 'react';
 import { cancelarComanda } from './actions';
 
-const MOTIVOS_RAPIDOS = [
-  'Sin ingredientes',
-  'Cocina cerrada',
-  'Producto agotado',
-];
+const MOTIVOS_RAPIDOS = ['Sin ingredientes', 'Cocina cerrada', 'Producto agotado'];
 
 /**
  * Botón rojo + modal para cancelar una comanda con motivo. Muestra opciones
@@ -84,10 +80,7 @@ export function BotonCancelarComanda({
             >
               Cancelar pedido #{String(numeroComanda).padStart(3, '0')}
             </h2>
-            <p
-              className="text-xs mb-4"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
+            <p className="text-xs mb-4" style={{ color: 'var(--color-ink-soft)' }}>
               El cliente verá el motivo en su pantalla.
             </p>
 
@@ -105,8 +98,7 @@ export function BotonCancelarComanda({
                   onClick={() => setMotivo(m)}
                   className="text-xs px-3 py-1.5 rounded-full border transition-colors"
                   style={{
-                    borderColor:
-                      motivo === m ? 'var(--color-ink)' : 'var(--color-border-strong)',
+                    borderColor: motivo === m ? 'var(--color-ink)' : 'var(--color-border-strong)',
                     background: motivo === m ? 'var(--color-ink)' : 'white',
                     color: motivo === m ? 'white' : 'var(--color-ink-soft)',
                   }}

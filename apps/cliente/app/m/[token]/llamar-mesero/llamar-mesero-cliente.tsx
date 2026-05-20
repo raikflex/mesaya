@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { leerSesionCliente } from '../../../../lib/cliente-session';
-import {
-  borrarTimerLlamado,
-  calcularSegundosRestantes,
-} from '../../../../lib/timer-llamado';
+import { borrarTimerLlamado, calcularSegundosRestantes } from '../../../../lib/timer-llamado';
 import { cancelarLlamado, crearLlamado } from './actions';
 
 type LlamadoActivo = {
@@ -93,7 +90,9 @@ export function LlamarMeseroCliente({
     let cancelado = false;
 
     async function setup() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (cancelado) return;
       if (session?.access_token) {
         supabase.realtime.setAuth(session.access_token);
@@ -255,12 +254,8 @@ export function LlamarMeseroCliente({
           >
             Aun no hiciste tu pedido.
           </h1>
-          <p
-            className="text-sm leading-relaxed mb-8"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
-            Pide algo del menu primero. Despues puedes llamar al mesero si lo
-            necesitas.
+          <p className="text-sm leading-relaxed mb-8" style={{ color: 'var(--color-ink-soft)' }}>
+            Pide algo del menu primero. Despues puedes llamar al mesero si lo necesitas.
           </p>
           <Link
             href={`/m/${qrToken}/menu`}
@@ -274,14 +269,10 @@ export function LlamarMeseroCliente({
     );
   }
 
-  const sugerencias =
-    motivo === 'campana' ? SUGERENCIAS_CAMPANA : SUGERENCIAS_OTRO;
+  const sugerencias = motivo === 'campana' ? SUGERENCIAS_CAMPANA : SUGERENCIAS_OTRO;
 
   return (
-    <main
-      className="min-h-screen flex flex-col"
-      style={{ background: 'var(--color-paper)' }}
-    >
+    <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
       <header
         className="sticky top-0 z-10 px-5 py-3 border-b backdrop-blur-sm"
         style={{
@@ -349,16 +340,10 @@ export function LlamarMeseroCliente({
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p
-                className="text-base font-semibold"
-                style={{ color: 'var(--color-ink)' }}
-              >
+              <p className="text-base font-semibold" style={{ color: 'var(--color-ink)' }}>
                 Listo para irte?
               </p>
-              <p
-                className="text-sm mt-0.5"
-                style={{ color: 'var(--color-ink-soft)' }}
-              >
+              <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                 Pedir la cuenta con propina y metodo de pago
               </p>
             </div>
@@ -408,16 +393,10 @@ export function LlamarMeseroCliente({
               </svg>
             </div>
             <div className="flex-1 min-w-0">
-              <p
-                className="text-base font-semibold"
-                style={{ color: 'var(--color-ink-soft)' }}
-              >
+              <p className="text-base font-semibold" style={{ color: 'var(--color-ink-soft)' }}>
                 Pedir la cuenta
               </p>
-              <p
-                className="text-sm mt-0.5"
-                style={{ color: 'var(--color-muted)' }}
-              >
+              <p className="text-sm mt-0.5" style={{ color: 'var(--color-muted)' }}>
                 Disponible cuando recibas tu pedido
               </p>
             </div>
@@ -443,17 +422,11 @@ export function LlamarMeseroCliente({
                 />
               </svg>
             </div>
-            <p
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-ink)' }}
-            >
+            <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
               Llamado atendido
             </p>
             {llamadoResuelto.nombreMesero ? (
-              <p
-                className="text-xs mt-1"
-                style={{ color: 'var(--color-ink-soft)' }}
-              >
+              <p className="text-xs mt-1" style={{ color: 'var(--color-ink-soft)' }}>
                 {llamadoResuelto.nombreMesero} paso por tu mesa
               </p>
             ) : null}
@@ -469,9 +442,7 @@ export function LlamarMeseroCliente({
                 colorMarca={colorMarca}
                 pending={pending}
                 onCancelar={() => cancelar(l.id)}
-                onVolverALlamar={() =>
-                  volverALlamar(l.id, l.motivo as Motivo)
-                }
+                onVolverALlamar={() => volverALlamar(l.id, l.motivo as Motivo)}
               />
             ))}
           </section>
@@ -524,9 +495,7 @@ export function LlamarMeseroCliente({
                   style={{
                     background: seleccionado ? colorMarca : 'transparent',
                     color: seleccionado ? 'white' : 'var(--color-ink)',
-                    borderColor: seleccionado
-                      ? colorMarca
-                      : 'var(--color-border-strong)',
+                    borderColor: seleccionado ? colorMarca : 'var(--color-border-strong)',
                   }}
                 >
                   {seleccionado ? '+ ' : '+ '}
@@ -541,8 +510,7 @@ export function LlamarMeseroCliente({
             className="text-xs uppercase tracking-[0.14em] mb-2 block"
             style={{ color: 'var(--color-muted)' }}
           >
-            O escribe tu detalle{' '}
-            <span className="lowercase tracking-normal">(opcional)</span>
+            O escribe tu detalle <span className="lowercase tracking-normal">(opcional)</span>
           </label>
           <textarea
             id="nota"
@@ -557,10 +525,7 @@ export function LlamarMeseroCliente({
               background: 'var(--color-paper)',
             }}
           />
-          <p
-            className="text-xs mt-1 text-right"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <p className="text-xs mt-1 text-right" style={{ color: 'var(--color-muted)' }}>
             {nota.length} / 200
           </p>
 
@@ -589,8 +554,8 @@ export function LlamarMeseroCliente({
           className="text-xs text-center mt-6 leading-relaxed px-2"
           style={{ color: 'var(--color-muted)' }}
         >
-          El mesero recibe el aviso al instante en su tableta. Si tarda,
-          puedes volver a llamarlo despues de 1 minuto y 45 segundos.
+          El mesero recibe el aviso al instante en su tableta. Si tarda, puedes volver a llamarlo
+          despues de 1 minuto y 45 segundos.
         </p>
       </div>
     </main>
@@ -649,10 +614,7 @@ function LlamadoActivoCard({
             </svg>
           </div>
           <div className="min-w-0">
-            <p
-              className="text-sm font-medium"
-              style={{ color: 'var(--color-ink)' }}
-            >
+            <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
               {ETIQUETAS[llamado.motivo] ?? 'Llamado activo'}
             </p>
             <p
@@ -698,10 +660,7 @@ function LlamadoActivoCard({
             {pending ? 'Avisando...' : 'Volver a llamar'}
           </button>
         ) : (
-          <p
-            className="text-xs text-center"
-            style={{ color: 'var(--color-muted)' }}
-          >
+          <p className="text-xs text-center" style={{ color: 'var(--color-muted)' }}>
             Si no llega en{' '}
             <span
               className="font-[family-name:var(--font-mono)] tabular-nums"
@@ -756,23 +715,14 @@ function OpcionMotivo({
         }}
       >
         {checked ? (
-          <span
-            className="size-2.5 rounded-full"
-            style={{ background: colorMarca }}
-          />
+          <span className="size-2.5 rounded-full" style={{ background: colorMarca }} />
         ) : null}
       </div>
       <div className="flex-1 min-w-0">
-        <p
-          className="text-sm font-medium"
-          style={{ color: 'var(--color-ink)' }}
-        >
+        <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
           {label}
         </p>
-        <p
-          className="text-xs mt-0.5"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
           {descripcion}
         </p>
       </div>

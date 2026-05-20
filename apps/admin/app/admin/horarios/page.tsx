@@ -30,8 +30,7 @@ export default async function HorariosPage() {
     .eq('id', restauranteId)
     .maybeSingle();
 
-  const nombreNegocio =
-    (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
+  const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
   const estado = (restaurante?.estado as string) ?? 'activo';
 
   // Horario base por dia de semana
@@ -50,9 +49,7 @@ export default async function HorariosPage() {
 
   // Excepciones futuras (hoy + 90 dias). Filtramos en BD para no traer ruido.
   const hoy = new Date().toISOString().slice(0, 10);
-  const en90Dias = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
+  const en90Dias = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
   const { data: excepcionesRaw } = await supabase
     .from('excepciones_horario')
@@ -85,10 +82,7 @@ export default async function HorariosPage() {
             style={{ color: 'var(--color-ink)' }}
           >
             Horarios de{' '}
-            <em
-              className="not-italic"
-              style={{ fontStyle: 'italic', fontWeight: 400 }}
-            >
+            <em className="not-italic" style={{ fontStyle: 'italic', fontWeight: 400 }}>
               atencion
             </em>
             .
@@ -97,8 +91,8 @@ export default async function HorariosPage() {
             className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Define cuando recibis pedidos. Fuera del horario los clientes ven
-            que estas cerrado y no pueden ordenar.
+            Define cuando recibis pedidos. Fuera del horario los clientes ven que estas cerrado y no
+            pueden ordenar.
           </p>
         </header>
 

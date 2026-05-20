@@ -2,10 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  borrarSesionCliente,
-  leerSesionCliente,
-} from '../../../../lib/cliente-session';
+import { borrarSesionCliente, leerSesionCliente } from '../../../../lib/cliente-session';
 
 export function MenuPlaceholder({
   qrToken,
@@ -52,10 +49,7 @@ export function MenuPlaceholder({
   }
 
   return (
-    <main
-      className="min-h-screen flex flex-col"
-      style={{ background: 'var(--color-paper)' }}
-    >
+    <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
       {/* Header sticky con nombre + mesa */}
       <header
         className="sticky top-0 z-10 px-5 py-3 border-b backdrop-blur-sm"
@@ -124,13 +118,9 @@ export function MenuPlaceholder({
           >
             Bienvenido, {nombre}.
           </h2>
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
-            Aquí verás el menú agrupado por categorías, podrás agregar productos
-            al carrito y enviar tu pedido a la cocina. Esta pantalla se
-            construye en el siguiente bloque.
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+            Aquí verás el menú agrupado por categorías, podrás agregar productos al carrito y enviar
+            tu pedido a la cocina. Esta pantalla se construye en el siguiente bloque.
           </p>
         </div>
       </div>

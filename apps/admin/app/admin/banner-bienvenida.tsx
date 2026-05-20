@@ -45,16 +45,10 @@ export function BannerBienvenida() {
         </svg>
       </span>
       <div className="flex-1">
-        <p
-          className="text-sm font-medium"
-          style={{ color: '#1d3d24' }}
-        >
+        <p className="text-sm font-medium" style={{ color: '#1d3d24' }}>
           ¡Listo! Tu restaurante está abierto.
         </p>
-        <p
-          className="text-xs mt-0.5"
-          style={{ color: '#1d3d24' }}
-        >
+        <p className="text-xs mt-0.5" style={{ color: '#1d3d24' }}>
           Los clientes ya pueden escanear los QRs y hacer pedidos.
         </p>
       </div>

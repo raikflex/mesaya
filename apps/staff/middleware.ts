@@ -17,11 +17,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
   // Permitir rutas estáticas y assets.
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname === '/favicon.ico'
-  ) {
+  if (pathname.startsWith('/_next') || pathname.startsWith('/api') || pathname === '/favicon.ico') {
     return sessionResponse;
   }
 
@@ -35,9 +31,7 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(
-          cookies: { name: string; value: string; options: CookieOptions }[],
-        ) {
+        setAll(cookies: { name: string; value: string; options: CookieOptions }[]) {
           cookies.forEach(({ name, value, options }) => {
             response.cookies.set(name, value, options);
           });

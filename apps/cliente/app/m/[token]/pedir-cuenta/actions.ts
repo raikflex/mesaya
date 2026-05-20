@@ -66,9 +66,9 @@ export async function pedirCuenta(input: {
     return { ok: false, error: 'Esta mesa ya no estÃ¡ disponible.' };
   }
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as { estado: string } | null;
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as { estado: string } | null;
 
   if (!restaurante || restaurante.estado !== 'activo') {
     return {

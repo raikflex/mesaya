@@ -39,9 +39,8 @@ export function MapaMesas({
   colorMarca: string;
   variante?: 'admin' | 'mesero';
 }) {
-  const [sesionesAbiertas, setSesionesAbiertas] = useState<SesionAbiertaResumen[]>(
-    sesionesAbiertasIniciales,
-  );
+  const [sesionesAbiertas, setSesionesAbiertas] =
+    useState<SesionAbiertaResumen[]>(sesionesAbiertasIniciales);
   const [, setTick] = useState(0);
 
   useEffect(() => {
@@ -78,21 +77,18 @@ export function MapaMesas({
           .eq('restaurante_id', restauranteId)
           .eq('estado', 'abierta');
 
-        const lista: SesionAbiertaResumen[] = ((data ?? []) as Array<{
-          mesa_id: string;
-          abierta_en: string;
-          comandas: { total: number; estado: string }[] | null;
-        }>).map((s) => {
-          const comandasNoCanceladas = (s.comandas ?? []).filter(
-            (c) => c.estado !== 'cancelada',
-          );
+        const lista: SesionAbiertaResumen[] = (
+          (data ?? []) as Array<{
+            mesa_id: string;
+            abierta_en: string;
+            comandas: { total: number; estado: string }[] | null;
+          }>
+        ).map((s) => {
+          const comandasNoCanceladas = (s.comandas ?? []).filter((c) => c.estado !== 'cancelada');
           return {
             mesaId: s.mesa_id,
             abiertaEn: s.abierta_en,
-            totalAcumulado: comandasNoCanceladas.reduce(
-              (acc, c) => acc + (c.total ?? 0),
-              0,
-            ),
+            totalAcumulado: comandasNoCanceladas.reduce((acc, c) => acc + (c.total ?? 0), 0),
             comandasCount: comandasNoCanceladas.length,
           };
         });
@@ -102,22 +98,14 @@ export function MapaMesas({
 
       const canal = supabase
         .channel(canalNombre)
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'sesiones' },
-          (payload) => {
-            const fila = (payload.new ?? payload.old) as { restaurante_id?: string } | null;
-            if (fila?.restaurante_id === restauranteId) refetch();
-          },
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'comandas' },
-          (payload) => {
-            const fila = payload.new as { restaurante_id?: string } | null;
-            if (fila?.restaurante_id === restauranteId) refetch();
-          },
-        );
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'sesiones' }, (payload) => {
+          const fila = (payload.new ?? payload.old) as { restaurante_id?: string } | null;
+          if (fila?.restaurante_id === restauranteId) refetch();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'comandas' }, (payload) => {
+          const fila = payload.new as { restaurante_id?: string } | null;
+          if (fila?.restaurante_id === restauranteId) refetch();
+        });
 
       if (cancelado) {
         supabase.removeChannel(canal);
@@ -166,24 +154,15 @@ export function MapaMesas({
           </h2>
         </div>
         <div className="flex items-center gap-1.5">
-          <span
-            className="size-1.5 rounded-full animate-pulse"
-            style={{ background: '#22c55e' }}
-          />
-          <span
-            className="text-[0.65rem] uppercase tracking-[0.14em]"
-            style={{ color: '#22c55e' }}
-          >
+          <span className="size-1.5 rounded-full animate-pulse" style={{ background: '#22c55e' }} />
+          <span className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: '#22c55e' }}>
             En vivo
           </span>
         </div>
       </div>
 
       {capacidadTotal > 0 ? (
-        <p
-          className="text-[0.7rem] mb-3"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-[0.7rem] mb-3" style={{ color: 'var(--color-muted)' }}>
           Capacidad ocupada: {capacidadOcupada} / {capacidadTotal} personas
         </p>
       ) : null}
@@ -228,10 +207,7 @@ function CardMesa({
   compacta: boolean;
 }) {
   const minutos = sesion
-    ? Math.max(
-        0,
-        Math.floor((Date.now() - new Date(sesion.abiertaEn).getTime()) / 60000),
-      )
+    ? Math.max(0, Math.floor((Date.now() - new Date(sesion.abiertaEn).getTime()) / 60000))
     : 0;
   const tiempoFmt =
     minutos < 1
@@ -305,10 +281,7 @@ function CardMesa({
           {ocupada ? 'Ocupada' : 'Libre'}
         </span>
       </div>
-      <p
-        className="text-[0.7rem]"
-        style={{ color: estilo.labelColor }}
-      >
+      <p className="text-[0.7rem]" style={{ color: estilo.labelColor }}>
         {mesa.capacidad} {mesa.capacidad === 1 ? 'persona' : 'personas'}
       </p>
       {ocupada && sesion ? (

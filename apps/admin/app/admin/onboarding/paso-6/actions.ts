@@ -36,10 +36,7 @@ export type BulkState = {
   fieldError?: string;
 };
 
-export async function generarMesas(
-  _prev: BulkState,
-  formData: FormData,
-): Promise<BulkState> {
+export async function generarMesas(_prev: BulkState, formData: FormData): Promise<BulkState> {
   const parsed = bulkSchema.safeParse({ cantidad: formData.get('cantidad') });
   if (!parsed.success) {
     return { ok: false, fieldError: parsed.error.issues[0]?.message ?? 'Cantidad inválida' };
@@ -57,7 +54,12 @@ export async function generarMesas(
   const numerosUsados = new Set((existentes ?? []).map((m) => String(m.numero)));
 
   // Generar mesas con números secuenciales que no choquen.
-  const aInsertar: { restaurante_id: string; numero: string; capacidad: number; activa: boolean }[] = [];
+  const aInsertar: {
+    restaurante_id: string;
+    numero: string;
+    capacidad: number;
+    activa: boolean;
+  }[] = [];
   let n = 1;
   while (aInsertar.length < parsed.data.cantidad) {
     const numStr = String(n);

@@ -75,9 +75,7 @@ export function Stepper() {
                   aria-hidden
                   className="w-3 h-px"
                   style={{
-                    background: completado
-                      ? 'var(--color-ink-soft)'
-                      : 'var(--color-border-strong)',
+                    background: completado ? 'var(--color-ink-soft)' : 'var(--color-border-strong)',
                   }}
                 />
               ) : null}

@@ -97,13 +97,10 @@ Deno.serve(async (req) => {
     }),
   );
 
-  const enviadas = resultados.filter(
-    (r) => r.status === 'fulfilled' && r.value.ok,
-  ).length;
+  const enviadas = resultados.filter((r) => r.status === 'fulfilled' && r.value.ok).length;
   const fallidas = resultados.length - enviadas;
 
-  return new Response(
-    JSON.stringify({ ok: true, total: subs.length, enviadas, fallidas }),
-    { headers: { 'Content-Type': 'application/json' } },
-  );
+  return new Response(JSON.stringify({ ok: true, total: subs.length, enviadas, fallidas }), {
+    headers: { 'Content-Type': 'application/json' },
+  });
 });

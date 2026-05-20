@@ -5,10 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { leerSesionCliente } from '../../../../lib/cliente-session';
-import {
-  borrarTimerLlamado,
-  calcularSegundosRestantes,
-} from '../../../../lib/timer-llamado';
+import { borrarTimerLlamado, calcularSegundosRestantes } from '../../../../lib/timer-llamado';
 import { cancelarLlamado } from '../llamar-mesero/actions';
 import { pedirCuenta, type FormaPago, type TipoDoc } from './actions';
 
@@ -34,7 +31,11 @@ type ComandaPorCliente = {
 const FORMAS_PAGO: { value: FormaPago; label: string; descripcion: string }[] = [
   { value: 'efectivo', label: 'Efectivo', descripcion: 'Pago en monedas y billetes' },
   { value: 'tarjeta', label: 'Tarjeta', descripcion: 'Débito o crédito en datafono' },
-  { value: 'transferencia', label: 'Transferencia / PSE', descripcion: 'Nequi, Bancolombia, Daviplata' },
+  {
+    value: 'transferencia',
+    label: 'Transferencia / PSE',
+    descripcion: 'Nequi, Bancolombia, Daviplata',
+  },
   { value: 'no_seguro', label: 'Aún no decido', descripcion: 'Le digo al mesero al llegar' },
 ];
 
@@ -54,9 +55,11 @@ export function PedirCuentaCliente({
   colorMarca: string;
   tieneSesionAbierta: boolean;
   comandas: ComandaPorCliente[];
-  llamadoPagoPendiente:
-    | { id: string; creado_en: string; mesero_atendiendo_nombre?: string | null }
-    | null;
+  llamadoPagoPendiente: {
+    id: string;
+    creado_en: string;
+    mesero_atendiendo_nombre?: string | null;
+  } | null;
   sesionId: string | null;
 }) {
   const router = useRouter();
@@ -98,7 +101,9 @@ export function PedirCuentaCliente({
     let cancelado = false;
 
     async function setup() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (cancelado) return;
       if (session?.access_token) {
         supabase.realtime.setAuth(session.access_token);
@@ -180,12 +185,8 @@ export function PedirCuentaCliente({
           >
             Aún no hiciste tu pedido.
           </h1>
-          <p
-            className="text-sm leading-relaxed mb-8"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
-            Pide algo del menú primero. Cuando termines, regresas aquí para
-            pedir la cuenta.
+          <p className="text-sm leading-relaxed mb-8" style={{ color: 'var(--color-ink-soft)' }}>
+            Pide algo del menú primero. Cuando termines, regresas aquí para pedir la cuenta.
           </p>
           <Link
             href={`/m/${qrToken}/menu`}
@@ -308,10 +309,7 @@ export function PedirCuentaCliente({
           className="rounded-[var(--radius-lg)] border bg-white mb-5 overflow-hidden"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div
-            className="px-5 py-3 border-b"
-            style={{ borderColor: 'var(--color-border)' }}
-          >
+          <div className="px-5 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
             <p
               className="text-xs uppercase tracking-[0.14em]"
               style={{ color: 'var(--color-muted)' }}
@@ -339,23 +337,12 @@ export function PedirCuentaCliente({
                 </div>
                 <ul className="space-y-1">
                   {c.items.map((it) => (
-                    <li
-                      key={it.id}
-                      className="text-xs leading-relaxed flex items-start gap-2"
-                    >
-                      <span style={{ color: 'var(--color-muted)' }}>
-                        {it.cantidad}×
-                      </span>
-                      <span
-                        className="flex-1"
-                        style={{ color: 'var(--color-ink-soft)' }}
-                      >
+                    <li key={it.id} className="text-xs leading-relaxed flex items-start gap-2">
+                      <span style={{ color: 'var(--color-muted)' }}>{it.cantidad}×</span>
+                      <span className="flex-1" style={{ color: 'var(--color-ink-soft)' }}>
                         {it.nombre_snapshot}
                         {it.nota ? (
-                          <span
-                            className="italic ml-1"
-                            style={{ color: 'var(--color-muted)' }}
-                          >
+                          <span className="italic ml-1" style={{ color: 'var(--color-muted)' }}>
                             ({it.nota})
                           </span>
                         ) : null}
@@ -388,16 +375,10 @@ export function PedirCuentaCliente({
               htmlFor="toggle-propina"
             >
               <div className="flex-1 min-w-0">
-                <span
-                  className="text-sm block"
-                  style={{ color: 'var(--color-ink-soft)' }}
-                >
+                <span className="text-sm block" style={{ color: 'var(--color-ink-soft)' }}>
                   Propina sugerida (10%)
                 </span>
-                <span
-                  className="text-[0.7rem]"
-                  style={{ color: 'var(--color-muted)' }}
-                >
+                <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
                   Voluntaria. Decides tú.
                 </span>
               </div>
@@ -418,20 +399,14 @@ export function PedirCuentaCliente({
                   onClick={() => setConPropina((v) => !v)}
                   className="relative h-6 w-11 rounded-full transition-colors"
                   style={{
-                    background: conPropina
-                      ? colorMarca
-                      : 'var(--color-paper-deep)',
-                    border: `1px solid ${
-                      conPropina ? colorMarca : 'var(--color-border-strong)'
-                    }`,
+                    background: conPropina ? colorMarca : 'var(--color-paper-deep)',
+                    border: `1px solid ${conPropina ? colorMarca : 'var(--color-border-strong)'}`,
                   }}
                 >
                   <span
                     className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform"
                     style={{
-                      transform: conPropina
-                        ? 'translateX(20px)'
-                        : 'translateX(0)',
+                      transform: conPropina ? 'translateX(20px)' : 'translateX(0)',
                     }}
                   />
                 </button>
@@ -442,10 +417,7 @@ export function PedirCuentaCliente({
               className="border-t pt-3 mt-2 flex items-center justify-between"
               style={{ borderColor: 'var(--color-border)' }}
             >
-              <span
-                className="text-base font-medium"
-                style={{ color: 'var(--color-ink)' }}
-              >
+              <span className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>
                 Total a pagar
               </span>
               <span
@@ -471,10 +443,7 @@ export function PedirCuentaCliente({
                 key={f.value}
                 className="flex items-start gap-3 px-3.5 py-3 rounded-[var(--radius-md)] border cursor-pointer transition-colors bg-white"
                 style={{
-                  borderColor:
-                    formaPago === f.value
-                      ? colorMarca
-                      : 'var(--color-border-strong)',
+                  borderColor: formaPago === f.value ? colorMarca : 'var(--color-border-strong)',
                   borderWidth: formaPago === f.value ? 1.5 : 1,
                 }}
               >
@@ -489,30 +458,18 @@ export function PedirCuentaCliente({
                 <div
                   className="size-5 rounded-full border-2 grid place-items-center shrink-0 mt-0.5"
                   style={{
-                    borderColor:
-                      formaPago === f.value
-                        ? colorMarca
-                        : 'var(--color-border-strong)',
+                    borderColor: formaPago === f.value ? colorMarca : 'var(--color-border-strong)',
                   }}
                 >
                   {formaPago === f.value ? (
-                    <span
-                      className="size-2.5 rounded-full"
-                      style={{ background: colorMarca }}
-                    />
+                    <span className="size-2.5 rounded-full" style={{ background: colorMarca }} />
                   ) : null}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p
-                    className="text-sm font-medium"
-                    style={{ color: 'var(--color-ink)' }}
-                  >
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
                     {f.label}
                   </p>
-                  <p
-                    className="text-[0.7rem] mt-0.5"
-                    style={{ color: 'var(--color-ink-soft)' }}
-                  >
+                  <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                     {f.descripcion}
                   </p>
                 </div>
@@ -528,9 +485,7 @@ export function PedirCuentaCliente({
             aria-expanded={quiereFactura}
             className="w-full flex items-center justify-between px-3.5 py-3 rounded-[var(--radius-md)] border bg-white"
             style={{
-              borderColor: quiereFactura
-                ? colorMarca
-                : 'var(--color-border-strong)',
+              borderColor: quiereFactura ? colorMarca : 'var(--color-border-strong)',
               borderWidth: quiereFactura ? 1.5 : 1,
             }}
           >
@@ -538,20 +493,12 @@ export function PedirCuentaCliente({
               <span
                 className="size-5 rounded border-2 grid place-items-center shrink-0"
                 style={{
-                  borderColor: quiereFactura
-                    ? colorMarca
-                    : 'var(--color-border-strong)',
+                  borderColor: quiereFactura ? colorMarca : 'var(--color-border-strong)',
                   background: quiereFactura ? colorMarca : 'transparent',
                 }}
               >
                 {quiereFactura ? (
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    aria-hidden
-                  >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
                     <polyline
                       points="5 12 10 17 19 8"
                       stroke="white"
@@ -563,16 +510,10 @@ export function PedirCuentaCliente({
                 ) : null}
               </span>
               <div className="text-left min-w-0">
-                <p
-                  className="text-sm font-medium"
-                  style={{ color: 'var(--color-ink)' }}
-                >
+                <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
                   ¿Necesitas factura?
                 </p>
-                <p
-                  className="text-[0.7rem] mt-0.5"
-                  style={{ color: 'var(--color-ink-soft)' }}
-                >
+                <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                   Si lo activas, agrega tu documento.
                 </p>
               </div>
@@ -600,10 +541,8 @@ export function PedirCuentaCliente({
                       aria-pressed={tipoDoc === t}
                       className="h-10 rounded-[var(--radius-md)] border text-sm font-medium transition-colors"
                       style={{
-                        borderColor:
-                          tipoDoc === t ? colorMarca : 'var(--color-border-strong)',
-                        background:
-                          tipoDoc === t ? colorMarca : 'white',
+                        borderColor: tipoDoc === t ? colorMarca : 'var(--color-border-strong)',
+                        background: tipoDoc === t ? colorMarca : 'white',
                         color: tipoDoc === t ? 'white' : 'var(--color-ink)',
                         borderWidth: tipoDoc === t ? 1.5 : 1,
                       }}
@@ -658,11 +597,7 @@ export function PedirCuentaCliente({
                     setNombreDoc(e.target.value);
                     if (error) setError(null);
                   }}
-                  placeholder={
-                    tipoDoc === 'NIT'
-                      ? 'Empresa SAS'
-                      : 'Como aparece en tu documento'
-                  }
+                  placeholder={tipoDoc === 'NIT' ? 'Empresa SAS' : 'Como aparece en tu documento'}
                   maxLength={120}
                   className="w-full h-11 px-3 rounded-[var(--radius-md)] border text-base"
                   style={{
@@ -680,8 +615,8 @@ export function PedirCuentaCliente({
           className="text-[0.7rem] text-center mb-2 leading-relaxed px-2"
           style={{ color: 'var(--color-muted)' }}
         >
-          Al pedir la cuenta, el mesero llega a tu mesa con la información que
-          elegiste. La cuenta es para toda la mesa.
+          Al pedir la cuenta, el mesero llega a tu mesa con la información que elegiste. La cuenta
+          es para toda la mesa.
         </p>
 
         {error ? (
@@ -805,10 +740,7 @@ function PantallaCuentaPedida({
             ? `${llamado.mesero_atendiendo_nombre} viene con la cuenta`
             : 'El mesero viene con la cuenta'}
         </h1>
-        <p
-          className="text-sm leading-relaxed mb-2"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
+        <p className="text-sm leading-relaxed mb-2" style={{ color: 'var(--color-ink-soft)' }}>
           Total a pagar:{' '}
           <span className="font-medium" style={{ color: 'var(--color-ink)' }}>
             ${totalFinal.toLocaleString('es-CO')}
@@ -834,10 +766,7 @@ function PantallaCuentaPedida({
                 {pending ? 'Avisando…' : 'Volver a llamar al mesero'}
               </button>
             ) : (
-              <p
-                className="text-[0.7rem]"
-                style={{ color: 'var(--color-muted)' }}
-              >
+              <p className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
                 Si no llega en{' '}
                 <span
                   className="font-[family-name:var(--font-mono)] tabular-nums"
@@ -852,11 +781,7 @@ function PantallaCuentaPedida({
         ) : null}
 
         {error ? (
-          <p
-            role="alert"
-            className="text-xs mb-3"
-            style={{ color: 'var(--color-danger)' }}
-          >
+          <p role="alert" className="text-xs mb-3" style={{ color: 'var(--color-danger)' }}>
             {error}
           </p>
         ) : null}

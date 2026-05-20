@@ -111,11 +111,7 @@ function OpcionCard({
         >
           {activa ? (
             <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-paper)" strokeWidth="3">
-              <polyline
-                points="5 12 10 17 19 8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <polyline points="5 12 10 17 19 8" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ) : null}
         </span>

@@ -37,9 +37,7 @@ export type DatosReporte = {
   }>;
 };
 
-export type ResultadoReporte =
-  | { ok: true; data: DatosReporte }
-  | { ok: false; error: string };
+export type ResultadoReporte = { ok: true; data: DatosReporte } | { ok: false; error: string };
 
 const MAX_DIAS = 366; // 1 ano de tope para evitar queries gigantes
 
@@ -54,9 +52,7 @@ export async function obtenerDatosReporte(
     return { ok: false, error: 'La fecha inicial debe ser anterior a la final.' };
   }
 
-  const diff =
-    (new Date(hasta).getTime() - new Date(desde).getTime()) /
-    (1000 * 60 * 60 * 24);
+  const diff = (new Date(hasta).getTime() - new Date(desde).getTime()) / (1000 * 60 * 60 * 24);
   if (diff > MAX_DIAS) {
     return {
       ok: false,
@@ -93,15 +89,14 @@ export async function obtenerDatosReporte(
   // desde 00:00 inicio del dia local -> UTC = +5 horas
   // hasta 23:59:59 fin del dia local -> UTC = +5 horas
   const desdeIso = `${desde}T05:00:00.000Z`;
-  const hastaIso = `${hasta}T28:59:59.999Z`.replace('T28', 'T04').replace(
-    /(\d{4}-\d{2}-\d{2})T04/,
-    (_m, fecha) => {
+  const hastaIso = `${hasta}T28:59:59.999Z`
+    .replace('T28', 'T04')
+    .replace(/(\d{4}-\d{2}-\d{2})T04/, (_m, fecha) => {
       // sumar 1 dia
       const d = new Date(fecha);
       d.setUTCDate(d.getUTCDate() + 1);
       return `${d.toISOString().slice(0, 10)}T04`;
-    },
-  );
+    });
 
   // Pagos confirmados en el rango (para calcular ingresos reales)
   const { data: pagosRaw } = await supabase
@@ -179,9 +174,7 @@ export async function obtenerDatosReporte(
       | { mesa_id: string; mesas?: { numero: string } | { numero: string }[] | null }[]
       | null;
     sesion_clientes: { nombre: string } | { nombre: string }[] | null;
-    comanda_items:
-      | { nombre_snapshot: string; cantidad: number; precio_snapshot: number }[]
-      | null;
+    comanda_items: { nombre_snapshot: string; cantidad: number; precio_snapshot: number }[] | null;
   };
 
   const comandasFiltradas = (comandasRaw ?? []) as ComandaRow[];
@@ -189,15 +182,9 @@ export async function obtenerDatosReporte(
   // Construir filas de sesiones (una por pago)
   const sesiones = pagos.map((p) => {
     const ses = Array.isArray(p.sesiones) ? p.sesiones[0] : p.sesiones;
-    const mesa = ses?.mesas
-      ? Array.isArray(ses.mesas)
-        ? ses.mesas[0]
-        : ses.mesas
-      : null;
+    const mesa = ses?.mesas ? (Array.isArray(ses.mesas) ? ses.mesas[0] : ses.mesas) : null;
     // Contar comandas de esa sesion (no canceladas)
-    const cantComandas = comandasFiltradas.filter(
-      (c) => c.sesion_id === p.sesion_id,
-    ).length;
+    const cantComandas = comandasFiltradas.filter((c) => c.sesion_id === p.sesion_id).length;
     return {
       fecha: p.confirmado_en,
       mesaNumero: (mesa?.numero as string) ?? '?',
@@ -211,14 +198,8 @@ export async function obtenerDatosReporte(
   // Construir filas de comandas con items
   const comandas = comandasFiltradas.map((c) => {
     const ses = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
-    const mesa = ses?.mesas
-      ? Array.isArray(ses.mesas)
-        ? ses.mesas[0]
-        : ses.mesas
-      : null;
-    const sc = Array.isArray(c.sesion_clientes)
-      ? c.sesion_clientes[0]
-      : c.sesion_clientes;
+    const mesa = ses?.mesas ? (Array.isArray(ses.mesas) ? ses.mesas[0] : ses.mesas) : null;
+    const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
     const items = (c.comanda_items ?? []).map((it) => ({
       nombre: it.nombre_snapshot,
       cantidad: it.cantidad,
@@ -242,8 +223,7 @@ export async function obtenerDatosReporte(
   const propinasTotal = pagos.reduce((acc, p) => acc + (p.propina ?? 0), 0);
   const cantidadSesiones = pagos.length;
   const cantidadComandas = comandas.length;
-  const ticketPromedio =
-    cantidadSesiones > 0 ? Math.round(totalFacturado / cantidadSesiones) : 0;
+  const ticketPromedio = cantidadSesiones > 0 ? Math.round(totalFacturado / cantidadSesiones) : 0;
 
   return {
     ok: true,

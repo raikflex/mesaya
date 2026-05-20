@@ -53,12 +53,9 @@ export function PedidosLargos({
         ))}
       </ul>
 
-      <p
-        className="text-xs mt-2 px-1"
-        style={{ color: 'var(--color-muted)' }}
-      >
-        Pedidos creados hace mas de 2 horas que siguen activos. Verifica si
-        siguen vigentes o cancelalos para liberar el ingreso del dia.
+      <p className="text-xs mt-2 px-1" style={{ color: 'var(--color-muted)' }}>
+        Pedidos creados hace mas de 2 horas que siguen activos. Verifica si siguen vigentes o
+        cancelalos para liberar el ingreso del dia.
       </p>
     </section>
   );
@@ -107,10 +104,7 @@ function ItemPedido({
       </button>
 
       {confirmando ? (
-        <ModalConfirmarCancelacion
-          pedido={pedido}
-          onCancelar={() => setConfirmando(false)}
-        />
+        <ModalConfirmarCancelacion pedido={pedido} onCancelar={() => setConfirmando(false)} />
       ) : null}
     </li>
   );
@@ -175,17 +169,17 @@ function ModalConfirmarCancelacion({
         >
           Cancelar pedido #{pedido.numeroDiario}?
         </h3>
-        <p
-          className="text-sm mt-3 leading-relaxed"
-          style={{ color: 'var(--color-ink-soft)' }}
-        >
-          Mesa {pedido.mesaNumero} - ${pedido.total.toLocaleString('es-CO')}.
-          El pedido se marca como cancelado, no se cobra y no cuenta en tus
-          metricas del dia. La cocina/staff sabran que ya no deben prepararlo.
+        <p className="text-sm mt-3 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+          Mesa {pedido.mesaNumero} - ${pedido.total.toLocaleString('es-CO')}. El pedido se marca
+          como cancelado, no se cobra y no cuenta en tus metricas del dia. La cocina/staff sabran
+          que ya no deben prepararlo.
         </p>
 
         {error ? (
-          <p className="text-xs mt-3 px-3 py-2 rounded" style={{ background: '#fee2e2', color: '#991b1b' }}>
+          <p
+            className="text-xs mt-3 px-3 py-2 rounded"
+            style={{ background: '#fee2e2', color: '#991b1b' }}
+          >
             {error}
           </p>
         ) : null}

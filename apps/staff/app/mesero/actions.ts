@@ -42,17 +42,13 @@ async function validarStaffMesero(): Promise<
   };
 }
 
-export type TomarResultado =
-  | { ok: true }
-  | { ok: false; error: string };
+export type TomarResultado = { ok: true } | { ok: false; error: string };
 
 // =========================================================================
 // Llamados (campana / otro)
 // =========================================================================
 
-export async function tomarLlamado(input: {
-  llamadoId: string;
-}): Promise<TomarResultado> {
+export async function tomarLlamado(input: { llamadoId: string }): Promise<TomarResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
 
@@ -97,9 +93,7 @@ export async function tomarLlamado(input: {
   return { ok: true };
 }
 
-export async function liberarLlamado(input: {
-  llamadoId: string;
-}): Promise<TomarResultado> {
+export async function liberarLlamado(input: { llamadoId: string }): Promise<TomarResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
 
@@ -132,9 +126,7 @@ export async function liberarLlamado(input: {
   return { ok: true };
 }
 
-export async function atenderLlamado(input: {
-  llamadoId: string;
-}): Promise<TomarResultado> {
+export async function atenderLlamado(input: { llamadoId: string }): Promise<TomarResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
 
@@ -175,9 +167,7 @@ export async function atenderLlamado(input: {
 // Comandas listas
 // =========================================================================
 
-export async function tomarComanda(input: {
-  comandaId: string;
-}): Promise<TomarResultado> {
+export async function tomarComanda(input: { comandaId: string }): Promise<TomarResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
 
@@ -219,9 +209,7 @@ export async function tomarComanda(input: {
   return { ok: true };
 }
 
-export async function liberarComanda(input: {
-  comandaId: string;
-}): Promise<TomarResultado> {
+export async function liberarComanda(input: { comandaId: string }): Promise<TomarResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
 
@@ -254,9 +242,7 @@ export async function liberarComanda(input: {
   return { ok: true };
 }
 
-export async function entregarComanda(input: {
-  comandaId: string;
-}): Promise<TomarResultado> {
+export async function entregarComanda(input: { comandaId: string }): Promise<TomarResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
 
@@ -300,27 +286,17 @@ export async function entregarComanda(input: {
 // Pagos
 // =========================================================================
 
-export async function tomarPago(input: {
-  llamadoId: string;
-}): Promise<TomarResultado> {
+export async function tomarPago(input: { llamadoId: string }): Promise<TomarResultado> {
   return tomarLlamado(input);
 }
 
-export async function liberarPago(input: {
-  llamadoId: string;
-}): Promise<TomarResultado> {
+export async function liberarPago(input: { llamadoId: string }): Promise<TomarResultado> {
   return liberarLlamado(input);
 }
 
-export type ConfirmarPagoResultado =
-  | { ok: true }
-  | { ok: false; error: string };
+export type ConfirmarPagoResultado = { ok: true } | { ok: false; error: string };
 
-export type FormaPagoBackend =
-  | 'efectivo'
-  | 'tarjeta'
-  | 'transferencia'
-  | 'no_seguro';
+export type FormaPagoBackend = 'efectivo' | 'tarjeta' | 'transferencia' | 'no_seguro';
 
 export async function confirmarPago(input: {
   llamadoId: string;
@@ -364,10 +340,7 @@ export async function confirmarPago(input: {
     .eq('sesion_id', sesionId)
     .neq('estado', 'cancelada');
 
-  const subtotal = (comandasSesion ?? []).reduce(
-    (acc, c) => acc + (c.total as number),
-    0,
-  );
+  const subtotal = (comandasSesion ?? []).reduce((acc, c) => acc + (c.total as number), 0);
   const propina = input.conPropina ? Math.round(subtotal * 0.1) : 0;
   const total = subtotal + propina;
 
@@ -405,26 +378,18 @@ export async function confirmarPago(input: {
   if (errorLlamado) {
     return {
       ok: false,
-      error:
-        'Pago registrado pero no pudimos cerrar el llamado. ' +
-        errorLlamado.message,
+      error: 'Pago registrado pero no pudimos cerrar el llamado. ' + errorLlamado.message,
     };
   }
 
   const idsListas = (comandasSesion ?? [])
     .filter(
-      (c) =>
-        c.estado === 'lista' ||
-        c.estado === 'pendiente' ||
-        c.estado === 'en_preparacion',
+      (c) => c.estado === 'lista' || c.estado === 'pendiente' || c.estado === 'en_preparacion',
     )
     .map((c) => c.id);
 
   if (idsListas.length > 0) {
-    await supabase
-      .from('comandas')
-      .update({ estado: 'entregada' })
-      .in('id', idsListas);
+    await supabase.from('comandas').update({ estado: 'entregada' }).in('id', idsListas);
   }
 
   const { error: errorSesion } = await supabase
@@ -489,9 +454,7 @@ export async function marcarComandaPreparando(input: {
  * Mesero marca que la comanda ya está lista para entregar (la recogió de la
  * cocina). Cambia estado: en_preparacion → lista.
  */
-export async function marcarComandaLista(input: {
-  comandaId: string;
-}): Promise<TomarResultado> {
+export async function marcarComandaLista(input: { comandaId: string }): Promise<TomarResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
 

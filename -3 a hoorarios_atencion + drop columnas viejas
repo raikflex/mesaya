@@ -1,0 +1,257 @@
+warning: in the working copy of '.vscode/settings.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/(auth)/forgot-password/forgot-password-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/(auth)/forgot-password/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/(auth)/login/login-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/(auth)/login/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/(auth)/reset-password/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/(auth)/reset-password/reset-password-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/(auth)/signup/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/_components/panel-shell.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/actions/auth.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/banner-activacion.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/banner-bienvenida.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/branding/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/branding/branding-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/branding/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/cancelar-comanda-actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/configuracion/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/configuracion/configuracion-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/equipo/equipo-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/equipo/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/estado-restaurante-actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/horarios/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/horarios/excepciones-actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/horarios/horarios-editor.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/horarios/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/menu/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/menu/menu-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/menu/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/mesas/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/mesas/mapa-mesas.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/mesas/mesas-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/mesas/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/metricas/comandas-activas-live.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/metricas/exportar.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/metricas/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/metricas/reporte-actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/metricas/reporte-exportador.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/metricas/sesiones-live.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-1/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-1/business-info-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-1/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-2/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-2/paso-2-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-3/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-3/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-3/paso-3-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-4/categorias-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-5/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-5/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-5/productos-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-6/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-6/mesas-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-6/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-7/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-8/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-8/equipo-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/paso-8/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/onboarding/stepper.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/pedidos-largos.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/perfil/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/perfil/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/perfil/perfil-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/reviews/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/reviews/reviews-manager.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/admin/toggle-estado-restaurante.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/api/qrs-pdf/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/app/auth/callback/route.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/lib/horarios.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/next.config.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/admin/tsconfig.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/cerrar-sesion-actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/estado-restaurante.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/formulario-nombre.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/gracias/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/gracias/gracias-cliente.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/gracias/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/llamar-mesero/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/llamar-mesero/llamar-mesero-cliente.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/llamar-mesero/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/[producto]/detalle-producto.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/[producto]/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/carrito/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/carrito/carrito-cliente.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/carrito/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/enviada/[comanda]/enviada-cliente.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/enviada/[comanda]/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/menu-cliente.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/menu-placeholder.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/menu/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/not-found.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/pedir-cuenta/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/pedir-cuenta/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/app/m/[token]/pedir-cuenta/pedir-cuenta-cliente.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/cliente/lib/horarios.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/cocina/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/cocina/boton-cancelar.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/cocina/cocina-inactiva.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/cocina/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/cocina/tablero-cocina.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/layout.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/login/login-form.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/login/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/mesero/actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/mesero/mapa-mesas.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/mesero/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/mesero/seccion-en-preparacion.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/app/mesero/tablero-mesero.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/components/notificaciones-push.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/lib/auth-server.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/lib/push-actions.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/lib/sonido-cocina.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/lib/sonido-mesero.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'apps/staff/middleware.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/MesaYA_Doc_Maestro_v0_4.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/MesaYA_Doc_Maestro_v0_5.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/config/package.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/config/tsconfig/nextjs.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/database/src/client.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/database/src/middleware.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/database/src/server.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/database/src/service.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/database/src/types.generated.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/database/src/types.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/ui/src/button.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'packages/ui/src/label.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'supabase/functions/send-push/index.ts', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'tsconfig.base.json', LF will be replaced by CRLF the next time Git touches it
+ .vscode/settings.json                              |    4 [32m+[m[31m-[m
+ .../forgot-password/forgot-password-form.tsx       |    6 [32m+[m[31m-[m
+ apps/admin/app/(auth)/forgot-password/page.tsx     |   12 [32m+[m[31m-[m
+ apps/admin/app/(auth)/login/login-form.tsx         |    2 [32m+[m[31m-[m
+ apps/admin/app/(auth)/login/page.tsx               |   10 [32m+[m[31m-[m
+ apps/admin/app/(auth)/reset-password/page.tsx      |   10 [32m+[m[31m-[m
+ .../(auth)/reset-password/reset-password-form.tsx  |    2 [32m+[m[31m-[m
+ apps/admin/app/(auth)/signup/page.tsx              |   27 [32m+[m[31m-[m
+ apps/admin/app/_components/panel-shell.tsx         |   63 [32m+[m[31m-[m
+ apps/admin/app/actions/auth.ts                     |   12 [32m+[m[31m-[m
+ apps/admin/app/admin/banner-activacion.tsx         |   31 [32m+[m[31m-[m
+ apps/admin/app/admin/banner-bienvenida.tsx         |   10 [32m+[m[31m-[m
+ apps/admin/app/admin/branding/actions.ts           |   67 [32m+[m[31m-[m
+ apps/admin/app/admin/branding/branding-form.tsx    |   61 [32m+[m[31m-[m
+ apps/admin/app/admin/branding/page.tsx             |   11 [32m+[m[31m-[m
+ apps/admin/app/admin/cancelar-comanda-actions.ts   |    8 [32m+[m[31m-[m
+ apps/admin/app/admin/configuracion/actions.ts      |   14 [32m+[m[31m-[m
+ .../app/admin/configuracion/configuracion-form.tsx |   40 [32m+[m[31m-[m
+ apps/admin/app/admin/equipo/equipo-manager.tsx     |   44 [32m+[m[31m-[m
+ apps/admin/app/admin/equipo/page.tsx               |   16 [32m+[m[31m-[m
+ apps/admin/app/admin/estado-restaurante-actions.ts |    6 [32m+[m[31m-[m
+ apps/admin/app/admin/horarios/actions.ts           |   12 [32m+[m[31m-[m
+ .../app/admin/horarios/excepciones-actions.ts      |   12 [32m+[m[31m-[m
+ apps/admin/app/admin/horarios/horarios-editor.tsx  |   91 [32m+[m[31m-[m
+ apps/admin/app/admin/horarios/page.tsx             |   16 [32m+[m[31m-[m
+ apps/admin/app/admin/menu/actions.ts               |   17 [32m+[m[31m-[m
+ apps/admin/app/admin/menu/menu-manager.tsx         |   46 [32m+[m[31m-[m
+ apps/admin/app/admin/menu/page.tsx                 |   43 [32m+[m[31m-[m
+ apps/admin/app/admin/mesas/actions.ts              |    2 [32m+[m[31m-[m
+ apps/admin/app/admin/mesas/mapa-mesas.tsx          |   75 [32m+[m[31m-[m
+ apps/admin/app/admin/mesas/mesas-manager.tsx       |   61 [32m+[m[31m-[m
+ apps/admin/app/admin/mesas/page.tsx                |   47 [32m+[m[31m-[m
+ .../app/admin/metricas/comandas-activas-live.tsx   |  131 [32m+[m[31m--[m
+ apps/admin/app/admin/metricas/exportar.ts          |   90 [32m+[m[31m-[m
+ apps/admin/app/admin/metricas/page.tsx             |  192 [32m++[m[31m--[m
+ apps/admin/app/admin/metricas/reporte-actions.ts   |   44 [32m+[m[31m-[m
+ .../app/admin/metricas/reporte-exportador.tsx      |   28 [32m+[m[31m-[m
+ apps/admin/app/admin/metricas/sesiones-live.tsx    |   94 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-1/actions.ts  |    5 [32m+[m[31m-[m
+ .../admin/onboarding/paso-1/business-info-form.tsx |   41 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-1/page.tsx    |    7 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-2/page.tsx    |    4 [32m+[m[31m-[m
+ .../app/admin/onboarding/paso-2/paso-2-form.tsx    |    6 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-3/actions.ts  |   67 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-3/page.tsx    |   71 [32m+[m[31m-[m
+ .../app/admin/onboarding/paso-3/paso-3-form.tsx    |   17 [32m+[m[31m-[m
+ .../admin/onboarding/paso-4/categorias-manager.tsx |    7 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-5/actions.ts  |    6 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-5/page.tsx    |    4 [32m+[m[31m-[m
+ .../admin/onboarding/paso-5/productos-manager.tsx  |   23 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-6/actions.ts  |   12 [32m+[m[31m-[m
+ .../app/admin/onboarding/paso-6/mesas-manager.tsx  |   18 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-6/page.tsx    |    4 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-7/page.tsx    |   30 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-8/actions.ts  |    6 [32m+[m[31m-[m
+ .../app/admin/onboarding/paso-8/equipo-manager.tsx |   34 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/paso-8/page.tsx    |    2 [32m+[m[31m-[m
+ apps/admin/app/admin/onboarding/stepper.tsx        |    4 [32m+[m[31m-[m
+ apps/admin/app/admin/page.tsx                      |  100 [32m+[m[31m-[m
+ apps/admin/app/admin/pedidos-largos.tsx            |   30 [32m+[m[31m-[m
+ apps/admin/app/admin/perfil/actions.ts             |    2 [32m+[m[31m-[m
+ apps/admin/app/admin/perfil/page.tsx               |    2 [32m+[m[31m-[m
+ apps/admin/app/admin/perfil/perfil-form.tsx        |   24 [32m+[m[31m-[m
+ apps/admin/app/admin/reviews/page.tsx              |   46 [32m+[m[31m-[m
+ apps/admin/app/admin/reviews/reviews-manager.tsx   |   78 [32m+[m[31m-[m
+ apps/admin/app/admin/toggle-estado-restaurante.tsx |   32 [32m+[m[31m-[m
+ apps/admin/app/api/qrs-pdf/route.ts                |    4 [32m+[m[31m-[m
+ apps/admin/app/auth/callback/route.ts              |    2 [32m+[m[31m-[m
+ apps/admin/lib/horarios.ts                         |   41 [32m+[m[31m-[m
+ apps/admin/next.config.ts                          |    2 [32m+[m[31m-[m
+ .../cliente/app/m/[token]/cerrar-sesion-actions.ts |    4 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/estado-restaurante.tsx  |   66 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/formulario-nombre.tsx   |    5 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/gracias/actions.ts      |   11 [32m+[m[31m-[m
+ .../app/m/[token]/gracias/gracias-cliente.tsx      |   40 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/gracias/page.tsx        |   11 [32m+[m[31m-[m
+ .../cliente/app/m/[token]/llamar-mesero/actions.ts |   18 [32m+[m[31m-[m
+ .../llamar-mesero/llamar-mesero-cliente.tsx        |  100 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/llamar-mesero/page.tsx  |    9 [32m+[m[31m-[m
+ .../m/[token]/menu/[producto]/detalle-producto.tsx |   44 [32m+[m[31m-[m
+ .../cliente/app/m/[token]/menu/[producto]/page.tsx |    6 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/menu/carrito/actions.ts |   22 [32m+[m[31m-[m
+ .../app/m/[token]/menu/carrito/carrito-cliente.tsx |   55 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/menu/carrito/page.tsx   |    6 [32m+[m[31m-[m
+ .../menu/enviada/[comanda]/enviada-cliente.tsx     |   69 [32m+[m[31m-[m
+ .../app/m/[token]/menu/enviada/[comanda]/page.tsx  |    6 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/menu/menu-cliente.tsx   |   35 [32m+[m[31m-[m
+ .../app/m/[token]/menu/menu-placeholder.tsx        |   20 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/menu/page.tsx           |   34 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/not-found.tsx           |    9 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/page.tsx                |   22 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/pedir-cuenta/actions.ts |    6 [32m+[m[31m-[m
+ apps/cliente/app/m/[token]/pedir-cuenta/page.tsx   |   21 [32m+[m[31m-[m
+ .../[token]/pedir-cuenta/pedir-cuenta-cliente.tsx  |  165 [32m+[m[31m---[m
+ apps/cliente/lib/horarios.ts                       |   41 [32m+[m[31m-[m
+ apps/staff/app/cocina/actions.ts                   |   23 [32m+[m[31m-[m
+ apps/staff/app/cocina/boton-cancelar.tsx           |   14 [32m+[m[31m-[m
+ apps/staff/app/cocina/cocina-inactiva.tsx          |   26 [32m+[m[31m-[m
+ apps/staff/app/cocina/page.tsx                     |    5 [32m+[m[31m-[m
+ apps/staff/app/cocina/tablero-cocina.tsx           |   55 [32m+[m[31m-[m
+ apps/staff/app/layout.tsx                          |    6 [32m+[m[31m-[m
+ apps/staff/app/login/login-form.tsx                |   11 [32m+[m[31m-[m
+ apps/staff/app/login/page.tsx                      |    5 [32m+[m[31m-[m
+ apps/staff/app/mesero/actions.ts                   |   69 [32m+[m[31m-[m
+ apps/staff/app/mesero/mapa-mesas.tsx               |   75 [32m+[m[31m-[m
+ apps/staff/app/mesero/page.tsx                     |   47 [32m+[m[31m-[m
+ apps/staff/app/mesero/seccion-en-preparacion.tsx   |   26 [32m+[m[31m-[m
+ apps/staff/app/mesero/tablero-mesero.tsx           |  303 [32m+++[m[31m---[m
+ apps/staff/components/notificaciones-push.tsx      |   42 [32m+[m[31m-[m
+ apps/staff/lib/auth-server.ts                      |   10 [32m+[m[31m-[m
+ apps/staff/lib/push-actions.ts                     |   36 [32m+[m[31m-[m
+ apps/staff/lib/sonido-cocina.ts                    |    7 [32m+[m[31m-[m
+ apps/staff/lib/sonido-mesero.ts                    |    7 [32m+[m[31m-[m
+ apps/staff/middleware.ts                           |   10 [32m+[m[31m-[m
+ docs/MesaYA_Doc_Maestro_v0_4.md                    |  130 [32m++[m[31m-[m
+ docs/MesaYA_Doc_Maestro_v0_5.md                    |  142 [32m++[m[31m-[m
+ packages/config/package.json                       |    5 [32m+[m[31m-[m
+ packages/config/tsconfig/nextjs.json               |    7 [32m+[m[31m-[m
+ packages/database/src/client.ts                    |    2 [32m+[m[31m-[m
+ packages/database/src/middleware.ts                |    4 [32m+[m[31m-[m
+ packages/database/src/server.ts                    |    4 [32m+[m[31m-[m
+ packages/database/src/types.generated.ts           | 1043 [32m++++++++++++++++++++[m
+ packages/database/src/types.ts                     |  Bin [31m50166[m -> [32m785[m bytes
+ packages/ui/src/button.tsx                         |    3 [32m+[m[31m-[m
+ packages/ui/src/label.tsx                          |   29 [32m+[m[31m-[m
+ supabase/functions/send-push/index.ts              |   13 [32m+[m[31m-[m
+ 126 files changed, 2574 insertions(+), 2598 deletions(-)

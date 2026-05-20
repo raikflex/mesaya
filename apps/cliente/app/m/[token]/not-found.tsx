@@ -21,12 +21,9 @@ export default function NotFound() {
           >
             Código no reconocido.
           </h2>
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
-            Este QR no corresponde a ninguna mesa activa. Verifica que estés
-            escaneando el código correcto, o pide al mesero uno nuevo.
+          <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+            Este QR no corresponde a ninguna mesa activa. Verifica que estés escaneando el código
+            correcto, o pide al mesero uno nuevo.
           </p>
         </div>
         <p

@@ -4,9 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { createClient } from '@mesaya/database/server';
 import { createServiceClient } from '@mesaya/database/service';
 
-export type AlternarEstadoResultado =
-  | { ok: true }
-  | { ok: false; error: string };
+export type AlternarEstadoResultado = { ok: true } | { ok: false; error: string };
 
 /**
  * Cambia el estado del restaurante entre 'activo' (recibe pedidos) y 'pausado'

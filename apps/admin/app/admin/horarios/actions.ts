@@ -14,9 +14,7 @@ const NOMBRES_DIA = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viern
 function nombreDia(n: number): string {
   return NOMBRES_DIA[n] ?? `Dia ${n}`;
 }
-export type ActualizarHorariosResultado =
-  | { ok: true }
-  | { ok: false; error: string };
+export type ActualizarHorariosResultado = { ok: true } | { ok: false; error: string };
 
 /**
  * Actualiza los 7 dias del horario del restaurante del dueño logueado.
@@ -35,11 +33,7 @@ export async function actualizarHorarios(
 
   const diasVistos = new Set<number>();
   for (const h of horarios) {
-    if (
-      typeof h.dia_semana !== 'number' ||
-      h.dia_semana < 0 ||
-      h.dia_semana > 6
-    ) {
+    if (typeof h.dia_semana !== 'number' || h.dia_semana < 0 || h.dia_semana > 6) {
       return { ok: false, error: `dia_semana invalido: ${h.dia_semana}` };
     }
     if (diasVistos.has(h.dia_semana)) {

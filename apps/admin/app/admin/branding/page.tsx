@@ -29,12 +29,10 @@ export default async function BrandingPage() {
     .eq('id', restauranteId)
     .maybeSingle();
 
-  const nombreNegocio =
-    (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
+  const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
   const logoUrl = (restaurante?.logo_url as string | null) ?? null;
   const colorMarca = (restaurante?.color_marca as string) ?? '#9a3f6b';
-  const tiempoEstimado =
-    (restaurante?.tiempo_estimado_preparacion_min as number | null) ?? null;
+  const tiempoEstimado = (restaurante?.tiempo_estimado_preparacion_min as number | null) ?? null;
 
   return (
     <PanelShell currentPage="branding" nombreNegocio={nombreNegocio}>
@@ -51,10 +49,7 @@ export default async function BrandingPage() {
             style={{ color: 'var(--color-ink)' }}
           >
             Tu{' '}
-            <em
-              className="not-italic"
-              style={{ fontStyle: 'italic', fontWeight: 400 }}
-            >
+            <em className="not-italic" style={{ fontStyle: 'italic', fontWeight: 400 }}>
               imagen
             </em>
             .

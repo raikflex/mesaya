@@ -14,9 +14,7 @@ import { createServiceClient } from '@mesaya/database/service';
  * Devuelve true si efectivamente cerro la sesion, false si no hizo nada
  * (no encontro la mesa, no habia sesion abierta, o habia comandas activas).
  */
-export async function cerrarSesionAbandonada(
-  qrToken: string,
-): Promise<{ ok: boolean }> {
+export async function cerrarSesionAbandonada(qrToken: string): Promise<{ ok: boolean }> {
   const supabase = await createClient();
 
   // Buscar la mesa por qr_token

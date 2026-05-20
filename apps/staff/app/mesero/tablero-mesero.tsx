@@ -4,10 +4,7 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@mesaya/database/client';
 import { MapaMesas, type MesaInfo, type SesionAbiertaResumen } from './mapa-mesas';
-import {
-  SeccionEnPreparacion,
-  type ComandaPreparacionMesero,
-} from './seccion-en-preparacion';
+import { SeccionEnPreparacion, type ComandaPreparacionMesero } from './seccion-en-preparacion';
 import {
   alternarSonido,
   desbloquearAudio,
@@ -121,15 +118,9 @@ export function TableroMesero({
   const [cola, setCola] = useState<ColaMesero>(colaInicial);
   const router = useRouter();
 
-  const llamadoIdsRef = useRef<Set<string>>(
-    new Set(colaInicial.llamados.map((l) => l.id)),
-  );
-  const comandaIdsRef = useRef<Set<string>>(
-    new Set(colaInicial.comandasListas.map((c) => c.id)),
-  );
-  const pagoIdsRef = useRef<Set<string>>(
-    new Set(colaInicial.pagos.map((p) => p.id)),
-  );
+  const llamadoIdsRef = useRef<Set<string>>(new Set(colaInicial.llamados.map((l) => l.id)));
+  const comandaIdsRef = useRef<Set<string>>(new Set(colaInicial.comandasListas.map((c) => c.id)));
+  const pagoIdsRef = useRef<Set<string>>(new Set(colaInicial.pagos.map((p) => p.id)));
 
   useEffect(() => {
     setCola(colaInicial);
@@ -149,7 +140,9 @@ export function TableroMesero({
     let cancelado = false;
 
     async function setupRealtime() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (cancelado) return;
       if (session?.access_token) {
         supabase.realtime.setAuth(session.access_token);
@@ -205,10 +198,7 @@ export function TableroMesero({
               };
               if (actualizada.restaurante_id !== restauranteId) return;
 
-              if (
-                actualizada.estado === 'atendido' ||
-                actualizada.estado === 'cancelado'
-              ) {
+              if (actualizada.estado === 'atendido' || actualizada.estado === 'cancelado') {
                 llamadoIdsRef.current.delete(actualizada.id);
                 pagoIdsRef.current.delete(actualizada.id);
                 setCola((c) => ({
@@ -264,10 +254,7 @@ export function TableroMesero({
               // el SSR para que la sección "En preparación" se mantenga
               // sincronizada cuando cocina_activa = false. Si está activa,
               // este refresh es benigno porque esa sección no se renderiza.
-              if (
-                fila.estado === 'pendiente' ||
-                fila.estado === 'en_preparacion'
-              ) {
+              if (fila.estado === 'pendiente' || fila.estado === 'en_preparacion') {
                 router.refresh();
                 return;
               }
@@ -334,10 +321,7 @@ export function TableroMesero({
     cola.comandasEnPreparacion.length;
 
   return (
-    <main
-      className="min-h-screen flex flex-col"
-      style={{ background: 'var(--color-paper)' }}
-    >
+    <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
       <Header
         perfilNombre={perfilNombre}
         restauranteNombre={restauranteNombre}
@@ -361,10 +345,7 @@ export function TableroMesero({
         {/* Sección "En preparación" — solo cuando cocina_activa = false */}
         {!cocinaActiva ? (
           <div className="mb-6">
-            <SeccionEnPreparacion
-              comandas={cola.comandasEnPreparacion}
-              colorMarca={colorMarca}
-            />
+            <SeccionEnPreparacion comandas={cola.comandasEnPreparacion} colorMarca={colorMarca} />
           </div>
         ) : null}
 
@@ -372,21 +353,13 @@ export function TableroMesero({
           <EstadoVacio colorMarca={colorMarca} />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <SeccionLlamados
-              llamados={cola.llamados}
-              colorMarca={colorMarca}
-              perfilId={perfilId}
-            />
+            <SeccionLlamados llamados={cola.llamados} colorMarca={colorMarca} perfilId={perfilId} />
             <SeccionComandasListas
               comandas={cola.comandasListas}
               colorMarca={colorMarca}
               perfilId={perfilId}
             />
-            <SeccionPagos
-              pagos={cola.pagos}
-              colorMarca={colorMarca}
-              perfilId={perfilId}
-            />
+            <SeccionPagos pagos={cola.pagos} colorMarca={colorMarca} perfilId={perfilId} />
           </div>
         )}
       </div>
@@ -459,13 +432,13 @@ async function traerPagoCompleto(llamadoId: string): Promise<PagoMesero | null> 
   const idsComandas = comandasArr.map((c) => c.id);
   const itemsRaw =
     idsComandas.length > 0
-      ? (
+      ? ((
           await supabase
             .from('comanda_items')
             .select('comanda_id, nombre_snapshot, cantidad, precio_snapshot, nota')
             .in('comanda_id', idsComandas)
             .order('id', { ascending: true })
-        ).data ?? []
+        ).data ?? [])
       : [];
 
   const itemsPorComanda = new Map<string, ItemComandaPago[]>();
@@ -488,10 +461,7 @@ async function traerPagoCompleto(llamadoId: string): Promise<PagoMesero | null> 
     items: itemsPorComanda.get(c.id) ?? [],
   }));
 
-  const totalAcumulado = comandasArr.reduce(
-    (acc, c) => acc + (c.total ?? 0),
-    0,
-  );
+  const totalAcumulado = comandasArr.reduce((acc, c) => acc + (c.total ?? 0), 0);
 
   const sesion = Array.isArray(llamado.sesiones) ? llamado.sesiones[0] : llamado.sesiones;
   const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
@@ -604,10 +574,16 @@ function Header({
             </svg>
           </div>
           <div className="min-w-0">
-            <p className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
+            <p
+              className="text-[0.65rem] uppercase tracking-[0.14em]"
+              style={{ color: 'var(--color-muted)' }}
+            >
               Mesero · {perfilNombre}
             </p>
-            <h1 className="font-[family-name:var(--font-display)] text-lg tracking-[-0.015em] truncate" style={{ color: 'var(--color-ink)' }}>
+            <h1
+              className="font-[family-name:var(--font-display)] text-lg tracking-[-0.015em] truncate"
+              style={{ color: 'var(--color-ink)' }}
+            >
               {restauranteNombre}
             </h1>
           </div>
@@ -618,7 +594,10 @@ function Header({
             className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full"
             style={{ background: 'var(--color-paper-deep)' }}
           >
-            <span className="size-2 rounded-full animate-pulse" style={{ background: colorMarca }} />
+            <span
+              className="size-2 rounded-full animate-pulse"
+              style={{ background: colorMarca }}
+            />
             <span className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
               {totalItems} pendiente{totalItems === 1 ? '' : 's'}
             </span>
@@ -637,11 +616,23 @@ function Header({
             >
               {sonidoOn ? (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               ) : (
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0M18.63 13A17.89 17.89 0 0 1 18 8M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14M18 8a6 6 0 0 0-9.33-5M1 1l22 22" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                  <path
+                    d="M13.73 21a2 2 0 0 1-3.46 0M18.63 13A17.89 17.89 0 0 1 18 8M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14M18 8a6 6 0 0 0-9.33-5M1 1l22 22"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
                 </svg>
               )}
             </button>
@@ -650,7 +641,11 @@ function Header({
           <NotificacionesPush colorMarca={colorMarca} />
 
           <form action={cerrarSesion}>
-            <button type="submit" className="text-xs underline shrink-0" style={{ color: 'var(--color-muted)' }}>
+            <button
+              type="submit"
+              className="text-xs underline shrink-0"
+              style={{ color: 'var(--color-muted)' }}
+            >
               Cerrar sesión
             </button>
           </form>
@@ -775,7 +770,10 @@ function CabeceraSeccion({
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
       <div>
-        <h2 className="font-[family-name:var(--font-display)] text-xl tracking-[-0.015em]" style={{ color: 'var(--color-ink)' }}>
+        <h2
+          className="font-[family-name:var(--font-display)] text-xl tracking-[-0.015em]"
+          style={{ color: 'var(--color-ink)' }}
+        >
           {titulo}
         </h2>
         <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-muted)' }}>
@@ -831,8 +829,14 @@ function CardLlamado({
 
   return (
     <CardBase esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending}>
-      <header className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>
+      <header
+        className="px-4 py-3 flex items-center justify-between gap-3 border-b"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
+        <span
+          className="text-xs px-2 py-0.5 rounded-full"
+          style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}
+        >
           Mesa {llamado.mesaNumero}
         </span>
         <TiempoTranscurrido fecha={llamado.creadoEn} />
@@ -853,10 +857,7 @@ function CardLlamado({
             >
               💬 El cliente dice
             </p>
-            <p
-              className="text-sm leading-relaxed"
-              style={{ color: 'var(--color-ink)' }}
-            >
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink)' }}>
               «{llamado.nota}»
             </p>
           </div>
@@ -930,12 +931,21 @@ function CardComanda({
 
   return (
     <CardBase esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending}>
-      <header className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+      <header
+        className="px-4 py-3 flex items-center justify-between gap-3 border-b"
+        style={{ borderColor: 'var(--color-border)' }}
+      >
         <div className="flex items-center gap-3 min-w-0">
-          <span className="font-[family-name:var(--font-display)] text-base tabular-nums" style={{ color: 'var(--color-ink)' }}>
+          <span
+            className="font-[family-name:var(--font-display)] text-base tabular-nums"
+            style={{ color: 'var(--color-ink)' }}
+          >
             #{comanda.numeroDiario.toString().padStart(3, '0')}
           </span>
-          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>
+          <span
+            className="text-xs px-2 py-0.5 rounded-full"
+            style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}
+          >
             Mesa {comanda.mesaNumero}
           </span>
         </div>
@@ -943,20 +953,29 @@ function CardComanda({
       </header>
 
       <div className="px-4 py-3">
-        <p className="text-[0.7rem] uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--color-muted)' }}>
+        <p
+          className="text-[0.7rem] uppercase tracking-[0.1em] mb-2"
+          style={{ color: 'var(--color-muted)' }}
+        >
           {comanda.clienteNombre}
         </p>
         <ul className="space-y-1.5">
           {comanda.items.map((item) => (
             <li key={item.id} className="text-sm">
               <div className="flex items-baseline gap-2">
-                <span className="font-[family-name:var(--font-display)] text-base tabular-nums shrink-0" style={{ color: colorMarca }}>
+                <span
+                  className="font-[family-name:var(--font-display)] text-base tabular-nums shrink-0"
+                  style={{ color: colorMarca }}
+                >
                   {item.cantidad}×
                 </span>
                 <span style={{ color: 'var(--color-ink)' }}>{item.nombre}</span>
               </div>
               {item.nota ? (
-                <p className="text-xs mt-0.5 ml-7 italic" style={{ color: 'var(--color-ink-soft)' }}>
+                <p
+                  className="text-xs mt-0.5 ml-7 italic"
+                  style={{ color: 'var(--color-ink-soft)' }}
+                >
                   «{item.nota}»
                 </p>
               ) : null}
@@ -1036,16 +1055,20 @@ function CardPago({
     transferencia: { label: '📱 Transferencia', bg: '#ede9fe', fg: '#5b21b6' },
     no_seguro: { label: '❓ Aún no decide', bg: '#fef3c7', fg: '#92400e' },
   };
-  const formaPago = pago.formaPagoPreferida
-    ? ETIQUETAS_PAGO[pago.formaPagoPreferida]
-    : null;
+  const formaPago = pago.formaPagoPreferida ? ETIQUETAS_PAGO[pago.formaPagoPreferida] : null;
 
   return (
     <>
       <CardBase esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending}>
-        <header className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
+        <header
+          className="px-4 py-3 flex items-center justify-between gap-3 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>
+            <span
+              className="text-xs px-2 py-0.5 rounded-full"
+              style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}
+            >
               Mesa {pago.mesaNumero}
             </span>
             <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
@@ -1072,10 +1095,16 @@ function CardPago({
         </header>
 
         <div className="px-4 py-3">
-          <p className="text-[0.7rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
+          <p
+            className="text-[0.7rem] uppercase tracking-[0.14em]"
+            style={{ color: 'var(--color-muted)' }}
+          >
             Total acumulado
           </p>
-          <p className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]" style={{ color: 'var(--color-ink)' }}>
+          <p
+            className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]"
+            style={{ color: 'var(--color-ink)' }}
+          >
             ${pago.totalAcumulado.toLocaleString('es-CO')}
           </p>
           {esMio ? (
@@ -1107,11 +1136,7 @@ function CardPago({
       </CardBase>
 
       {modalAbierto ? (
-        <ModalCobrar
-          pago={pago}
-          colorMarca={colorMarca}
-          onCerrar={() => setModalAbierto(false)}
-        />
+        <ModalCobrar pago={pago} colorMarca={colorMarca} onCerrar={() => setModalAbierto(false)} />
       ) : null}
     </>
   );
@@ -1164,10 +1189,16 @@ function ModalCobrar({
         onClick={(e) => e.stopPropagation()}
       >
         <header className="px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-          <p className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
+          <p
+            className="text-[0.65rem] uppercase tracking-[0.14em]"
+            style={{ color: 'var(--color-muted)' }}
+          >
             Cobrar Mesa {pago.mesaNumero}
           </p>
-          <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em] mt-1" style={{ color: 'var(--color-ink)' }}>
+          <h2
+            className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em] mt-1"
+            style={{ color: 'var(--color-ink)' }}
+          >
             Confirmar pago
           </h2>
         </header>
@@ -1202,10 +1233,7 @@ function ModalCobrar({
                   Mesa {pago.mesaNumero}
                 </p>
               </div>
-              <ul
-                className="divide-y"
-                style={{ borderColor: 'var(--color-border)' }}
-              >
+              <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
                 {pago.comandas.map((c, idxC) => (
                   <li key={`${c.numeroDiario}-${idxC}`} className="px-4 py-3">
                     <div className="flex items-baseline justify-between mb-2">
@@ -1240,10 +1268,7 @@ function ModalCobrar({
                             >
                               {it.cantidad}×
                             </span>
-                            <span
-                              className="flex-1"
-                              style={{ color: 'var(--color-ink)' }}
-                            >
+                            <span className="flex-1" style={{ color: 'var(--color-ink)' }}>
                               {it.nombre}
                             </span>
                             <span
@@ -1292,7 +1317,10 @@ function ModalCobrar({
                   >
                     Tipo
                   </dt>
-                  <dd className="font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>
+                  <dd
+                    className="font-[family-name:var(--font-mono)]"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
                     {pago.docTipo}
                   </dd>
                 </div>
@@ -1303,7 +1331,10 @@ function ModalCobrar({
                   >
                     Número
                   </dt>
-                  <dd className="font-[family-name:var(--font-mono)] select-all" style={{ color: 'var(--color-ink)' }}>
+                  <dd
+                    className="font-[family-name:var(--font-mono)] select-all"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
                     {pago.docNumero}
                   </dd>
                 </div>
@@ -1319,19 +1350,22 @@ function ModalCobrar({
                   </dd>
                 </div>
               </dl>
-              <p
-                className="text-[0.65rem] mt-2 leading-relaxed"
-                style={{ color: '#1e40af' }}
-              >
+              <p className="text-[0.65rem] mt-2 leading-relaxed" style={{ color: '#1e40af' }}>
                 Estos datos quedan guardados con el pago para la facturación.
               </p>
             </div>
           ) : null}
 
-          <div className="rounded-[var(--radius-md)] border p-4" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
+          <div
+            className="rounded-[var(--radius-md)] border p-4"
+            style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
+          >
             <div className="flex items-center justify-between text-sm">
               <span style={{ color: 'var(--color-ink-soft)' }}>Subtotal</span>
-              <span className="font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>
+              <span
+                className="font-[family-name:var(--font-mono)]"
+                style={{ color: 'var(--color-ink)' }}
+              >
                 ${pago.totalAcumulado.toLocaleString('es-CO')}
               </span>
             </div>
@@ -1341,7 +1375,10 @@ function ModalCobrar({
               </span>
               <div className="flex items-center gap-2">
                 {conPropina ? (
-                  <span className="text-sm font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>
+                  <span
+                    className="text-sm font-[family-name:var(--font-mono)]"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
                     ${propina.toLocaleString('es-CO')}
                   </span>
                 ) : null}
@@ -1363,27 +1400,38 @@ function ModalCobrar({
                 </button>
               </div>
             </label>
-            <div className="border-t pt-3 mt-2 flex items-center justify-between" style={{ borderColor: 'var(--color-border)' }}>
+            <div
+              className="border-t pt-3 mt-2 flex items-center justify-between"
+              style={{ borderColor: 'var(--color-border)' }}
+            >
               <span className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>
                 Total
               </span>
-              <span className="font-[family-name:var(--font-display)] text-2xl" style={{ color: 'var(--color-ink)' }}>
+              <span
+                className="font-[family-name:var(--font-display)] text-2xl"
+                style={{ color: 'var(--color-ink)' }}
+              >
                 ${total.toLocaleString('es-CO')}
               </span>
             </div>
           </div>
 
           <div>
-            <p className="text-xs uppercase tracking-[0.14em] mb-2" style={{ color: 'var(--color-muted)' }}>
+            <p
+              className="text-xs uppercase tracking-[0.14em] mb-2"
+              style={{ color: 'var(--color-muted)' }}
+            >
               Método de pago
             </p>
             <div className="grid grid-cols-2 gap-2">
-              {([
-                { v: 'efectivo', l: 'Efectivo' },
-                { v: 'tarjeta', l: 'Tarjeta' },
-                { v: 'transferencia', l: 'Transferencia' },
-                { v: 'no_seguro', l: 'Otro' },
-              ] as const).map((opt) => (
+              {(
+                [
+                  { v: 'efectivo', l: 'Efectivo' },
+                  { v: 'tarjeta', l: 'Tarjeta' },
+                  { v: 'transferencia', l: 'Transferencia' },
+                  { v: 'no_seguro', l: 'Otro' },
+                ] as const
+              ).map((opt) => (
                 <button
                   key={opt.v}
                   type="button"
@@ -1403,18 +1451,25 @@ function ModalCobrar({
           </div>
 
           {error ? (
-            <p role="alert" className="text-xs text-center" style={{ color: 'var(--color-danger)' }}>
+            <p
+              role="alert"
+              className="text-xs text-center"
+              style={{ color: 'var(--color-danger)' }}
+            >
               {error}
             </p>
           ) : null}
 
           <p className="text-[0.7rem] text-center px-2" style={{ color: 'var(--color-muted)' }}>
-            Al confirmar, la mesa se cierra y todas las comandas pendientes
-            se marcan como entregadas.
+            Al confirmar, la mesa se cierra y todas las comandas pendientes se marcan como
+            entregadas.
           </p>
         </div>
 
-        <footer className="px-5 py-4 border-t flex items-center gap-3" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
+        <footer
+          className="px-5 py-4 border-t flex items-center gap-3"
+          style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
+        >
           <button
             type="button"
             onClick={onCerrar}
@@ -1548,13 +1603,7 @@ function FooterAcciones({
   );
 }
 
-function SeccionVacia({
-  mensaje,
-  borderColor,
-}: {
-  mensaje: string;
-  borderColor: string;
-}) {
+function SeccionVacia({ mensaje, borderColor }: { mensaje: string; borderColor: string }) {
   return (
     <div
       className="rounded-[var(--radius-lg)] border-2 border-dashed py-10 px-4 text-center"
@@ -1578,10 +1627,7 @@ function TiempoTranscurrido({ fecha }: { fecha: string }) {
   }, [fecha]);
 
   return (
-    <span
-      className="text-[0.7rem] tabular-nums"
-      style={{ color: 'var(--color-muted)' }}
-    >
+    <span className="text-[0.7rem] tabular-nums" style={{ color: 'var(--color-muted)' }}>
       {texto}
     </span>
   );
@@ -1609,7 +1655,13 @@ function EstadoVacio({ colorMarca }: { colorMarca: string }) {
       >
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
           <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.5" />
-          <path d="M9 12l2 2 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          <path
+            d="M9 12l2 2 4-4"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
         </svg>
       </div>
       <h2
@@ -1618,12 +1670,9 @@ function EstadoVacio({ colorMarca }: { colorMarca: string }) {
       >
         Todo bajo control.
       </h2>
-      <p
-        className="text-sm leading-relaxed"
-        style={{ color: 'var(--color-ink-soft)' }}
-      >
-        Sin llamados, comandas listas, o pagos pendientes. Cuando llegue algo,
-        sonará un aviso y aparecerá aquí.
+      <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+        Sin llamados, comandas listas, o pagos pendientes. Cuando llegue algo, sonará un aviso y
+        aparecerá aquí.
       </p>
     </div>
   );

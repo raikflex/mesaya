@@ -2,9 +2,7 @@
 
 import { createClient } from '@mesaya/database/server';
 
-export type EnviarReviewResultado =
-  | { ok: true }
-  | { ok: false; error: string };
+export type EnviarReviewResultado = { ok: true } | { ok: false; error: string };
 
 export async function enviarReview(input: {
   sesionId: string;
@@ -44,9 +42,10 @@ export async function enviarReview(input: {
   const { error } = await supabase.from('reviews').insert({
     sesion_id: input.sesionId,
     estrellas: input.estrellas,
-    comentario: input.comentario && input.comentario.trim().length > 0
-      ? input.comentario.trim().slice(0, 500)
-      : null,
+    comentario:
+      input.comentario && input.comentario.trim().length > 0
+        ? input.comentario.trim().slice(0, 500)
+        : null,
   });
 
   if (error) {

@@ -24,10 +24,7 @@ export default function LoginPage() {
             </em>
             .
           </h1>
-          <p
-            className="text-sm mt-3 leading-relaxed"
-            style={{ color: 'var(--color-ink-soft)' }}
-          >
+          <p className="text-sm mt-3 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
             Ingresa con tu correo para entrar a la cocina o al área de meseros.
           </p>
         </div>

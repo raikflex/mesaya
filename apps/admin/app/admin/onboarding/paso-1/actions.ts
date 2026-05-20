@@ -135,8 +135,7 @@ export async function guardarDatosNegocio(
     return {
       ok: false,
       error:
-        'Restaurante creado pero no se pudo crear tu perfil. Detalle: ' +
-        insertPerfilError.message,
+        'Restaurante creado pero no se pudo crear tu perfil. Detalle: ' + insertPerfilError.message,
     };
   }
 

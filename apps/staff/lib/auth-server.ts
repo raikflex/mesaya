@@ -16,9 +16,7 @@ export type PerfilStaff = {
  * Si el rol no coincide con `rolEsperado`, redirige a /login (caso raro,
  * el middleware ya filtra esto, esto es defensa en profundidad).
  */
-export async function obtenerPerfilStaff(
-  rolEsperado?: 'cocina' | 'mesero',
-): Promise<PerfilStaff> {
+export async function obtenerPerfilStaff(rolEsperado?: 'cocina' | 'mesero'): Promise<PerfilStaff> {
   const supabase = await createClient();
   const {
     data: { user },
@@ -50,9 +48,9 @@ export async function obtenerPerfilStaff(
   }
 
   const rol = perfil.rol as 'cocina' | 'mesero' | 'dueno';
-  const restaurante = (Array.isArray(perfil.restaurantes)
-    ? perfil.restaurantes[0]
-    : perfil.restaurantes) as {
+  const restaurante = (
+    Array.isArray(perfil.restaurantes) ? perfil.restaurantes[0] : perfil.restaurantes
+  ) as {
     nombre_publico: string;
     color_marca: string;
   } | null;

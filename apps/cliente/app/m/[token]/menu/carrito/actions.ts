@@ -75,9 +75,9 @@ export async function enviarComanda(input: {
     return { ok: false, error: 'Esta mesa ya no esta disponible.' };
   }
 
-  const restaurante = (Array.isArray(mesa.restaurantes)
-    ? mesa.restaurantes[0]
-    : mesa.restaurantes) as {
+  const restaurante = (
+    Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes
+  ) as {
     estado: string;
     tiempo_estimado_preparacion_min: number | null;
   } | null;
@@ -108,8 +108,7 @@ export async function enviarComanda(input: {
         nombre: p.nombre as string,
         precio: p.precio as number,
         disponible: p.disponible as boolean,
-        tiempoPreparacionMin:
-          (p.tiempo_preparacion_min as number | null) ?? null,
+        tiempoPreparacionMin: (p.tiempo_preparacion_min as number | null) ?? null,
       },
     ]),
   );
@@ -195,8 +194,7 @@ export async function enviarComanda(input: {
     if (clienteError || !sesionClienteNuevo) {
       return {
         ok: false,
-        error:
-          'No pudimos registrarte en la mesa. ' + (clienteError?.message ?? ''),
+        error: 'No pudimos registrarte en la mesa. ' + (clienteError?.message ?? ''),
       };
     }
     sesionClienteId = sesionClienteNuevo.id as string;
@@ -219,8 +217,7 @@ export async function enviarComanda(input: {
       return prod.tiempoPreparacionMin ?? tiempoGlobalRestaurante ?? null;
     })
     .filter((t): t is number => t !== null);
-  const tiempoEstimadoMin =
-    tiemposEfectivos.length > 0 ? Math.max(...tiemposEfectivos) : null;
+  const tiempoEstimadoMin = tiemposEfectivos.length > 0 ? Math.max(...tiemposEfectivos) : null;
 
   // 6) Crear comanda.
   const { data: comanda, error: comandaError } = await admin
@@ -260,16 +257,13 @@ export async function enviarComanda(input: {
     };
   });
 
-  const { error: itemsError } = await admin
-    .from('comanda_items')
-    .insert(itemsParaInsertar);
+  const { error: itemsError } = await admin.from('comanda_items').insert(itemsParaInsertar);
 
   if (itemsError) {
     await admin.from('comandas').delete().eq('id', comandaId);
     return {
       ok: false,
-      error:
-        'No pudimos guardar los productos del pedido. ' + itemsError.message,
+      error: 'No pudimos guardar los productos del pedido. ' + itemsError.message,
     };
   }
 

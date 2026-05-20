@@ -33,10 +33,7 @@ export function SeccionEnPreparacion({
   return (
     <section className="space-y-3">
       <header className="flex items-center justify-between gap-3">
-        <h2
-          className="text-xs uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <h2 className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
           En preparación
         </h2>
         <span
@@ -101,7 +98,11 @@ function CardPreparacion({
     Math.floor((Date.now() - new Date(comanda.creadaEn).getTime()) / 60000),
   );
   const tiempoFmt =
-    minutos < 1 ? 'recién' : minutos < 60 ? `${minutos}m` : `${Math.floor(minutos / 60)}h ${minutos % 60}m`;
+    minutos < 1
+      ? 'recién'
+      : minutos < 60
+        ? `${minutos}m`
+        : `${Math.floor(minutos / 60)}h ${minutos % 60}m`;
 
   // Estados visuales:
   //   pendiente: ámbar (urgente — el chef todavía no sabe)
@@ -144,10 +145,7 @@ function CardPreparacion({
           >
             #{comanda.numeroDiario.toString().padStart(3, '0')} · Mesa {comanda.mesaNumero}
           </p>
-          <p
-            className="text-[0.7rem]"
-            style={{ color: estilo.accent }}
-          >
+          <p className="text-[0.7rem]" style={{ color: estilo.accent }}>
             {comanda.estado === 'pendiente' ? '⚠ Hay que imprimir' : 'Cocinando'} · {tiempoFmt}
           </p>
         </div>
@@ -183,10 +181,7 @@ function CardPreparacion({
         ))}
       </ul>
 
-      <p
-        className="text-[0.7rem] px-4"
-        style={{ color: 'var(--color-muted)' }}
-      >
+      <p className="text-[0.7rem] px-4" style={{ color: 'var(--color-muted)' }}>
         Cliente: {comanda.clienteNombre}
       </p>
 
@@ -200,10 +195,7 @@ function CardPreparacion({
         </p>
       ) : null}
 
-      <footer
-        className="px-4 py-3 border-t flex gap-2"
-        style={{ borderColor: estilo.border }}
-      >
+      <footer className="px-4 py-3 border-t flex gap-2" style={{ borderColor: estilo.border }}>
         {comanda.estado === 'pendiente' ? (
           <>
             <button

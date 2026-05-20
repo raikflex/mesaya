@@ -17,8 +17,7 @@ const variants: Record<Variant, string> = {
   secondary:
     'bg-[var(--color-paper)] text-[var(--color-ink)] border border-[var(--color-border-strong)] ' +
     'hover:bg-[var(--color-paper-deep)]',
-  ghost:
-    'bg-transparent text-[var(--color-ink)] hover:bg-[var(--color-paper-deep)]',
+  ghost: 'bg-transparent text-[var(--color-ink)] hover:bg-[var(--color-paper-deep)]',
   link:
     'bg-transparent text-[var(--color-accent)] hover:text-[var(--color-accent-hover)] underline ' +
     'underline-offset-4 px-0 py-0 h-auto',
