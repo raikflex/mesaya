@@ -1,0 +1,22 @@
+# Normalizar line endings en todo el repo.
+# Todos los archivos de texto se guardan con LF (estandar moderno JS/TS).
+* text=auto eol=lf
+
+# Binarios explicitos (git no los convierte)
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.webp  binary
+*.ico   binary
+*.woff  binary
+*.woff2 binary
+*.ttf   binary
+*.eot   binary
+*.pdf   binary
+*.mp3   binary
+*.wav   binary
+*.ogg   binary
+
+# SVG es texto (XML)
+*.svg   text eol=lf
