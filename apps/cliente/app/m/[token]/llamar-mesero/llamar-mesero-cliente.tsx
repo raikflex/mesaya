@@ -650,7 +650,7 @@ function LlamadoActivoCard({
             type="button"
             onClick={onVolverALlamar}
             disabled={pending}
-            className="w-full h-9 rounded-[var(--radius-md)] text-xs font-medium border transition-colors disabled:opacity-50"
+            className="w-full h-11 rounded-[var(--radius-md)] text-xs font-medium border transition-colors disabled:opacity-50"
             style={{
               borderColor: colorMarca,
               color: colorMarca,

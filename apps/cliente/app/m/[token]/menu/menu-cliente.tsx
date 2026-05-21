@@ -216,7 +216,7 @@ export function MenuCliente({
             ) : null}
             <div className="min-w-0 flex-1">
               <p
-                className="text-[0.65rem] uppercase tracking-[0.14em]"
+                className="text-xs uppercase tracking-[0.14em]"
                 style={{ color: 'var(--color-muted)' }}
               >
                 Mesa {numeroMesa} - Hola, {nombre}
@@ -287,7 +287,7 @@ export function MenuCliente({
                 type="button"
                 data-tab-id={g.id}
                 onClick={() => scrollACategoria(g.id)}
-                className="px-3.5 h-8 rounded-full text-xs whitespace-nowrap transition-all shrink-0"
+                className="px-3.5 h-11 rounded-full text-xs whitespace-nowrap transition-all shrink-0"
                 style={{
                   background: categoriaActiva === g.id ? 'var(--color-ink)' : 'transparent',
                   color: categoriaActiva === g.id ? 'var(--color-paper)' : 'var(--color-ink-soft)',
@@ -398,7 +398,7 @@ export function MenuCliente({
       {carrito.length === 0 ? (
         <footer className="py-6 text-center mt-4">
           <p
-            className="text-[0.7rem] uppercase tracking-[0.14em]"
+            className="text-xs uppercase tracking-[0.14em]"
             style={{ color: 'var(--color-muted)' }}
           >
             Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
@@ -455,7 +455,7 @@ function ItemProducto({
             </p>
             {sinStock ? (
               <span
-                className="text-[0.65rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded"
+                className="text-xs uppercase tracking-[0.1em] px-1.5 py-0.5 rounded"
                 style={{
                   background: 'var(--color-paper-deep)',
                   color: 'var(--color-muted)',

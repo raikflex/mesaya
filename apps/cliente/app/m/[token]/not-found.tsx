@@ -27,7 +27,7 @@ export default function NotFound() {
           </p>
         </div>
         <p
-          className="mt-12 text-[0.7rem] uppercase tracking-[0.14em]"
+          className="mt-12 text-xs uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
           Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>

@@ -212,7 +212,7 @@ export function DetalleProducto({
                 }}
               />
               <p
-                className="text-[0.7rem] mt-1 text-right"
+                className="text-xs mt-1 text-right"
                 style={{
                   color: restantes < 20 ? 'var(--color-danger)' : 'var(--color-muted)',
                 }}

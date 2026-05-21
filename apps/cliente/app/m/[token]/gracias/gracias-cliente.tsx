@@ -73,7 +73,7 @@ export function GraciasCliente({
               />
             </svg>
           </div>
-          <p className="text-[0.7rem] uppercase tracking-[0.14em] opacity-80">
+          <p className="text-xs uppercase tracking-[0.14em] opacity-80">
             Mesa {mesaNumero} cerrada
           </p>
           <h1 className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] mt-1">
@@ -89,7 +89,7 @@ export function GraciasCliente({
         >
           <div>
             <p
-              className="text-[0.65rem] uppercase tracking-[0.14em]"
+              className="text-xs uppercase tracking-[0.14em]"
               style={{ color: 'var(--color-muted)' }}
             >
               Total pagado
@@ -187,7 +187,7 @@ export function GraciasCliente({
                 background: 'var(--color-paper)',
               }}
             />
-            <p className="text-[0.7rem] mt-1 text-right" style={{ color: 'var(--color-muted)' }}>
+            <p className="text-xs mt-1 text-right" style={{ color: 'var(--color-muted)' }}>
               {comentario.length} / 500
             </p>
 
@@ -211,7 +211,7 @@ export function GraciasCliente({
               {pending ? 'Enviando…' : 'Enviar reseña'}
             </button>
 
-            <p className="text-[0.7rem] text-center mt-3" style={{ color: 'var(--color-muted)' }}>
+            <p className="text-xs text-center mt-3" style={{ color: 'var(--color-muted)' }}>
               <button
                 type="button"
                 onClick={saltar}
@@ -242,7 +242,7 @@ export function GraciasCliente({
 
       <footer className="py-6 text-center">
         <p
-          className="text-[0.7rem] uppercase tracking-[0.14em]"
+          className="text-xs uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
           Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>

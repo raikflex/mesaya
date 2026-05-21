@@ -234,7 +234,7 @@ export function CarritoCliente({
       <div className="flex-1 px-5 py-6 max-w-md mx-auto w-full">
         <div className="mb-6">
           <p
-            className="text-[0.65rem] uppercase tracking-[0.14em] mb-1"
+            className="text-xs uppercase tracking-[0.14em] mb-1"
             style={{ color: 'var(--color-muted)' }}
           >
             Mesa {numeroMesa} · {nombre}
@@ -280,7 +280,7 @@ export function CarritoCliente({
                   >
                     Total de este pedido
                   </p>
-                  <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-muted)' }}>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
                     {unidades} producto{unidades === 1 ? '' : 's'}
                   </p>
                 </div>
@@ -294,7 +294,7 @@ export function CarritoCliente({
             </section>
 
             <p
-              className="text-[0.7rem] text-center px-2 leading-relaxed"
+              className="text-xs text-center px-2 leading-relaxed"
               style={{ color: 'var(--color-muted)' }}
             >
               La propina y el pago final se gestionan al pedir la cuenta. Por ahora, este pedido
@@ -552,7 +552,7 @@ function ItemFila({
           type="button"
           onClick={onEliminar}
           aria-label={`Eliminar ${item.nombre}`}
-          className="size-8 grid place-items-center rounded-[var(--radius-md)] transition-colors shrink-0 -mr-1.5"
+          className="size-12 grid place-items-center rounded-[var(--radius-md)] transition-colors shrink-0 -mr-1.5"
           style={{ color: 'var(--color-muted)' }}
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
@@ -573,7 +573,7 @@ function ItemFila({
             type="button"
             onClick={() => onCambiarCantidad(item.cantidad - 1)}
             aria-label="Disminuir cantidad"
-            className="size-8 grid place-items-center rounded-[var(--radius-md)] border transition-colors"
+            className="size-12 grid place-items-center rounded-[var(--radius-md)] border transition-colors"
             style={{
               borderColor: 'var(--color-border-strong)',
               color: 'var(--color-ink)',
@@ -595,7 +595,7 @@ function ItemFila({
             onClick={() => onCambiarCantidad(item.cantidad + 1)}
             disabled={item.cantidad >= 99}
             aria-label="Aumentar cantidad"
-            className="size-8 grid place-items-center rounded-[var(--radius-md)] border transition-colors disabled:opacity-40"
+            className="size-12 grid place-items-center rounded-[var(--radius-md)] border transition-colors disabled:opacity-40"
             style={{
               borderColor: 'var(--color-border-strong)',
               color: 'var(--color-ink)',

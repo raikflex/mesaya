@@ -61,7 +61,7 @@ export function MenuPlaceholder({
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0 flex-1">
             <p
-              className="text-[0.65rem] uppercase tracking-[0.14em]"
+              className="text-xs uppercase tracking-[0.14em]"
               style={{ color: 'var(--color-muted)' }}
             >
               Mesa {numeroMesa} · Hola, {nombre}
@@ -128,7 +128,7 @@ export function MenuPlaceholder({
       {/* Footer */}
       <footer className="py-6 text-center">
         <p
-          className="text-[0.7rem] uppercase tracking-[0.14em]"
+          className="text-xs uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
           Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>

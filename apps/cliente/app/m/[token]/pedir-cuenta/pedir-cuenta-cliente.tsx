@@ -293,7 +293,7 @@ export function PedirCuentaCliente({
 
       <div className="flex-1 px-5 py-6 max-w-md mx-auto w-full">
         <p
-          className="text-[0.65rem] uppercase tracking-[0.14em] mb-1"
+          className="text-xs uppercase tracking-[0.14em] mb-1"
           style={{ color: 'var(--color-muted)' }}
         >
           Mesa {numeroMesa} · {nombreNegocio}
@@ -378,7 +378,7 @@ export function PedirCuentaCliente({
                 <span className="text-sm block" style={{ color: 'var(--color-ink-soft)' }}>
                   Propina sugerida (10%)
                 </span>
-                <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
+                <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
                   Voluntaria. Decides tú.
                 </span>
               </div>
@@ -469,7 +469,7 @@ export function PedirCuentaCliente({
                   <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
                     {f.label}
                   </p>
-                  <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                     {f.descripcion}
                   </p>
                 </div>
@@ -513,7 +513,7 @@ export function PedirCuentaCliente({
                 <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
                   ¿Necesitas factura?
                 </p>
-                <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                   Si lo activas, agrega tu documento.
                 </p>
               </div>
@@ -527,7 +527,7 @@ export function PedirCuentaCliente({
             >
               <div>
                 <label
-                  className="block text-[0.7rem] uppercase tracking-[0.12em] mb-1.5"
+                  className="block text-xs uppercase tracking-[0.12em] mb-1.5"
                   style={{ color: 'var(--color-muted)' }}
                 >
                   Tipo de documento
@@ -539,7 +539,7 @@ export function PedirCuentaCliente({
                       type="button"
                       onClick={() => setTipoDoc(t)}
                       aria-pressed={tipoDoc === t}
-                      className="h-10 rounded-[var(--radius-md)] border text-sm font-medium transition-colors"
+                      className="h-11 rounded-[var(--radius-md)] border text-sm font-medium transition-colors"
                       style={{
                         borderColor: tipoDoc === t ? colorMarca : 'var(--color-border-strong)',
                         background: tipoDoc === t ? colorMarca : 'white',
@@ -556,7 +556,7 @@ export function PedirCuentaCliente({
               <div>
                 <label
                   htmlFor="numeroDoc"
-                  className="block text-[0.7rem] uppercase tracking-[0.12em] mb-1.5"
+                  className="block text-xs uppercase tracking-[0.12em] mb-1.5"
                   style={{ color: 'var(--color-muted)' }}
                 >
                   Número
@@ -584,7 +584,7 @@ export function PedirCuentaCliente({
               <div>
                 <label
                   htmlFor="nombreDoc"
-                  className="block text-[0.7rem] uppercase tracking-[0.12em] mb-1.5"
+                  className="block text-xs uppercase tracking-[0.12em] mb-1.5"
                   style={{ color: 'var(--color-muted)' }}
                 >
                   {tipoDoc === 'NIT' ? 'Razón social' : 'Nombre completo'}
@@ -612,7 +612,7 @@ export function PedirCuentaCliente({
         </section>
 
         <p
-          className="text-[0.7rem] text-center mb-2 leading-relaxed px-2"
+          className="text-xs text-center mb-2 leading-relaxed px-2"
           style={{ color: 'var(--color-muted)' }}
         >
           Al pedir la cuenta, el mesero llega a tu mesa con la información que elegiste. La cuenta
@@ -760,13 +760,13 @@ function PantallaCuentaPedida({
                 type="button"
                 onClick={reLlamar}
                 disabled={pending}
-                className="w-full h-10 rounded-[var(--radius-md)] text-xs font-medium border transition-colors disabled:opacity-50"
+                className="w-full h-11 rounded-[var(--radius-md)] text-xs font-medium border transition-colors disabled:opacity-50"
                 style={{ borderColor: colorMarca, color: colorMarca, background: 'white' }}
               >
                 {pending ? 'Avisando…' : 'Volver a llamar al mesero'}
               </button>
             ) : (
-              <p className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
+              <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
                 Si no llega en{' '}
                 <span
                   className="font-[family-name:var(--font-mono)] tabular-nums"

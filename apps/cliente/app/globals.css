@@ -1,7 +1,13 @@
 @import 'tailwindcss';
 @import '../../../packages/config/tailwind/tokens.css';
-
 @source "../../../packages/ui/src/**/*.{ts,tsx}";
+
+html {
+  /* Accesibilidad: base tipografica a 18px (en vez de 16px del navegador).
+   * Escala TODA la tipografia del cliente proporcionalmente.
+   * Usamos % para respetar si el usuario subio el tamano en su navegador. */
+  font-size: 112.5%;
+}
 
 html,
 body {

@@ -177,7 +177,7 @@ export default async function MesaQRPage({ params }: PageProps) {
           />
         ) : null}
         <p
-          className="text-[0.7rem] uppercase tracking-[0.16em] mb-2"
+          className="text-xs uppercase tracking-[0.16em] mb-2"
           style={{ color: 'var(--color-muted)' }}
         >
           Mesa {mesa.numero as string}
@@ -198,7 +198,7 @@ export default async function MesaQRPage({ params }: PageProps) {
         </div>
 
         <p
-          className="mt-10 text-[0.7rem] uppercase tracking-[0.14em]"
+          className="mt-10 text-xs uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
           Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
