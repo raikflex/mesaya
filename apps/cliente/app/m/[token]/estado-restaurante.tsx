@@ -50,7 +50,7 @@ export function EstadoRestauranteScreen(props: EstadoProps) {
           className="mt-12 text-xs uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
-          Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
+          Servido con <span style={{ color: 'var(--color-ink)' }}>EnPura</span>
         </p>
       </div>
     </main>

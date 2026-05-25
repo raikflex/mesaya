@@ -17,7 +17,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: { default: 'MesaYA Staff', template: '%s · MesaYA Staff' },
+  title: { default: 'EnPura Staff', template: '%s · EnPura Staff' },
   description: 'Aplicación para meseros y cocina.',
   robots: { index: false, follow: false },
 };

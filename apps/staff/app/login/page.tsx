@@ -12,7 +12,7 @@ export default function LoginPage() {
             className="text-[0.7rem] uppercase tracking-[0.16em] mb-2"
             style={{ color: 'var(--color-muted)' }}
           >
-            MesaYA · Staff
+            EnPura · Staff
           </p>
           <h1
             className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] leading-[1.1]"
@@ -36,7 +36,7 @@ export default function LoginPage() {
         className="text-[0.7rem] uppercase tracking-[0.14em] mt-10"
         style={{ color: 'var(--color-muted)' }}
       >
-        Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
+        Servido con <span style={{ color: 'var(--color-ink)' }}>EnPura</span>
       </p>
     </main>
   );

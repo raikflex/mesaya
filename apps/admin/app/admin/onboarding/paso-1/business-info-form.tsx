@@ -311,7 +311,7 @@ function ClientPreview({
               Pedir · 1 ítem
             </div>
             <p className="mt-3 text-[0.65rem] text-center text-stone-500">
-              {dueno ? `Atiende ${dueno}` : 'MesaYA'}
+              {dueno ? `Atiende ${dueno}` : 'EnPura'}
             </p>
           </div>
         </div>

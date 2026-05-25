@@ -34,7 +34,7 @@ function Header() {
           className="font-[family-name:var(--font-display)] text-xl tracking-[-0.02em]"
           style={{ color: 'var(--color-ink)' }}
         >
-          MesaYA
+          EnPura
         </span>
       </Link>
       <span className="text-xs uppercase tracking-[0.12em]" style={{ color: 'var(--color-muted)' }}>

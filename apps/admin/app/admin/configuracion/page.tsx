@@ -3,7 +3,7 @@ import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { ConfiguracionForm } from './configuracion-form';
 
-export const metadata = { title: 'Configuración · MesaYA' };
+export const metadata = { title: 'Configuración · EnPura' };
 export const dynamic = 'force-dynamic';
 
 export default async function ConfiguracionPage() {

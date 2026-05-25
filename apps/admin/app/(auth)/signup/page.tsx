@@ -33,7 +33,7 @@ export default function SignupPage() {
               className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]"
               style={{ color: 'var(--color-ink)' }}
             >
-              MesaYA
+              EnPura
             </span>
           </Link>
         </div>
@@ -81,7 +81,7 @@ export default function SignupPage() {
               className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]"
               style={{ color: 'var(--color-ink)' }}
             >
-              MesaYA
+              EnPura
             </span>
           </Link>
 

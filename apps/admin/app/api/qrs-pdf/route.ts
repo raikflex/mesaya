@@ -53,7 +53,7 @@ export async function GET() {
 
   const pdfDoc = await PDFDocument.create();
   pdfDoc.setTitle(`QRs - ${nombreNegocio}`);
-  pdfDoc.setAuthor('MesaYA');
+  pdfDoc.setAuthor('EnPura');
 
   const fontRegular = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
@@ -158,7 +158,7 @@ export async function GET() {
   // Convertir Uint8Array a Buffer (Node) para NextResponse.
   const buffer = Buffer.from(pdfBytes);
 
-  const filename = `mesaya-qrs-${slugify(nombreNegocio)}.pdf`;
+  const filename = `enpura-qrs-${slugify(nombreNegocio)}.pdf`;
 
   return new NextResponse(buffer, {
     status: 200,

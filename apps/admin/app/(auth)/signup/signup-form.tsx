@@ -74,7 +74,7 @@ export function SignupForm() {
       </Button>
 
       <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted)' }}>
-        Al continuar aceptas los términos del servicio y la política de privacidad de MesaYA.
+        Al continuar aceptas los términos del servicio y la política de privacidad de EnPura.
       </p>
     </form>
   );

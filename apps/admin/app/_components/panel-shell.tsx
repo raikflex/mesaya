@@ -184,7 +184,7 @@ export function PanelShell({
               className="font-[family-name:var(--font-display)] text-lg tracking-[-0.02em]"
               style={{ color: 'var(--color-ink)' }}
             >
-              MesaYA
+              EnPura
             </span>
           </Link>
           <p className="text-[0.7rem] truncate mt-1" style={{ color: 'var(--color-muted)' }}>
@@ -338,7 +338,7 @@ export function PanelShell({
             className="ml-2 font-[family-name:var(--font-display)] text-base"
             style={{ color: 'var(--color-ink)' }}
           >
-            MesaYA
+            EnPura
           </span>
         </header>
 

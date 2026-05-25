@@ -1,6 +1,6 @@
 {
-  "name": "MesaYA",
-  "short_name": "MesaYA",
+  "name": "EnPura",
+  "short_name": "EnPura",
   "description": "Pide y paga desde la mesa.",
   "start_url": "/",
   "display": "standalone",

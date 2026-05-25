@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useActionState, useEffect, useRef, useState } from 'react';
 import { Button, Field, Input, cn } from '@mesaya/ui';
@@ -191,7 +191,7 @@ function CredencialesCard({
 }) {
   const [copiado, setCopiado] = useState(false);
 
-  const textoParaCompartir = `Hola ${credenciales.nombre}, tu acceso a MesaYA:\n\nCorreo: ${credenciales.email}\nContraseÃ±a: ${credenciales.password}\n\nGuÃ¡rdala bien, esta contraseÃ±a es temporal.`;
+  const textoParaCompartir = `Hola ${credenciales.nombre}, tu acceso a EnPura:\n\nCorreo: ${credenciales.email}\nContraseÃ±a: ${credenciales.password}\n\nGuÃ¡rdala bien, esta contraseÃ±a es temporal.`;
 
   function copiar() {
     void navigator.clipboard.writeText(textoParaCompartir);

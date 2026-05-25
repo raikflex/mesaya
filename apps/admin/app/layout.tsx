@@ -24,10 +24,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: 'MesaYA — Panel de administración',
-    template: '%s · MesaYA',
+    default: 'EnPura — Panel de administración',
+    template: '%s · EnPura',
   },
-  description: 'Panel de administración para tu restaurante en MesaYA.',
+  description: 'Panel de administración para tu restaurante en EnPura.',
   // En MVP el panel no debe ser indexado.
   robots: { index: false, follow: false },
 };

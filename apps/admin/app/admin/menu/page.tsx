@@ -3,7 +3,7 @@ import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { MenuManager } from './menu-manager';
 
-export const metadata = { title: 'Menu - MesaYA' };
+export const metadata = { title: 'Menu - EnPura' };
 
 export type Categoria = {
   id: string;

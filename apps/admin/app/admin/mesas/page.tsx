@@ -4,7 +4,7 @@ import { PanelShell } from '../../_components/panel-shell';
 import { MesasManager } from './mesas-manager';
 import { MapaMesas, type MesaInfo, type SesionAbiertaResumen } from './mapa-mesas';
 
-export const metadata = { title: 'Mesas · MesaYA' };
+export const metadata = { title: 'Mesas · EnPura' };
 export const dynamic = 'force-dynamic';
 
 type Mesa = {

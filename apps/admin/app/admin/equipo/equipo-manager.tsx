@@ -171,7 +171,7 @@ function CredencialesCard({
   const [copiadoMensaje, setCopiadoMensaje] = useState(false);
   const [copiadoPass, setCopiadoPass] = useState(false);
 
-  const textoParaCompartir = `Hola ${credenciales.nombre}, tu acceso a MesaYA:\n\nCorreo: ${credenciales.email}\nContraseña: ${credenciales.password}\n\nGuárdala bien, esta contraseña es temporal.`;
+  const textoParaCompartir = `Hola ${credenciales.nombre}, tu acceso a EnPura:\n\nCorreo: ${credenciales.email}\nContraseña: ${credenciales.password}\n\nGuárdala bien, esta contraseña es temporal.`;
 
   function copiarMensaje() {
     void navigator.clipboard.writeText(textoParaCompartir);

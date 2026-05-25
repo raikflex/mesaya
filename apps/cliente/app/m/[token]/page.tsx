@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps) {
     .maybeSingle();
 
   if (!mesa) {
-    return { title: 'MesaYA' };
+    return { title: 'EnPura' };
   }
 
   const rest = (Array.isArray(mesa.restaurantes) ? mesa.restaurantes[0] : mesa.restaurantes) as {
@@ -201,7 +201,7 @@ export default async function MesaQRPage({ params }: PageProps) {
           className="mt-10 text-xs uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
-          Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
+          Servido con <span style={{ color: 'var(--color-ink)' }}>EnPura</span>
         </p>
       </div>
     </main>

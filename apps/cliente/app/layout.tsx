@@ -12,11 +12,11 @@ const fraunces = Fraunces({
 const geist = Geist({ subsets: ['latin'], display: 'swap', variable: '--font-sans' });
 
 export const metadata: Metadata = {
-  title: 'MesaYA',
+  title: 'EnPura',
   description: 'Pide y paga desde la mesa.',
-  applicationName: 'MesaYA',
+  applicationName: 'EnPura',
   manifest: '/manifest.json',
-  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'MesaYA' },
+  appleWebApp: { capable: true, statusBarStyle: 'default', title: 'EnPura' },
 };
 
 export const viewport: Viewport = {

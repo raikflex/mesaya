@@ -9,7 +9,7 @@ export default function NotFound() {
           className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] leading-[1.1]"
           style={{ color: 'var(--color-ink)' }}
         >
-          MesaYA
+          EnPura
         </h1>
         <div
           className="rounded-[var(--radius-lg)] border bg-white px-6 py-8 mt-10"
@@ -30,7 +30,7 @@ export default function NotFound() {
           className="mt-12 text-xs uppercase tracking-[0.14em]"
           style={{ color: 'var(--color-muted)' }}
         >
-          Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
+          Servido con <span style={{ color: 'var(--color-ink)' }}>EnPura</span>
         </p>
       </div>
     </main>

@@ -7,7 +7,7 @@ import { BannerBienvenida } from './banner-bienvenida';
 import { ToggleEstadoRestaurante } from './toggle-estado-restaurante';
 import { PedidosLargos, type PedidoLargo } from './pedidos-largos';
 
-export const metadata = { title: 'Panel · MesaYA' };
+export const metadata = { title: 'Panel · EnPura' };
 export const dynamic = 'force-dynamic';
 
 export default async function AdminHome({

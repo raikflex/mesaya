@@ -3,7 +3,7 @@ import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { EquipoManager, type Miembro } from './equipo-manager';
 
-export const metadata = { title: 'Equipo · MesaYA' };
+export const metadata = { title: 'Equipo · EnPura' };
 export const dynamic = 'force-dynamic';
 
 export default async function EquipoPage() {
