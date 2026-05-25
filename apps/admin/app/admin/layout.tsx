@@ -1,4 +1,4 @@
-﻿import { redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +17,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .maybeSingle();
 
   // Si tiene perfil pero no es dueño, no puede entrar a /admin.
-  // (En S3 los redirigimos a su app: staff.mesaya.co o cocina.mesaya.co).
+  // (En S3 los redirigimos a su app: staff.enpura.co o cocina.enpura.co).
   if (perfil && perfil.rol !== 'dueno') {
     redirect('/login?error=acceso-denegado');
   }

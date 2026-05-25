@@ -1,16 +1,8 @@
-# MesaYA — Documento Maestro del Proyecto
+# EnPura — Documento Maestro del Proyecto
 
-**Versión:** 0.5 · **Fecha:** 3 may 2026 · **Estado:** Onboarding completo + panel del dueño con activación + app cliente con 5 estados validados + CRUD post-onboarding de mesas y menú. Listo para apps de cocina y mesero (S5).
+**Versión:** 0.4 · **Fecha:** 2 may 2026 · **Estado:** Producto end-to-end funcional. Onboarding completo + panel del dueño con activación + app cliente con 5 estados validados. Listo para apps de cocina y mesero (S4).
 
-> **Cómo usar este documento:** Pégalo al inicio de cada chat con Claude para que arranque con todo el contexto. Después de cada sesión, agrega entrada en la **Bitácora** (sección 14) y sube versión menor (v0.5 → v0.6).
-
-**Cambios desde v0.4 (S4):**
-
-- **CRUD post-onboarding de mesas** (`/admin/mesas`): agregar más mesas con numeración continua, editar capacidad inline, soft delete (`activa=false`), toggle desactivar/activar, descargar PDF de QRs sin volver al wizard.
-- **CRUD post-onboarding de menú** (`/admin/menu`): tabs Productos/Categorías. CRUD completo de categorías (agregar, renombrar inline, soft delete). CRUD completo de productos (agregar con form, editar nombre/precio/categoría inline, toggle disponible/sin stock).
-- **Migration aplicada:** `productos.disponible BOOLEAN NOT NULL DEFAULT true` (diferencia conceptual entre "borrado permanente" vs "sin stock temporal").
-- **Formato de precio en COP:** input visible con separadores de miles (`$32.000`), envío numérico al backend.
-- **Soft delete vs hard delete:** mesas y categorías son soft (`activa=false` para preservar QRs físicos e historial). Productos es hard delete (no hay comandas históricas todavía; cambiar a soft cuando S5+ tenga comandas reales).
+> **Cómo usar este documento:** Pégalo al inicio de cada chat con Claude para que arranque con todo el contexto. Después de cada sesión, agrega entrada en la **Bitácora** (sección 14) y sube versión menor (v0.4 → v0.5).
 
 **Cambios desde v0.3 (S2.2 + S2.3 + S3):**
 
@@ -21,11 +13,11 @@
 - **Tabla `pedidos_qr` postergada** hasta que se monte el servicio físico de impresión (semana 4-5).
 - Schema verificado contra DB real: nuevas columnas `restaurantes.dueno_user_id` + `primer_activacion_en`, `perfiles.nombre` (no `nombre_completo`), sufijos `creado_en`/`actualizada_en` mixtos por tabla.
 
-**Cambios desde v0.1:** Nombre confirmado (`MesaYA`). QRs como servicio de impresión laminada + PDF temporal. Cliente flow simplificado (escaneo → nombre → menú, sin elección de modo). Demo de 15 días + suspensión. Todas las decisiones pendientes resueltas excepto modelo de precios.
+**Cambios desde v0.1:** Nombre confirmado (`EnPura`). QRs como servicio de impresión laminada + PDF temporal. Cliente flow simplificado (escaneo → nombre → menú, sin elección de modo). Demo de 15 días + suspensión. Todas las decisiones pendientes resueltas excepto modelo de precios.
 
 ---
 
-## 1. ¿Qué es MesaYA?
+## 1. ¿Qué es EnPura?
 
 Sistema web para restaurantes en Colombia (foco inicial: Bogotá) que permite al cliente pedir, hacer adiciones, llamar al mesero y pagar desde su celular escaneando un QR en la mesa, sin esperar a que un mesero venga a tomarle el pedido.
 
@@ -81,7 +73,7 @@ Sistema web para restaurantes en Colombia (foco inicial: Bogotá) que permite al
 | Pagos en v1                     | Manuales (sin pasarela)                               | Elimina riesgo regulatorio (SFC) y semanas de integración. |
 | Carga de menú                   | Dueño self-service desde dashboard                    | Escala sin intervención manual.                            |
 | Modo grupal                     | Pospuesto a v2                                        | Validar modo solo primero.                                 |
-| Nombre del producto             | `MesaYA`                                              | Decidido.                                                  |
+| Nombre del producto             | `EnPura`                                              | Decidido.                                                  |
 | QRs físicos                     | Servicio de impresión laminada + envío. PDF temporal. | Premium feel, justifica precio.                            |
 | Cliente sin cuenta visible      | Auth anónima por debajo, UX sin mostrar "cuenta"      | Fricción cero al escanear.                                 |
 | Demo / trial                    | 15 días gratis, después suspensión hasta pago         | Sin plan free permanente.                                  |
@@ -398,16 +390,15 @@ flowchart TD
 
 ## 11. Plan semana a semana
 
-| Semana          | Objetivo                                                             | Entregable                                                                                                                                                                                    |
-| --------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **1 (cerrada)** | Definición y diagramas                                               | Doc maestro v0.2, esquema SQL, RLS.                                                                                                                                                           |
-| **2 (cerrada)** | Setup + auth + onboarding completo                                   | Repo, monorepo, Supabase aplicado, login dueño, wizard 8/8 pasos, generación QR, PDF descargable.                                                                                             |
-| **3 (cerrada)** | Panel del dueño + checkpoint de activación + app cliente con estados | Dashboard real, "Empezar a operar" arranca trial, cliente lee QR y muestra estado.                                                                                                            |
-| **4 (cerrada)** | CRUD post-onboarding mesas y menú + formato COP                      | Admin completo de mesas (agregar, capacidad, soft delete, toggle activa, PDF). Admin completo de menú con tabs (CRUD categorías + CRUD productos con disponible/sin stock + formato $32.000). |
-| **5**           | Apps de cocina y mesero + flujo cliente completo                     | Cocina: tablero realtime, estados. Mesero: free pickup. Cliente: nombre → menú → carrito → comanda. Migration `mesero_atendiendo_id` + auth anónima Supabase + realtime.                      |
-| **6**           | KPIs + cierre + demo-ready                                           | KPIs avanzados. Modo simulación. Seed data. Pulida visual. CRUD post-onboarding de equipo (faltante).                                                                                         |
+| Semana                  | Objetivo                                                             | Entregable                                                                                                                                                                   |
+| ----------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **1 (cerrada)**         | Definición y diagramas                                               | Doc maestro v0.2, esquema SQL, RLS.                                                                                                                                          |
+| **2 (cerrada)**         | Setup + auth + onboarding completo                                   | Repo, monorepo, Supabase aplicado, login dueño, wizard 8/8 pasos, generación QR, PDF descargable.                                                                            |
+| **3 (parcial cerrada)** | Panel del dueño + checkpoint de activación + app cliente con estados | Dashboard real con métricas básicas, "Empezar a operar" arranca trial, cliente lee QR y muestra estado. **CRUD post-onboarding del menú/mesas/equipo postergado a S4 o S5.** |
+| **4**                   | Apps de cocina y mesero + flujo cliente completo                     | Cocina: tablero realtime, estados. Mesero: free pickup. Cliente: nombre → menú → carrito → comanda.                                                                          |
+| **5**                   | KPIs + cierre + demo-ready                                           | KPIs avanzados. Modo simulación. Seed data. CRUD post-onboarding. Pulida visual.                                                                                             |
 
-**Criterios demo-ready (final S6):**
+**Criterios demo-ready (final S5):**
 
 - Onboarding del dueño impecable, sin pantallas en blanco, mensajes claros.
 - Pantalla cliente se siente "del restaurante" (color, nombre, branding mínimo).
@@ -628,75 +619,10 @@ UPDATE restaurantes SET trial_termina_en = NULL WHERE estado='archivado' AND pri
 
 **Estado del repo al cerrar S3:**
 
-- `main` con dos commits nuevos: `6b7fc70` (panel + activación) y `502b4c6` (cliente con pantallas de estado).
+- `main` con dos commits nuevos: `6b7fc70` (panel + activación) y el commit del cliente (pendiente de push final).
 - 5/5 typecheck verde.
 - Producto end-to-end funcional: signup → onboarding → panel → activar → cliente escanea QR → ve estado correcto.
 
 ---
 
-### Sesión 4 — 3 may 2026 (mañana, ~1h 25min de codeo)
-
-**Objetivo:** CRUD post-onboarding del menú y mesas para que el dueño no tenga que volver al wizard cuando quiera cambiar algo.
-
-**Migration aplicada en Supabase:**
-
-```sql
-ALTER TABLE public.productos
-  ADD COLUMN IF NOT EXISTS disponible BOOLEAN NOT NULL DEFAULT true;
-```
-
-**Decisiones tomadas:**
-
-- **Soft delete para mesas y categorías** (`activa=false`): preserva QRs físicos pegados en mesas (cliente que escanea ve "Esta mesa no está disponible") y preserva historial cuando S5+ tenga comandas. La pantalla de cliente ya soportaba este caso.
-- **Hard delete para productos**: hoy no hay comandas históricas que los referencien. Cuando S5 tenga comandas reales, agregar campo `activo BOOLEAN` y migrar a soft delete (decisión registrada en pendientes).
-- **`disponible` vs `activa` en productos**: dos conceptos distintos. `disponible=false` es "se acabó hoy, vuelve mañana". `activo=false` (a futuro) sería "ya no vendo más este producto". Mezclarlos confunde al dueño.
-- **Formato de precio**: input visible con separadores de miles colombianos (`$32.000`), input hidden con valor numérico para el server. Componente `PrecioInput` reusable con prop `resetSignal` para limpiarlo al hacer submit exitoso del form padre.
-- **Una sola página `/admin/menu` con tabs** vs dos páginas separadas: tabs porque categorías y productos se piensan juntas. Tab default = Productos (lo que más se edita).
-
-**Bug del scaffold viejo:**
-
-- Notepad falló al hacer Reemplazar/Reemplazar todo de un bloque grande de JSX (el `<Field>` de precio). Quedaron dos versiones encimadas y typecheck reventó con 6 errores. Solución: regenerar el archivo entero limpio, no pelear con Notepad.
-
-**Tests visuales validados con screenshot:**
-
-- ✅ `/admin/mesas` con 7 mesas activas, números grandes, capacidad editable inline
-- ✅ Mesa 5 desactivada → cliente al escanear ve "Esta mesa no está disponible" con triángulo en color de marca
-- ✅ Mesa 5 reactivada → vuelve a la sección Activas
-- ✅ Bulk add: 2 mesas nuevas con numeración continuando desde la última (no desde 1)
-- ✅ `/admin/menu` con tab Productos default, "Bandeja paisa" y "Sueño suizo" agrupados por categoría
-- ✅ Tab Categorías con 4 categorías (Bebidas/Platos fuertes/Postres/waffles, postres, Vinos, desayunos)
-- ✅ Producto agregado con formato `$12.000` visible
-- ✅ Edición inline de precio con validación
-- ✅ Toggle Disponible / Sin stock funcional
-
-**Entregables:**
-
-- `apps/admin/app/admin/mesas/page.tsx`: header con breadcrumb + lista de mesas
-- `apps/admin/app/admin/mesas/mesas-manager.tsx`: 2 cards arriba (form agregar bulk + descargar PDF), lista activas con número grande negro, edición de capacidad, toggle desactivar/activar, papelera (soft delete). Sección separada "Inactivas" en gris.
-- `apps/admin/app/admin/mesas/actions.ts`: 5 server actions con guard de rol dueño en cada una.
-- `apps/admin/app/admin/menu/page.tsx`: header + carga categorías y productos en paralelo + tab inicial vía query param.
-- `apps/admin/app/admin/menu/menu-manager.tsx`: tabs Productos/Categorías, formularios, listas agrupadas, edición inline (nombre/precio/categoría), `PrecioInput` con formato COP, sección "Sin categoría" para huérfanos.
-- `apps/admin/app/admin/menu/actions.ts`: 7 server actions (3 categorías + 4 productos).
-- Links agregados al panel del dueño desde los cards "Productos", "Categorías", "Mesas".
-
-**Pendiente para S5:**
-
-- Migration: agregar `mesero_atendiendo_id uuid NULL` a `comandas` y `llamados_mesero` (para modelo free pickup).
-- App cocina (`apps/staff` con detección de rol cocina): tablero realtime de comandas, sonido al llegar nueva, cambio de estados.
-- App mesero (mismo `apps/staff`, rol mesero): lista de comandas/llamados/pagos del restaurante con botón "Tomar". Lock optimista en server action.
-- Flujo cliente completo: del placeholder al menú real → carrito en sessionStorage → enviar comanda → tracking.
-- Auth anónima de Supabase para clientes.
-- Realtime sobre `comandas` y `llamados_mesero`.
-- Seed data de demo (1 restaurante con menú completo, 5 mesas, 1 cocina, 2 meseros).
-- CRUD post-onboarding de equipo (similar a productos, postergado a S5/S6).
-- Productos: cuando lleguen comandas reales, migrar de hard delete a soft delete con campo `activo`.
-
-**Estado del repo al cerrar S4:**
-
-- `main` con dos commits nuevos: `70cb67a` (CRUD mesas) y `5cfba16` (CRUD menú con formato COP).
-- 5/5 typecheck verde.
-- Doc maestro v0.4 versionado en `docs/MesaYA_Doc_Maestro_v0_4.md`.
-
----
-
-**Fin del documento maestro v0.5.**
+**Fin del documento maestro v0.4.**

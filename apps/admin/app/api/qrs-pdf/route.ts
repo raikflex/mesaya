@@ -8,7 +8,7 @@ import { createClient } from '@mesaya/database/server';
  * Cada QR apunta a {APP_URL_CLIENTE}/m/{qr_token}.
  *
  * Para dev: el dominio del cliente se toma de NEXT_PUBLIC_APP_URL_CLIENTE
- * (ej. http://192.168.1.11:3002). En prod: https://app.mesaya.co.
+ * (ej. http://192.168.1.11:3002). En prod: https://app.enpura.co.
  */
 export async function GET() {
   const supabase = await createClient();
