@@ -142,6 +142,7 @@ export type Database = {
           motivo_cancelacion: string | null;
           nota_cocina: string | null;
           numero_diario: number;
+          origen: string;
           restaurante_id: string;
           sesion_cliente_id: string;
           sesion_id: string;
@@ -159,6 +160,7 @@ export type Database = {
           motivo_cancelacion?: string | null;
           nota_cocina?: string | null;
           numero_diario: number;
+          origen?: string;
           restaurante_id: string;
           sesion_cliente_id: string;
           sesion_id: string;
@@ -176,6 +178,7 @@ export type Database = {
           motivo_cancelacion?: string | null;
           nota_cocina?: string | null;
           numero_diario?: number;
+          origen?: string;
           restaurante_id?: string;
           sesion_cliente_id?: string;
           sesion_id?: string;
@@ -806,21 +809,21 @@ export type Database = {
       };
       sesion_clientes: {
         Row: {
-          auth_user_id: string;
+          auth_user_id: string | null;
           entro_en: string;
           id: string;
           nombre: string;
           sesion_id: string;
         };
         Insert: {
-          auth_user_id: string;
+          auth_user_id?: string | null;
           entro_en?: string;
           id?: string;
           nombre: string;
           sesion_id: string;
         };
         Update: {
-          auth_user_id?: string;
+          auth_user_id?: string | null;
           entro_en?: string;
           id?: string;
           nombre?: string;

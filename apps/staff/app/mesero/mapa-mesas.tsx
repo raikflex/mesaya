@@ -32,12 +32,14 @@ export function MapaMesas({
   restauranteId,
   colorMarca,
   variante = 'admin',
+  onTomarPedido,
 }: {
   mesas: MesaInfo[];
   sesionesAbiertasIniciales: SesionAbiertaResumen[];
   restauranteId: string;
   colorMarca: string;
   variante?: 'admin' | 'mesero';
+  onTomarPedido?: (mesa: MesaInfo) => void;
 }) {
   const [sesionesAbiertas, setSesionesAbiertas] =
     useState<SesionAbiertaResumen[]>(sesionesAbiertasIniciales);
@@ -185,6 +187,7 @@ export function MapaMesas({
               ocupada={ocupada}
               colorMarca={colorMarca}
               compacta={tamañoCard === 'compacto'}
+              onTomarPedido={onTomarPedido}
             />
           );
         })}
@@ -199,12 +202,14 @@ function CardMesa({
   ocupada,
   colorMarca,
   compacta,
+  onTomarPedido,
 }: {
   mesa: MesaInfo;
   sesion: SesionAbiertaResumen | undefined;
   ocupada: boolean;
   colorMarca: string;
   compacta: boolean;
+  onTomarPedido?: (mesa: MesaInfo) => void;
 }) {
   const minutos = sesion
     ? Math.max(0, Math.floor((Date.now() - new Date(sesion.abiertaEn).getTime()) / 60000))
@@ -232,15 +237,9 @@ function CardMesa({
       };
 
   if (compacta) {
-    // Vista para mesero: card chica, número grande, badge mini
-    return (
-      <li
-        className="rounded-[var(--radius-md)] border p-2.5 text-center"
-        style={{
-          background: estilo.background,
-          borderColor: estilo.border,
-        }}
-      >
+    // Vista para mesero: card chica clickeable que abre "tomar pedido".
+    const contenido = (
+      <>
         <p
           className="font-[family-name:var(--font-display)] text-2xl tabular-nums leading-tight"
           style={{ color: estilo.valueColor }}
@@ -253,6 +252,30 @@ function CardMesa({
         >
           {ocupada ? `${tiempoFmt}` : `${mesa.capacidad}p libre`}
         </p>
+      </>
+    );
+
+    if (onTomarPedido) {
+      return (
+        <li>
+          <button
+            type="button"
+            onClick={() => onTomarPedido(mesa)}
+            className="w-full rounded-[var(--radius-md)] border p-2.5 text-center transition-opacity hover:opacity-80"
+            style={{ background: estilo.background, borderColor: estilo.border }}
+          >
+            {contenido}
+          </button>
+        </li>
+      );
+    }
+
+    return (
+      <li
+        className="rounded-[var(--radius-md)] border p-2.5 text-center"
+        style={{ background: estilo.background, borderColor: estilo.border }}
+      >
+        {contenido}
       </li>
     );
   }

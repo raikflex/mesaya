@@ -1,6 +1,6 @@
 import { createClient } from '@mesaya/database/server';
 import { obtenerPerfilStaff } from '../../lib/auth-server';
-import { TableroMesero, type ColaMesero } from './tablero-mesero';
+import { TableroMesero, type ColaMesero, type CategoriaMenu } from './tablero-mesero';
 import type { MesaInfo, SesionAbiertaResumen } from './mapa-mesas';
 
 export const dynamic = 'force-dynamic';
@@ -10,10 +10,10 @@ export const dynamic = 'force-dynamic';
  *
  * 3 secciones:
  *   1. Llamados activos (campana/otro/pago) en estado 'pendiente'.
- *   2. Comandas con estado='lista' (cocina ya las terminó, falta entregar).
+ *   2. Comandas con estado='lista' (cocina ya las termino, falta entregar).
  *   3. Pagos: derivados de los llamados motivo='pago' pendientes, enriquecidos
- *      con el detalle de comandas + total de la sesión + datos opcionales de
- *      facturación (doc_tipo, doc_numero, doc_nombre) que el cliente pasó al
+ *      con el detalle de comandas + total de la sesion + datos opcionales de
+ *      facturacion (doc_tipo, doc_numero, doc_nombre) que el cliente paso al
  *      pedir cuenta.
  *
  * Modelo "free pickup": cualquier mesero puede tomar cualquier item via
@@ -23,9 +23,9 @@ export default async function MeseroPage() {
   const perfil = await obtenerPerfilStaff('mesero');
   const supabase = await createClient();
 
-  // Verificar si la pantalla de cocina está activa. Si no lo está, el mesero
-  // ve una sección extra "En preparación" donde maneja el ciclo de vida de
-  // las comandas (pendiente → en_preparacion → lista) manualmente.
+  // Verificar si la pantalla de cocina esta activa. Si no lo esta, el mesero
+  // ve una seccion extra "En preparacion" donde maneja el ciclo de vida de
+  // las comandas (pendiente -> en_preparacion -> lista) manualmente.
   const { data: restaurante } = await supabase
     .from('restaurantes')
     .select('cocina_activa')
@@ -34,10 +34,10 @@ export default async function MeseroPage() {
 
   const cocinaActiva = (restaurante?.cocina_activa as boolean) ?? false;
 
-  // --- Llamados activos (excluyendo motivo='pago' que va a sección de pagos) ---
-  // Traemos también doc_tipo, doc_numero, doc_nombre, forma_pago_preferida y nota.
+  // --- Llamados activos (excluyendo motivo='pago' que va a seccion de pagos) ---
+  // Traemos tambien doc_tipo, doc_numero, doc_nombre, forma_pago_preferida y nota.
   // Las primeras 4 son para pagos; nota es para llamados normales (cliente
-  // escribió detalles como "más servilletas"). Leerlas en todos no tiene costo.
+  // escribio detalles como "mas servilletas"). Leerlas en todos no tiene costo.
   const { data: llamadosRaw } = await supabase
     .from('llamados_mesero')
     .select(
@@ -87,9 +87,9 @@ export default async function MeseroPage() {
   const inicioDia = new Date();
   inicioDia.setHours(0, 0, 0, 0);
 
-  // Si la cocina está inactiva, el mesero ve TODAS las comandas en estados
+  // Si la cocina esta inactiva, el mesero ve TODAS las comandas en estados
   // activos (pendiente, en_preparacion, lista) para manejarlas manualmente.
-  // Si la cocina está activa, solo ve las que ya están listas para entregar.
+  // Si la cocina esta activa, solo ve las que ya estan listas para entregar.
   const estadosFiltro = cocinaActiva ? ['lista'] : ['pendiente', 'en_preparacion', 'lista'];
 
   const { data: comandasListasRaw } = await supabase
@@ -257,8 +257,8 @@ export default async function MeseroPage() {
           items: itemsPorComanda.get(c.id) ?? [],
         };
       }),
-    // Comandas en pendiente o en_preparacion — solo se llenan cuando
-    // cocinaActiva = false. Si está activa, este array queda vacío.
+    // Comandas en pendiente o en_preparacion - solo se llenan cuando
+    // cocinaActiva = false. Si esta activa, este array queda vacio.
     comandasEnPreparacion: comandasListasArr
       .filter((c) => c.estado === 'pendiente' || c.estado === 'en_preparacion')
       .map((c) => {
@@ -338,6 +338,45 @@ export default async function MeseroPage() {
     };
   });
 
+  // === MENU del restaurante (para que el mesero pueda tomar pedidos) ===
+  const [{ data: categoriasMenu }, { data: productosMenu }] = await Promise.all([
+    supabase
+      .from('categorias')
+      .select('id, nombre, orden')
+      .eq('restaurante_id', perfil.restauranteId)
+      .eq('activa', true)
+      .order('orden', { ascending: true }),
+    supabase
+      .from('productos')
+      .select('id, nombre, descripcion, precio, disponible, categoria_id')
+      .eq('restaurante_id', perfil.restauranteId)
+      .order('nombre', { ascending: true }),
+  ]);
+
+  const menu: CategoriaMenu[] = (categoriasMenu ?? []).map((c) => ({
+    id: c.id as string,
+    nombre: c.nombre as string,
+    orden: c.orden as number,
+    productos: (
+      (productosMenu ?? []) as {
+        id: string;
+        nombre: string;
+        descripcion: string | null;
+        precio: number;
+        disponible: boolean;
+        categoria_id: string;
+      }[]
+    )
+      .filter((p) => p.categoria_id === c.id)
+      .map(({ id, nombre, descripcion, precio, disponible }) => ({
+        id,
+        nombre,
+        descripcion,
+        precio,
+        disponible,
+      })),
+  }));
+
   return (
     <TableroMesero
       perfilId={perfil.id}
@@ -349,6 +388,7 @@ export default async function MeseroPage() {
       mesasInfo={mesasInfo}
       sesionesAbiertasInicial={sesionesAbiertas}
       cocinaActiva={cocinaActiva}
+      menu={menu}
     />
   );
 }

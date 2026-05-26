@@ -4,6 +4,9 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@mesaya/database/client';
 import { MapaMesas, type MesaInfo, type SesionAbiertaResumen } from './mapa-mesas';
+import { ModalTomarPedido } from './modal-tomar-pedido';
+export type { CategoriaMenu } from './modal-tomar-pedido';
+import type { CategoriaMenu } from './modal-tomar-pedido';
 import { SeccionEnPreparacion, type ComandaPreparacionMesero } from './seccion-en-preparacion';
 import {
   alternarSonido,
@@ -104,6 +107,7 @@ export function TableroMesero({
   mesasInfo,
   sesionesAbiertasInicial,
   cocinaActiva,
+  menu,
 }: {
   perfilId: string;
   perfilNombre: string;
@@ -114,8 +118,10 @@ export function TableroMesero({
   mesasInfo: MesaInfo[];
   sesionesAbiertasInicial: SesionAbiertaResumen[];
   cocinaActiva: boolean;
+  menu: CategoriaMenu[];
 }) {
   const [cola, setCola] = useState<ColaMesero>(colaInicial);
+  const [mesaParaPedido, setMesaParaPedido] = useState<MesaInfo | null>(null);
   const router = useRouter();
 
   const llamadoIdsRef = useRef<Set<string>>(new Set(colaInicial.llamados.map((l) => l.id)));
@@ -276,7 +282,10 @@ export function TableroMesero({
                 if (completa) {
                   setCola((c) => ({
                     ...c,
-                    comandasListas: [...c.comandasListas, completa],
+                    comandasListas: [
+                      ...c.comandasListas.filter((cm) => cm.id !== completa.id),
+                      completa,
+                    ],
                   }));
                   reproducir('comanda');
                 }
@@ -338,6 +347,7 @@ export function TableroMesero({
               restauranteId={restauranteId}
               colorMarca={colorMarca}
               variante="mesero"
+              onTomarPedido={setMesaParaPedido}
             />
           </div>
         ) : null}
@@ -363,6 +373,15 @@ export function TableroMesero({
           </div>
         )}
       </div>
+
+      {mesaParaPedido ? (
+        <ModalTomarPedido
+          mesa={{ id: mesaParaPedido.id, numero: mesaParaPedido.numero }}
+          grupos={menu}
+          colorMarca={colorMarca}
+          onCerrar={() => setMesaParaPedido(null)}
+        />
+      ) : null}
     </main>
   );
 }

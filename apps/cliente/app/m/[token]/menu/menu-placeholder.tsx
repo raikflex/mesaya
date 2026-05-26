@@ -127,10 +127,7 @@ export function MenuPlaceholder({
 
       {/* Footer */}
       <footer className="py-6 text-center">
-        <p
-          className="text-xs uppercase tracking-[0.14em]"
-          style={{ color: 'var(--color-muted)' }}
-        >
+        <p className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
           Servido con <span style={{ color: 'var(--color-ink)' }}>EnPura</span>
         </p>
       </footer>
