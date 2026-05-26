@@ -10,21 +10,34 @@ export type MesaInfo = {
 };
 
 export type SesionAbiertaResumen = {
+  sesionId: string;
   mesaId: string;
   abiertaEn: string;
   totalAcumulado: number;
   comandasCount: number;
 };
 
+// Modo con el que se abre el modal de tomar pedido desde el mapa.
+//   'pedido' -> modal normal para agregar productos
+//   'cobrar' -> modal con el panel de cobro ya desplegado
+export type ModoMesa = 'pedido' | 'cobrar';
+
+// Datos de la sesion ya conocidos por el mapa (realtime). Se pasan al modal
+// para que el panel de cobro abra al instante sin esperar una query.
+// Es null cuando la mesa esta libre (no hay sesion abierta).
+export type SesionPrecargada = {
+  sesionId: string;
+  totalAcumulado: number;
+} | null;
+
 /**
  * Mapa visual de mesas con su estado en tiempo real.
- *   - Libre: sin sesión abierta
- *   - Ocupada: con sesión abierta (muestra tiempo + total)
- *   - Reservada: tiene reserva activa (preparado para feature #5)
+ *   - Libre: sin sesion abierta
+ *   - Ocupada: con sesion abierta (muestra tiempo + total)
  *
  * Se usa en 2 lugares:
- *   - /admin/mesas (vista del dueño, cards grandes con QR)
- *   - /mesero (vista compacta para que el mesero vea qué mesas tiene libres)
+ *   - /admin/mesas (vista del dueno, cards grandes con QR)
+ *   - /mesero (vista compacta: el mesero toca la mesa para tomar pedido o cobrar)
  */
 export function MapaMesas({
   mesas,
@@ -39,7 +52,7 @@ export function MapaMesas({
   restauranteId: string;
   colorMarca: string;
   variante?: 'admin' | 'mesero';
-  onTomarPedido?: (mesa: MesaInfo) => void;
+  onTomarPedido?: (mesa: MesaInfo, modo: ModoMesa, sesion: SesionPrecargada) => void;
 }) {
   const [sesionesAbiertas, setSesionesAbiertas] =
     useState<SesionAbiertaResumen[]>(sesionesAbiertasIniciales);
@@ -75,12 +88,13 @@ export function MapaMesas({
       async function refetch() {
         const { data } = await supabase
           .from('sesiones')
-          .select('mesa_id, abierta_en, comandas(id, total, estado)')
+          .select('id, mesa_id, abierta_en, comandas(id, total, estado)')
           .eq('restaurante_id', restauranteId)
           .eq('estado', 'abierta');
 
         const lista: SesionAbiertaResumen[] = (
           (data ?? []) as Array<{
+            id: string;
             mesa_id: string;
             abierta_en: string;
             comandas: { total: number; estado: string }[] | null;
@@ -88,6 +102,7 @@ export function MapaMesas({
         ).map((s) => {
           const comandasNoCanceladas = (s.comandas ?? []).filter((c) => c.estado !== 'cancelada');
           return {
+            sesionId: s.id,
             mesaId: s.mesa_id,
             abiertaEn: s.abierta_en,
             totalAcumulado: comandasNoCanceladas.reduce((acc, c) => acc + (c.total ?? 0), 0),
@@ -142,7 +157,7 @@ export function MapaMesas({
     return null;
   }
 
-  const tamañoCard = variante === 'mesero' ? 'compacto' : 'normal';
+  const tamanoCard = variante === 'mesero' ? 'compacto' : 'normal';
 
   return (
     <section>
@@ -171,7 +186,7 @@ export function MapaMesas({
 
       <ul
         className={
-          tamañoCard === 'compacto'
+          tamanoCard === 'compacto'
             ? 'grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2'
             : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3'
         }
@@ -186,7 +201,7 @@ export function MapaMesas({
               sesion={sesion}
               ocupada={ocupada}
               colorMarca={colorMarca}
-              compacta={tamañoCard === 'compacto'}
+              compacta={tamanoCard === 'compacto'}
               onTomarPedido={onTomarPedido}
             />
           );
@@ -209,19 +224,19 @@ function CardMesa({
   ocupada: boolean;
   colorMarca: string;
   compacta: boolean;
-  onTomarPedido?: (mesa: MesaInfo) => void;
+  onTomarPedido?: (mesa: MesaInfo, modo: ModoMesa, sesion: SesionPrecargada) => void;
 }) {
   const minutos = sesion
     ? Math.max(0, Math.floor((Date.now() - new Date(sesion.abiertaEn).getTime()) / 60000))
     : 0;
   const tiempoFmt =
     minutos < 1
-      ? 'recién'
+      ? 'recien'
       : minutos < 60
         ? `${minutos}m`
         : `${Math.floor(minutos / 60)}h ${minutos % 60}m`;
 
-  // Colores: libre = paper claro, ocupada = ámbar suave
+  // Colores: libre = verde suave, ocupada = ambar suave
   const estilo = ocupada
     ? {
         background: '#fef3c7',
@@ -236,9 +251,14 @@ function CardMesa({
         valueColor: '#14532d',
       };
 
+  // Datos precargados de la sesion (para que el cobro abra al instante).
+  const sesionPrecargada: SesionPrecargada = sesion
+    ? { sesionId: sesion.sesionId, totalAcumulado: sesion.totalAcumulado }
+    : null;
+
   if (compacta) {
-    // Vista para mesero: card chica clickeable que abre "tomar pedido".
-    const contenido = (
+    // Vista para mesero.
+    const cabecera = (
       <>
         <p
           className="font-[family-name:var(--font-display)] text-2xl tabular-nums leading-tight"
@@ -255,32 +275,64 @@ function CardMesa({
       </>
     );
 
-    if (onTomarPedido) {
+    // Sin handler (no deberia pasar en variante mesero): card estatica.
+    if (!onTomarPedido) {
       return (
-        <li>
-          <button
-            type="button"
-            onClick={() => onTomarPedido(mesa)}
-            className="w-full rounded-[var(--radius-md)] border p-2.5 text-center transition-opacity hover:opacity-80"
-            style={{ background: estilo.background, borderColor: estilo.border }}
-          >
-            {contenido}
-          </button>
+        <li
+          className="rounded-[var(--radius-md)] border p-2.5 text-center"
+          style={{ background: estilo.background, borderColor: estilo.border }}
+        >
+          {cabecera}
         </li>
       );
     }
 
+    // Mesa OCUPADA: numero arriba + 2 botones (Pedido / Cobrar).
+    if (ocupada) {
+      return (
+        <li
+          className="rounded-[var(--radius-md)] border p-2.5 text-center"
+          style={{ background: estilo.background, borderColor: estilo.border }}
+        >
+          {cabecera}
+          <div className="grid grid-cols-2 gap-1 mt-2">
+            <button
+              type="button"
+              onClick={() => onTomarPedido(mesa, 'pedido', sesionPrecargada)}
+              className="h-8 rounded-[var(--radius-sm)] text-[0.7rem] font-medium transition-opacity hover:opacity-80"
+              style={{ background: 'white', color: estilo.labelColor, border: `1px solid ${estilo.border}` }}
+            >
+              Pedido
+            </button>
+            <button
+              type="button"
+              onClick={() => onTomarPedido(mesa, 'cobrar', sesionPrecargada)}
+              className="h-8 rounded-[var(--radius-sm)] text-[0.7rem] font-medium text-white transition-opacity hover:opacity-80"
+              style={{ background: colorMarca }}
+            >
+              Cobrar
+            </button>
+          </div>
+        </li>
+      );
+    }
+
+    // Mesa LIBRE: toda la card abre "tomar pedido".
     return (
-      <li
-        className="rounded-[var(--radius-md)] border p-2.5 text-center"
-        style={{ background: estilo.background, borderColor: estilo.border }}
-      >
-        {contenido}
+      <li>
+        <button
+          type="button"
+          onClick={() => onTomarPedido(mesa, 'pedido', null)}
+          className="w-full rounded-[var(--radius-md)] border p-2.5 text-center transition-opacity hover:opacity-80"
+          style={{ background: estilo.background, borderColor: estilo.border }}
+        >
+          {cabecera}
+        </button>
       </li>
     );
   }
 
-  // Vista admin: card más grande con detalle
+  // Vista admin: card mas grande con detalle.
   return (
     <li
       className="rounded-[var(--radius-lg)] border p-4"

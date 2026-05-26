@@ -3,7 +3,13 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@mesaya/database/client';
-import { MapaMesas, type MesaInfo, type SesionAbiertaResumen } from './mapa-mesas';
+import {
+  MapaMesas,
+  type MesaInfo,
+  type SesionAbiertaResumen,
+  type ModoMesa,
+  type SesionPrecargada,
+} from './mapa-mesas';
 import { ModalTomarPedido } from './modal-tomar-pedido';
 export type { CategoriaMenu } from './modal-tomar-pedido';
 import type { CategoriaMenu } from './modal-tomar-pedido';
@@ -121,7 +127,11 @@ export function TableroMesero({
   menu: CategoriaMenu[];
 }) {
   const [cola, setCola] = useState<ColaMesero>(colaInicial);
-  const [mesaParaPedido, setMesaParaPedido] = useState<MesaInfo | null>(null);
+  const [mesaParaPedido, setMesaParaPedido] = useState<{
+    mesa: MesaInfo;
+    modo: ModoMesa;
+    sesion: SesionPrecargada;
+  } | null>(null);
   const router = useRouter();
 
   const llamadoIdsRef = useRef<Set<string>>(new Set(colaInicial.llamados.map((l) => l.id)));
@@ -347,7 +357,7 @@ export function TableroMesero({
               restauranteId={restauranteId}
               colorMarca={colorMarca}
               variante="mesero"
-              onTomarPedido={setMesaParaPedido}
+              onTomarPedido={(mesa, modo, sesion) => setMesaParaPedido({ mesa, modo, sesion })}
             />
           </div>
         ) : null}
@@ -376,9 +386,11 @@ export function TableroMesero({
 
       {mesaParaPedido ? (
         <ModalTomarPedido
-          mesa={{ id: mesaParaPedido.id, numero: mesaParaPedido.numero }}
+          mesa={{ id: mesaParaPedido.mesa.id, numero: mesaParaPedido.mesa.numero }}
           grupos={menu}
           colorMarca={colorMarca}
+          modoInicial={mesaParaPedido.modo}
+          sesionPrecargada={mesaParaPedido.sesion}
           onCerrar={() => setMesaParaPedido(null)}
         />
       ) : null}

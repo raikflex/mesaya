@@ -27,27 +27,41 @@ export type CategoriaMenu = {
   productos: ProductoMenu[];
 };
 
+// Modo con el que se abre el modal.
+export type ModoModal = 'pedido' | 'cobrar';
+
+// Datos de la sesion ya conocidos por el mapa (realtime). Si vienen, el panel
+// de cobro abre al instante sin esperar la query del servidor.
+export type SesionPrecargada = {
+  sesionId: string;
+  totalAcumulado: number;
+} | null;
+
 type ComandaResumen = Extract<ResumenSesionMesa, { ok: true }>['comandas'][number];
 
 /**
  * Modal POS para que el mesero tome el pedido en su dispositivo.
  *
- * - Al abrir, carga el resumen de la sesion de la mesa (obtenerResumenSesion):
- *   si la mesa ya tiene pedidos, los muestra arriba ("Ya pedido").
+ * - Si recibe sesionPrecargada (la mesa esta ocupada y el mapa ya sabe el
+ *   total), el panel de cobro puede abrir al instante con ese subtotal.
+ * - obtenerResumenSesion corre igual al montar, pero solo para traer el
+ *   DETALLE de items de "lo ya pedido" — no bloquea el cobro.
  * - El mesero arma un pedido nuevo con los controles +/- y lo envia.
- * - Boton "Cobrar mesa": abre el panel de cobro (confirmarPagoMesero), que
- *   cierra la mesa sin necesidad de que el cliente pida la cuenta.
  */
 export function ModalTomarPedido({
   mesa,
   grupos,
   colorMarca,
   onCerrar,
+  modoInicial = 'pedido',
+  sesionPrecargada = null,
 }: {
   mesa: { id: string; numero: string };
   grupos: CategoriaMenu[];
   colorMarca: string;
   onCerrar: () => void;
+  modoInicial?: ModoModal;
+  sesionPrecargada?: SesionPrecargada;
 }) {
   const router = useRouter();
   const [carrito, setCarrito] = useState<Map<string, number>>(new Map());
@@ -55,37 +69,51 @@ export function ModalTomarPedido({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  // Resumen de lo ya pedido en la mesa (Pieza A).
+  // Resumen de lo ya pedido. Se inicializa con lo que el mapa ya sabe
+  // (sesionId + total), asi el cobro no espera. El detalle de comandas se
+  // completa cuando obtenerResumenSesion responde.
   const [resumen, setResumen] = useState<{
-    cargando: boolean;
+    cargandoDetalle: boolean;
     sesionId: string | null;
     comandas: ComandaResumen[];
     totalAcumulado: number;
-  }>({ cargando: true, sesionId: null, comandas: [], totalAcumulado: 0 });
+  }>({
+    cargandoDetalle: sesionPrecargada !== null,
+    sesionId: sesionPrecargada?.sesionId ?? null,
+    comandas: [],
+    totalAcumulado: sesionPrecargada?.totalAcumulado ?? 0,
+  });
 
-  // Panel de cobro abierto/cerrado (Pieza B).
-  const [cobrando, setCobrando] = useState(false);
+  // Panel de cobro: si se abrio en modo 'cobrar' y ya tenemos sesion
+  // precargada, arranca abierto. Sin precarga, espera a obtenerResumenSesion.
+  const [cobrando, setCobrando] = useState(
+    modoInicial === 'cobrar' && sesionPrecargada !== null,
+  );
 
-  // Al montar, traer el resumen de la sesion de la mesa.
+  // Al montar, traer el detalle de la sesion (items de cada comanda).
   useEffect(() => {
     let cancelado = false;
     obtenerResumenSesion({ mesaId: mesa.id }).then((r) => {
       if (cancelado) return;
       if (r.ok) {
         setResumen({
-          cargando: false,
+          cargandoDetalle: false,
           sesionId: r.sesionId,
           comandas: r.comandas,
           totalAcumulado: r.totalAcumulado,
         });
+        // Si se pidio 'cobrar' sin precarga, abrir el panel ahora.
+        if (modoInicial === 'cobrar' && r.sesionId && r.comandas.length > 0) {
+          setCobrando(true);
+        }
       } else {
-        setResumen({ cargando: false, sesionId: null, comandas: [], totalAcumulado: 0 });
+        setResumen((prev) => ({ ...prev, cargandoDetalle: false }));
       }
     });
     return () => {
       cancelado = true;
     };
-  }, [mesa.id]);
+  }, [mesa.id, modoInicial]);
 
   const productosMap = useMemo(() => {
     const m = new Map<string, ProductoMenu>();
@@ -148,7 +176,8 @@ export function ModalTomarPedido({
   }
 
   const hayProductos = grupos.some((g) => g.productos.some((p) => p.disponible));
-  const mesaOcupada = resumen.comandas.length > 0;
+  // La mesa esta ocupada si el mapa lo dijo (precarga) o si el detalle lo confirma.
+  const mesaOcupada = resumen.sesionId !== null || resumen.comandas.length > 0;
 
   return (
     <div
@@ -179,12 +208,8 @@ export function ModalTomarPedido({
 
         {/* Body scrolleable */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
-          {/* Pieza A: lo ya pedido en la mesa */}
-          {resumen.cargando ? (
-            <p className="text-xs italic" style={{ color: 'var(--color-muted)' }}>
-              Cargando lo pedido en la mesa…
-            </p>
-          ) : mesaOcupada ? (
+          {/* Lo ya pedido en la mesa */}
+          {mesaOcupada ? (
             <div
               className="rounded-[var(--radius-md)] border"
               style={{ borderColor: '#fde68a', background: '#fefce8' }}
@@ -206,34 +231,40 @@ export function ModalTomarPedido({
                   ${resumen.totalAcumulado.toLocaleString('es-CO')}
                 </p>
               </div>
-              <ul className="divide-y" style={{ borderColor: '#fde68a' }}>
-                {resumen.comandas.map((c, idxC) => (
-                  <li key={`${c.numeroDiario}-${idxC}`} className="px-4 py-2.5">
-                    <p
-                      className="font-[family-name:var(--font-display)] text-xs tabular-nums mb-1"
-                      style={{ color: '#92400e' }}
-                    >
-                      Comanda #{c.numeroDiario.toString().padStart(3, '0')}
-                      {idxC > 0 ? ' (adicion)' : ''}
-                    </p>
-                    <ul className="space-y-0.5">
-                      {c.items.map((it, idxI) => (
-                        <li key={idxI} className="text-sm flex items-baseline gap-2">
-                          <span
-                            className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0"
-                            style={{ color: '#92400e' }}
-                          >
-                            {it.cantidad}×
-                          </span>
-                          <span className="flex-1" style={{ color: 'var(--color-ink)' }}>
-                            {it.nombre}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                  </li>
-                ))}
-              </ul>
+              {resumen.cargandoDetalle ? (
+                <p className="px-4 py-3 text-xs italic" style={{ color: '#92400e' }}>
+                  Cargando el detalle…
+                </p>
+              ) : (
+                <ul className="divide-y" style={{ borderColor: '#fde68a' }}>
+                  {resumen.comandas.map((c, idxC) => (
+                    <li key={`${c.numeroDiario}-${idxC}`} className="px-4 py-2.5">
+                      <p
+                        className="font-[family-name:var(--font-display)] text-xs tabular-nums mb-1"
+                        style={{ color: '#92400e' }}
+                      >
+                        Comanda #{c.numeroDiario.toString().padStart(3, '0')}
+                        {idxC > 0 ? ' (adicion)' : ''}
+                      </p>
+                      <ul className="space-y-0.5">
+                        {c.items.map((it, idxI) => (
+                          <li key={idxI} className="text-sm flex items-baseline gap-2">
+                            <span
+                              className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0"
+                              style={{ color: '#92400e' }}
+                            >
+                              {it.cantidad}×
+                            </span>
+                            <span className="flex-1" style={{ color: 'var(--color-ink)' }}>
+                              {it.nombre}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           ) : null}
 
@@ -412,7 +443,7 @@ export function ModalTomarPedido({
             >
               Cerrar
             </button>
-            {/* Pieza B: cobrar mesa. Solo si la mesa ya tiene pedidos. */}
+            {/* Cobrar mesa. Solo si la mesa ya tiene sesion abierta. */}
             {mesaOcupada && resumen.sesionId ? (
               <button
                 type="button"
@@ -437,7 +468,7 @@ export function ModalTomarPedido({
         </footer>
       </div>
 
-      {/* Panel de cobro (Pieza B) */}
+      {/* Panel de cobro */}
       {cobrando && resumen.sesionId ? (
         <PanelCobroMesero
           sesionId={resumen.sesionId}

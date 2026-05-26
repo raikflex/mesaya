@@ -305,7 +305,7 @@ export default async function MeseroPage() {
       .order('numero', { ascending: true }),
     supabase
       .from('sesiones')
-      .select('mesa_id, abierta_en, comandas(id, total, estado)')
+      .select('id, mesa_id, abierta_en, comandas(id, total, estado)')
       .eq('restaurante_id', perfil.restauranteId)
       .eq('estado', 'abierta'),
   ]);
@@ -324,6 +324,7 @@ export default async function MeseroPage() {
 
   const sesionesAbiertas: SesionAbiertaResumen[] = (
     (sesionesAbiertasResp.data ?? []) as Array<{
+      id: string;
       mesa_id: string;
       abierta_en: string;
       comandas: { total: number; estado: string }[] | null;
@@ -331,6 +332,7 @@ export default async function MeseroPage() {
   ).map((s) => {
     const comandasNoCanceladas = (s.comandas ?? []).filter((c) => c.estado !== 'cancelada');
     return {
+      sesionId: s.id,
       mesaId: s.mesa_id,
       abiertaEn: s.abierta_en,
       totalAcumulado: comandasNoCanceladas.reduce((acc, c) => acc + (c.total ?? 0), 0),
