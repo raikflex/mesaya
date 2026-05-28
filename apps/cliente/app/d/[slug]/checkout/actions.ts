@@ -70,31 +70,24 @@ export async function crearPedidoExterno(input: {
 
   const restauranteId = restaurante.id as string;
 
-  // 2) Buscar o crear la mesa virtual de domicilios.
-  // Cada restaurante tiene exactamente una mesa _domicilio que agrupa
-  // todos los pedidos externos. Cada pedido crea su propia sesion sobre ella.
-  let mesaDomicilioId: string;
-
-  const { data: mesaExistente } = await admin
+  // 2) Crear una mesa virtual UNICA para este pedido externo.
+  // No reusamos una sola mesa _domicilio compartida porque el indice
+  // uq_sesiones_mesa_activa impide dos sesiones abiertas en la misma mesa.
+  // Cada pedido = su propia mesa virtual con nombre unico.
+  const sufijoUnico = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const { data: mesaNueva, error: mesaError } = await admin
     .from('mesas')
+    .insert({
+      restaurante_id: restauranteId,
+      numero: `_dom_${sufijoUnico}`,
+      capacidad: 1,
+      activa: true,
+    })
     .select('id')
-    .eq('restaurante_id', restauranteId)
-    .eq('numero', '_domicilio')
-    .is('borrada_en', null)
-    .maybeSingle();
-
-  if (mesaExistente) {
-    mesaDomicilioId = mesaExistente.id as string;
-  } else {
-    const { data: mesaNueva, error: mesaError } = await admin
-      .from('mesas')
-      .insert({ restaurante_id: restauranteId, numero: '_domicilio', capacidad: 1, activa: true })
-      .select('id')
-      .single();
-    if (mesaError || !mesaNueva)
-      return { ok: false, error: 'Error interno al crear el pedido. Intenta de nuevo.' };
-    mesaDomicilioId = mesaNueva.id as string;
-  }
+    .single();
+  if (mesaError || !mesaNueva)
+    return { ok: false, error: 'Error interno al crear el pedido. Intenta de nuevo.' };
+  const mesaDomicilioId = mesaNueva.id as string;
 
   // 3) Validar productos.
   const productosIds = input.items.map((i) => i.productoId);
