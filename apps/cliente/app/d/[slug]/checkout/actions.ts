@@ -42,7 +42,9 @@ export async function crearPedidoExterno(input: {
   if (!input.nombreCliente.trim() || input.nombreCliente.trim().length < 2)
     return { ok: false, error: 'Ingresa tu nombre.' };
 
-  if (!input.telefono.trim() || input.telefono.replace(/\D/g, '').length < 7)
+  // El telefono ya viene con prefijo (ej: "+57 3001234567"). Validamos que
+  // tenga al menos prefijo + 8 digitos como minimo razonable.
+  if (!input.telefono.trim() || input.telefono.replace(/\D/g, '').length < 8)
     return { ok: false, error: 'Ingresa un telefono valido.' };
 
   if (input.tipo === 'domicilio' && !input.direccion?.trim())

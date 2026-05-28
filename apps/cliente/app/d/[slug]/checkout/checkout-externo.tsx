@@ -12,6 +12,18 @@ import { crearPedidoExterno } from './actions';
 
 type TipoPedido = 'domicilio' | 'pickup';
 
+// Paises soportados para el telefono. digitos = cantidad esperada del numero
+// local (sin prefijo). Colombia primero (caso principal).
+const PAISES = [
+  { codigo: 'CO', nombre: 'Colombia', prefijo: '+57', bandera: '🇨🇴', digitos: 10 },
+  { codigo: 'VE', nombre: 'Venezuela', prefijo: '+58', bandera: '🇻🇪', digitos: 10 },
+  { codigo: 'EC', nombre: 'Ecuador', prefijo: '+593', bandera: '🇪🇨', digitos: 9 },
+  { codigo: 'PE', nombre: 'Peru', prefijo: '+51', bandera: '🇵🇪', digitos: 9 },
+  { codigo: 'PA', nombre: 'Panama', prefijo: '+507', bandera: '🇵🇦', digitos: 8 },
+  { codigo: 'MX', nombre: 'Mexico', prefijo: '+52', bandera: '🇲🇽', digitos: 10 },
+  { codigo: 'US', nombre: 'USA', prefijo: '+1', bandera: '🇺🇸', digitos: 10 },
+] as const;
+
 export function CheckoutExterno({
   slug,
   nombreNegocio,
@@ -30,9 +42,9 @@ export function CheckoutExterno({
 
   const tipoDefault: TipoPedido = aceptaDomicilios ? 'domicilio' : 'pickup';
 
-  // Todos los hooks antes de cualquier return condicional.
   const [tipo, setTipo] = useState<TipoPedido>(tipoDefault);
   const [nombre, setNombre] = useState('');
+  const [paisCodigo, setPaisCodigo] = useState<string>('CO');
   const [telefono, setTelefono] = useState('');
   const [direccion, setDireccion] = useState('');
   const [hora, setHora] = useState('');
@@ -40,7 +52,6 @@ export function CheckoutExterno({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  // Items: vacio en SSR para evitar hydration mismatch, se llena en useEffect.
   const [items, setItems] = useState<ItemCarrito[]>([]);
   const [cargando, setCargando] = useState(true);
 
@@ -48,6 +59,8 @@ export function CheckoutExterno({
     setItems(leerCarrito(carritoKey));
     setCargando(false);
   }, [carritoKey]);
+
+  const pais = PAISES.find((p) => p.codigo === paisCodigo) ?? PAISES[0];
 
   function onCambiarNotas(productoId: string, notas: string) {
     const nuevo = items.map((i) =>
@@ -61,12 +74,25 @@ export function CheckoutExterno({
 
   function confirmar() {
     setError(null);
+
+    // Validacion de telefono segun el pais elegido.
+    const soloDigitos = telefono.replace(/\D/g, '');
+    if (soloDigitos.length !== pais.digitos) {
+      setError(
+        `El numero de ${pais.nombre} debe tener ${pais.digitos} digitos. Escribiste ${soloDigitos.length}.`,
+      );
+      return;
+    }
+
+    // Telefono completo con prefijo internacional.
+    const telefonoCompleto = `${pais.prefijo} ${soloDigitos}`;
+
     startTransition(async () => {
       const r = await crearPedidoExterno({
         slug,
         tipo,
         nombreCliente: nombre,
-        telefono,
+        telefono: telefonoCompleto,
         direccion: tipo === 'domicilio' ? direccion : undefined,
         horaPedido: tipo === 'pickup' ? hora : undefined,
         notasEntrega: notasGenerales || undefined,
@@ -85,7 +111,6 @@ export function CheckoutExterno({
     });
   }
 
-  // Returns condicionales despues de todos los hooks.
   if (cargando) {
     return (
       <main
@@ -211,7 +236,10 @@ export function CheckoutExterno({
             {items.map((item) => (
               <li key={item.productoId} className="px-4 py-3.5">
                 <div className="flex items-baseline justify-between gap-3 mb-2">
-                  <p className="text-sm font-medium flex-1 min-w-0" style={{ color: 'var(--color-ink)' }}>
+                  <p
+                    className="text-sm font-medium flex-1 min-w-0"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
                     <span className="mr-1.5" style={{ color: colorMarca }}>
                       {item.cantidad}×
                     </span>
@@ -277,19 +305,59 @@ export function CheckoutExterno({
               background: 'var(--color-paper)',
             }}
           />
-          <input
-            type="tel"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            placeholder="Telefono de contacto"
-            maxLength={15}
-            className="w-full h-11 px-3 rounded-[var(--radius-md)] border text-sm"
-            style={{
-              borderColor: 'var(--color-border-strong)',
-              color: 'var(--color-ink)',
-              background: 'var(--color-paper)',
-            }}
-          />
+
+          {/* Telefono con selector de pais */}
+          <div className="flex gap-2">
+            <div className="relative shrink-0">
+              <select
+                value={paisCodigo}
+                onChange={(e) => setPaisCodigo(e.target.value)}
+                className="h-11 pl-3 pr-8 rounded-[var(--radius-md)] border text-sm appearance-none cursor-pointer"
+                style={{
+                  borderColor: 'var(--color-border-strong)',
+                  color: 'var(--color-ink)',
+                  background: 'var(--color-paper)',
+                }}
+                aria-label="Pais"
+              >
+                {PAISES.map((p) => (
+                  <option key={p.codigo} value={p.codigo}>
+                    {p.bandera} {p.codigo} {p.prefijo}
+                  </option>
+                ))}
+              </select>
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: 'var(--color-muted)' }}
+                aria-hidden
+              >
+                <path
+                  d="M6 9l6 6 6-6"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+            <input
+              type="tel"
+              value={telefono}
+              onChange={(e) => setTelefono(e.target.value.replace(/[^\d\s]/g, ''))}
+              placeholder={`Telefono (${pais.digitos} digitos)`}
+              maxLength={15}
+              className="flex-1 min-w-0 h-11 px-3 rounded-[var(--radius-md)] border text-sm"
+              style={{
+                borderColor: 'var(--color-border-strong)',
+                color: 'var(--color-ink)',
+                background: 'var(--color-paper)',
+              }}
+            />
+          </div>
         </div>
 
         {/* Datos de entrega segun tipo */}
