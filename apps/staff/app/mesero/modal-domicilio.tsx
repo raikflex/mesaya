@@ -32,9 +32,14 @@ export function ModalDomicilio({
   const yaListoPickup = estado === 'listo_pickup';
   const yaEntregado = estado === 'entregado';
 
-  // URL de Google Maps con la direccion (sin API key, link directo).
-  const mapsUrl = entrega.direccion
-    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(entrega.direccion)}`
+  // URL de Google Maps. Si el cliente pego un link de Maps (http...), lo
+  // abrimos directo. Si escribio una direccion normal, armamos la busqueda.
+  const dir = entrega.direccion?.trim() ?? '';
+  const esLink = /^https?:\/\//i.test(dir);
+  const mapsUrl = dir
+    ? esLink
+      ? dir
+      : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(dir)}`
     : null;
 
   // URL para llamar (abre el dialer del telefono).
