@@ -300,7 +300,11 @@ function CardMesa({
               type="button"
               onClick={() => onTomarPedido(mesa, 'pedido', sesionPrecargada)}
               className="h-8 rounded-[var(--radius-sm)] text-[0.7rem] font-medium transition-opacity hover:opacity-80"
-              style={{ background: 'white', color: estilo.labelColor, border: `1px solid ${estilo.border}` }}
+              style={{
+                background: 'white',
+                color: estilo.labelColor,
+                border: `1px solid ${estilo.border}`,
+              }}
             >
               Pedido
             </button>

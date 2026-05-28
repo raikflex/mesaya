@@ -103,8 +103,10 @@ export default async function MeseroPage() {
       creada_en,
       mesero_atendiendo_id,
       sesion_id,
+      origen,
       sesion_clientes (nombre),
-      sesiones (mesas (numero))
+      sesiones (mesas (numero)),
+      pedidos_externos (id, estado_entrega, tipo, nombre_cliente, telefono, direccion, hora_pickup, notas_entrega)
     `,
     )
     .eq('restaurante_id', perfil.restauranteId)
@@ -120,10 +122,15 @@ export default async function MeseroPage() {
     creada_en: string;
     mesero_atendiendo_id: string | null;
     sesion_id: string;
+    origen: string;
     sesion_clientes: { nombre: string } | { nombre: string }[] | null;
     sesiones:
       | { mesas: { numero: string } | { numero: string }[] | null }
       | { mesas: { numero: string } | { numero: string }[] | null }[]
+      | null;
+    pedidos_externos:
+      | { id: string; estado_entrega: string; tipo: string; nombre_cliente: string; telefono: string; direccion: string | null; hora_pickup: string | null; notas_entrega: string | null }
+      | { id: string; estado_entrega: string; tipo: string; nombre_cliente: string; telefono: string; direccion: string | null; hora_pickup: string | null; notas_entrega: string | null }[]
       | null;
   }[];
 
@@ -246,14 +253,30 @@ export default async function MeseroPage() {
         const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
         const sesion = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
         const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
+        const pedidoRaw = Array.isArray(c.pedidos_externos) ? c.pedidos_externos[0] : c.pedidos_externos;
+        const pedido = pedidoRaw as {
+          id: string; estado_entrega: string; tipo: string; nombre_cliente: string; telefono: string;
+          direccion: string | null; hora_pickup: string | null; notas_entrega: string | null;
+        } | null;
         return {
           id: c.id,
           numeroDiario: c.numero_diario,
           total: c.total,
           creadaEn: c.creada_en,
-          clienteNombre: sc?.nombre ?? 'Cliente',
-          mesaNumero: mesa?.numero ?? '?',
+          clienteNombre: (sc as { nombre: string } | null)?.nombre ?? 'Cliente',
+          mesaNumero: (mesa as { numero: string } | null)?.numero ?? '?',
           meseroAtendiendoId: c.mesero_atendiendo_id,
+          origen: c.origen ?? 'cliente',
+          entrega: pedido ? {
+            pedidoExternoId: pedido.id,
+            estadoEntrega: pedido.estado_entrega,
+            tipo: pedido.tipo as 'domicilio' | 'pickup',
+            nombreCliente: pedido.nombre_cliente,
+            telefono: pedido.telefono,
+            direccion: pedido.direccion,
+            horaPedido: pedido.hora_pickup,
+            notasEntrega: pedido.notas_entrega,
+          } : null,
           items: itemsPorComanda.get(c.id) ?? [],
         };
       }),

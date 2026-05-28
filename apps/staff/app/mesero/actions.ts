@@ -727,9 +727,7 @@ export type ResumenSesionMesa =
  * Si la mesa no tiene sesion abierta, devuelve ok:true con sesionId null y
  * comandas vacias (mesa libre, primer pedido).
  */
-export async function obtenerResumenSesion(input: {
-  mesaId: string;
-}): Promise<ResumenSesionMesa> {
+export async function obtenerResumenSesion(input: { mesaId: string }): Promise<ResumenSesionMesa> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
 
@@ -909,5 +907,34 @@ export async function confirmarPagoMesero(input: {
 
   revalidatePath('/mesero');
   revalidatePath('/cocina');
+  return { ok: true };
+}
+
+export async function marcarEstadoEntrega(input: {
+  pedidoExternoId: string;
+  nuevoEstado: "en_camino" | "listo_pickup";
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const guard = await validarStaffMesero();
+  if (!guard.ok) return { ok: false, error: guard.error };
+  const admin = createServiceClient();
+  const { data: pedido } = await admin
+    .from("pedidos_externos")
+    .select("id, restaurante_id, estado_entrega")
+    .eq("id", input.pedidoExternoId)
+    .maybeSingle();
+  if (!pedido || pedido.restaurante_id !== guard.restauranteId) {
+    return { ok: false, error: "No encontramos el pedido." };
+  }
+  if (pedido.estado_entrega === "entregado") {
+    return { ok: false, error: "Este pedido ya fue entregado." };
+  }
+  const { error } = await admin
+    .from("pedidos_externos")
+    .update({ estado_entrega: input.nuevoEstado })
+    .eq("id", input.pedidoExternoId);
+  if (error) {
+    return { ok: false, error: "No pudimos actualizar el estado. Intenta de nuevo." };
+  }
+  revalidatePath("/mesero");
   return { ok: true };
 }

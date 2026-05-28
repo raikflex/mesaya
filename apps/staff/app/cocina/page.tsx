@@ -5,21 +5,10 @@ import { CocinaInactiva } from './cocina-inactiva';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Tablero de cocina.
- * - Carga las comandas del día con estados activos (pendiente, en_preparacion, lista).
- * - Las que están en estado 'entregada' o 'cancelada' no se muestran (ya cerraron su ciclo).
- * - El client component se encarga del realtime y del cambio de estados.
- *
- * NUEVO en S10: si el restaurante tiene `cocina_activa = false`, esta pantalla
- * muestra un mensaje explicando que el dueño desactivó la pantalla de cocina.
- * El cocinero no debe ver pedidos que el mesero está manejando manualmente.
- */
 export default async function CocinaPage() {
   const perfil = await obtenerPerfilStaff('cocina');
   const supabase = await createClient();
 
-  // Verificar si la pantalla de cocina está activa
   const { data: restaurante } = await supabase
     .from('restaurantes')
     .select('cocina_activa, nombre_publico, color_marca')
@@ -38,7 +27,6 @@ export default async function CocinaPage() {
     );
   }
 
-  // Filtrar comandas del día actual del restaurante.
   const inicioDia = new Date();
   inicioDia.setHours(0, 0, 0, 0);
 
@@ -46,16 +34,10 @@ export default async function CocinaPage() {
     .from('comandas')
     .select(
       `
-      id,
-      numero_diario,
-      estado,
-      total,
-      creada_en,
-      sesion_id,
+      id, numero_diario, estado, total, creada_en, sesion_id, origen,
       sesion_clientes (nombre),
-      sesiones (
-        mesas (numero)
-      )
+      sesiones (mesas (numero)),
+      pedidos_externos (tipo, nombre_cliente, telefono, direccion, hora_pickup, notas_entrega)
     `,
     )
     .eq('restaurante_id', perfil.restauranteId)
@@ -70,10 +52,15 @@ export default async function CocinaPage() {
     total: number;
     creada_en: string;
     sesion_id: string;
+    origen: string;
     sesion_clientes: { nombre: string } | { nombre: string }[] | null;
     sesiones:
       | { mesas: { numero: string } | { numero: string }[] | null }
       | { mesas: { numero: string } | { numero: string }[] | null }[]
+      | null;
+    pedidos_externos:
+      | { tipo: string; nombre_cliente: string; telefono: string; direccion: string | null; hora_pickup: string | null; notas_entrega: string | null }
+      | { tipo: string; nombre_cliente: string; telefono: string; direccion: string | null; hora_pickup: string | null; notas_entrega: string | null }[]
       | null;
   }[];
 
@@ -82,14 +69,12 @@ export default async function CocinaPage() {
     const comandaIds = comandasArr.map((c) => c.id);
     const { data: itemsRaw } = await supabase
       .from('comanda_items')
-      .select('id, comanda_id, nombre_snapshot, precio_snapshot, cantidad, nota')
+      .select('id, comanda_id, nombre_snapshot, cantidad, nota')
       .in('comanda_id', comandaIds)
       .order('id', { ascending: true });
 
     const itemsPorComanda = new Map<string, ComandaCocina['items']>();
-    for (const c of comandasArr) {
-      itemsPorComanda.set(c.id, []);
-    }
+    for (const c of comandasArr) itemsPorComanda.set(c.id, []);
     for (const it of itemsRaw ?? []) {
       const arr = itemsPorComanda.get(it.comanda_id as string);
       if (arr) {
@@ -106,14 +91,29 @@ export default async function CocinaPage() {
       const sc = Array.isArray(c.sesion_clientes) ? c.sesion_clientes[0] : c.sesion_clientes;
       const sesion = Array.isArray(c.sesiones) ? c.sesiones[0] : c.sesiones;
       const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
+      const pedidoRaw = Array.isArray(c.pedidos_externos) ? c.pedidos_externos[0] : c.pedidos_externos;
+      const pedido = pedidoRaw as {
+        tipo: string; nombre_cliente: string; telefono: string;
+        direccion: string | null; hora_pickup: string | null; notas_entrega: string | null;
+      } | null;
+
       return {
         id: c.id,
         numeroDiario: c.numero_diario,
         estado: c.estado as 'pendiente' | 'en_preparacion' | 'lista',
         total: c.total,
         creadaEn: c.creada_en,
-        clienteNombre: sc?.nombre ?? 'Cliente',
-        mesaNumero: mesa?.numero ?? '?',
+        clienteNombre: (sc as { nombre: string } | null)?.nombre ?? 'Cliente',
+        mesaNumero: (mesa as { numero: string } | null)?.numero ?? '?',
+        origen: c.origen ?? 'cliente',
+        entrega: pedido ? {
+          tipo: pedido.tipo as 'domicilio' | 'pickup',
+          nombreCliente: pedido.nombre_cliente,
+          telefono: pedido.telefono,
+          direccion: pedido.direccion,
+          horaPedido: pedido.hora_pickup,
+          notasEntrega: pedido.notas_entrega,
+        } : null,
         items: itemsPorComanda.get(c.id) ?? [],
       };
     });

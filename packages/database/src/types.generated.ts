@@ -549,6 +549,63 @@ export type Database = {
           },
         ];
       };
+      pedidos_externos: {
+        Row: {
+          comanda_id: string;
+          creado_en: string;
+          direccion: string | null;
+          estado_entrega: string;
+          hora_pickup: string | null;
+          id: string;
+          nombre_cliente: string;
+          notas_entrega: string | null;
+          restaurante_id: string;
+          telefono: string;
+          tipo: string;
+        };
+        Insert: {
+          comanda_id: string;
+          creado_en?: string;
+          direccion?: string | null;
+          estado_entrega?: string;
+          hora_pickup?: string | null;
+          id?: string;
+          nombre_cliente: string;
+          notas_entrega?: string | null;
+          restaurante_id: string;
+          telefono: string;
+          tipo: string;
+        };
+        Update: {
+          comanda_id?: string;
+          creado_en?: string;
+          direccion?: string | null;
+          estado_entrega?: string;
+          hora_pickup?: string | null;
+          id?: string;
+          nombre_cliente?: string;
+          notas_entrega?: string | null;
+          restaurante_id?: string;
+          telefono?: string;
+          tipo?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'pedidos_externos_comanda_id_fkey';
+            columns: ['comanda_id'];
+            isOneToOne: false;
+            referencedRelation: 'comandas';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'pedidos_externos_restaurante_id_fkey';
+            columns: ['restaurante_id'];
+            isOneToOne: false;
+            referencedRelation: 'restaurantes';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       perfiles: {
         Row: {
           activo: boolean;
@@ -723,10 +780,14 @@ export type Database = {
       };
       restaurantes: {
         Row: {
+          acepta_domicilios: boolean;
+          acepta_pickup: boolean;
           actualizada_en: string;
+          ciudad: string | null;
           cocina_activa: boolean;
           color_marca: string;
           creado_en: string;
+          descripcion_publica: string | null;
           direccion: string | null;
           dueno_user_id: string;
           estado: string;
@@ -735,15 +796,20 @@ export type Database = {
           nit: string | null;
           nombre_publico: string;
           primer_activacion_en: string | null;
+          slug: string | null;
           tiempo_estimado_preparacion_min: number | null;
           trial_termina_en: string | null;
           usa_meseros: boolean;
         };
         Insert: {
+          acepta_domicilios?: boolean;
+          acepta_pickup?: boolean;
           actualizada_en?: string;
+          ciudad?: string | null;
           cocina_activa?: boolean;
           color_marca?: string;
           creado_en?: string;
+          descripcion_publica?: string | null;
           direccion?: string | null;
           dueno_user_id: string;
           estado?: string;
@@ -752,15 +818,20 @@ export type Database = {
           nit?: string | null;
           nombre_publico: string;
           primer_activacion_en?: string | null;
+          slug?: string | null;
           tiempo_estimado_preparacion_min?: number | null;
           trial_termina_en?: string | null;
           usa_meseros?: boolean;
         };
         Update: {
+          acepta_domicilios?: boolean;
+          acepta_pickup?: boolean;
           actualizada_en?: string;
+          ciudad?: string | null;
           cocina_activa?: boolean;
           color_marca?: string;
           creado_en?: string;
+          descripcion_publica?: string | null;
           direccion?: string | null;
           dueno_user_id?: string;
           estado?: string;
@@ -769,6 +840,7 @@ export type Database = {
           nit?: string | null;
           nombre_publico?: string;
           primer_activacion_en?: string | null;
+          slug?: string | null;
           tiempo_estimado_preparacion_min?: number | null;
           trial_termina_en?: string | null;
           usa_meseros?: boolean;

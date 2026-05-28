@@ -86,9 +86,7 @@ export function ModalTomarPedido({
 
   // Panel de cobro: si se abrio en modo 'cobrar' y ya tenemos sesion
   // precargada, arranca abierto. Sin precarga, espera a obtenerResumenSesion.
-  const [cobrando, setCobrando] = useState(
-    modoInicial === 'cobrar' && sesionPrecargada !== null,
-  );
+  const [cobrando, setCobrando] = useState(modoInicial === 'cobrar' && sesionPrecargada !== null);
 
   // Al montar, traer el detalle de la sesion (items de cada comanda).
   useEffect(() => {
@@ -195,7 +193,10 @@ export function ModalTomarPedido({
           className="px-5 py-4 border-b shrink-0"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <p className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>
+          <p
+            className="text-xs uppercase tracking-[0.14em]"
+            style={{ color: 'var(--color-muted)' }}
+          >
             Tomar pedido
           </p>
           <h2
@@ -352,7 +353,13 @@ export function ModalTomarPedido({
                                 color: 'var(--color-ink)',
                               }}
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                aria-hidden
+                              >
                                 <path
                                   d="M5 12h14"
                                   stroke="currentColor"
@@ -377,7 +384,13 @@ export function ModalTomarPedido({
                                 color: 'var(--color-ink)',
                               }}
                             >
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden>
+                              <svg
+                                width="14"
+                                height="14"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                aria-hidden
+                              >
                                 <path
                                   d="M12 5v14M5 12h14"
                                   stroke="currentColor"
@@ -651,7 +664,11 @@ function PanelCobroMesero({
           </div>
 
           {error ? (
-            <p role="alert" className="text-xs text-center" style={{ color: 'var(--color-danger)' }}>
+            <p
+              role="alert"
+              className="text-xs text-center"
+              style={{ color: 'var(--color-danger)' }}
+            >
               {error}
             </p>
           ) : null}

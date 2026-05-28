@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { createClient } from '@mesaya/database/client';
@@ -20,6 +20,15 @@ export type ItemComanda = {
   nota: string | null;
 };
 
+export type InfoEntrega = {
+  tipo: 'domicilio' | 'pickup';
+  nombreCliente: string;
+  telefono: string;
+  direccion: string | null;
+  horaPedido: string | null;
+  notasEntrega: string | null;
+} | null;
+
 export type ComandaCocina = {
   id: string;
   numeroDiario: number;
@@ -28,6 +37,8 @@ export type ComandaCocina = {
   creadaEn: string;
   clienteNombre: string;
   mesaNumero: string;
+  origen: string;
+  entrega: InfoEntrega;
   items: ItemComanda[];
 };
 
@@ -227,9 +238,10 @@ async function traerComandaCompleta(comandaId: string): Promise<ComandaCocina | 
     .from('comandas')
     .select(
       `
-      id, numero_diario, estado, total, creada_en,
+      id, numero_diario, estado, total, creada_en, origen,
       sesion_clientes (nombre),
-      sesiones (mesas (numero))
+      sesiones (mesas (numero)),
+      pedidos_externos (tipo, nombre_cliente, telefono, direccion, hora_pickup, notas_entrega)
     `,
     )
     .eq('id', comandaId)
@@ -243,6 +255,29 @@ async function traerComandaCompleta(comandaId: string): Promise<ComandaCocina | 
   const sesion = Array.isArray(comanda.sesiones) ? comanda.sesiones[0] : comanda.sesiones;
   const mesa = sesion ? (Array.isArray(sesion.mesas) ? sesion.mesas[0] : sesion.mesas) : null;
 
+  const pedidoRaw = Array.isArray(comanda.pedidos_externos)
+    ? comanda.pedidos_externos[0]
+    : comanda.pedidos_externos;
+  const pedido = pedidoRaw as {
+    tipo: string;
+    nombre_cliente: string;
+    telefono: string;
+    direccion: string | null;
+    hora_pickup: string | null;
+    notas_entrega: string | null;
+  } | null;
+
+  const entrega: InfoEntrega = pedido
+    ? {
+        tipo: pedido.tipo as 'domicilio' | 'pickup',
+        nombreCliente: pedido.nombre_cliente,
+        telefono: pedido.telefono,
+        direccion: pedido.direccion,
+        horaPedido: pedido.hora_pickup,
+        notasEntrega: pedido.notas_entrega,
+      }
+    : null;
+
   const items = await traerItemsDeComanda(comandaId);
 
   return {
@@ -253,6 +288,8 @@ async function traerComandaCompleta(comandaId: string): Promise<ComandaCocina | 
     creadaEn: comanda.creada_en as string,
     clienteNombre: (sc as { nombre: string } | null)?.nombre ?? 'Cliente',
     mesaNumero: (mesa as { numero: string } | null)?.numero ?? '?',
+    origen: (comanda.origen as string) ?? 'cliente',
+    entrega,
     items,
   };
 }
@@ -375,7 +412,7 @@ function Header({
               className="text-xs underline shrink-0"
               style={{ color: 'var(--color-muted)' }}
             >
-              Cerrar sesión
+              Cerrar sesion
             </button>
           </form>
         </div>
@@ -501,6 +538,8 @@ function CardComanda({
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
+  const esDomicilio = comanda.origen === 'domicilio' || comanda.origen === 'pickup';
+
   function avanzar() {
     setError(null);
     desbloquearAudio();
@@ -540,15 +579,24 @@ function CardComanda({
           >
             #{comanda.numeroDiario.toString().padStart(3, '0')}
           </span>
-          <span
-            className="text-xs px-2 py-0.5 rounded-full"
-            style={{
-              background: 'var(--color-paper-deep)',
-              color: 'var(--color-ink-soft)',
-            }}
-          >
-            Mesa {comanda.mesaNumero}
-          </span>
+          {esDomicilio ? (
+            <span
+              className="text-xs px-2 py-0.5 rounded-full font-medium"
+              style={{
+                background: comanda.origen === 'domicilio' ? '#dbeafe' : '#dcfce7',
+                color: comanda.origen === 'domicilio' ? '#1e40af' : '#166534',
+              }}
+            >
+              {comanda.origen === 'domicilio' ? 'Domicilio' : 'Para recoger'}
+            </span>
+          ) : (
+            <span
+              className="text-xs px-2 py-0.5 rounded-full"
+              style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}
+            >
+              Mesa {comanda.mesaNumero}
+            </span>
+          )}
         </div>
         <TiempoTranscurrido creadaEn={comanda.creadaEn} />
       </header>
@@ -586,6 +634,39 @@ function CardComanda({
             </li>
           ))}
         </ul>
+
+        {/* Datos de entrega para domicilios y pickup */}
+        {comanda.entrega ? (
+          <div
+            className="mt-3 pt-3 border-t p-2.5 rounded-[var(--radius-md)]"
+            style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
+          >
+            <p
+              className="text-[0.65rem] uppercase tracking-[0.12em] mb-1.5"
+              style={{ color: 'var(--color-muted)' }}
+            >
+              {comanda.entrega.tipo === 'domicilio' ? 'Entrega' : 'Recogida'}
+            </p>
+            <p className="text-xs font-medium" style={{ color: 'var(--color-ink)' }}>
+              {comanda.entrega.nombreCliente} · {comanda.entrega.telefono}
+            </p>
+            {comanda.entrega.direccion ? (
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+                {comanda.entrega.direccion}
+              </p>
+            ) : null}
+            {comanda.entrega.horaPedido ? (
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+                Hora: {comanda.entrega.horaPedido}
+              </p>
+            ) : null}
+            {comanda.entrega.notasEntrega ? (
+              <p className="text-xs mt-0.5 italic" style={{ color: 'var(--color-ink-soft)' }}>
+                {comanda.entrega.notasEntrega}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
 
         {error ? (
           <p
@@ -625,7 +706,7 @@ function CardComanda({
               style={{ color: colorMarca }}
             >
               {pending
-                ? 'Actualizando…'
+                ? 'Actualizando...'
                 : tono === 'pending'
                   ? 'Empezar a preparar →'
                   : 'Marcar como lista →'}
@@ -659,7 +740,7 @@ function formatearTiempo(creadaEn: string): string {
   const desde = new Date(creadaEn).getTime();
   const minutos = Math.floor((ahora - desde) / 60_000);
 
-  if (minutos < 1) return 'recién';
+  if (minutos < 1) return 'recien';
   if (minutos === 1) return 'hace 1 min';
   if (minutos < 60) return `hace ${minutos} min`;
   const horas = Math.floor(minutos / 60);
@@ -691,8 +772,8 @@ function EstadoVacio({ colorMarca }: { colorMarca: string }) {
         Todo en orden.
       </h2>
       <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
-        No hay comandas activas en este momento. Cuando un cliente envíe un pedido, aparecerá aquí
-        automáticamente.
+        No hay comandas activas en este momento. Cuando un cliente envie un pedido, aparecera aqui
+        automaticamente.
       </p>
     </div>
   );
