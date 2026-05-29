@@ -336,6 +336,7 @@ export default async function MeseroPage() {
   const mesasInfo: MesaInfo[] = (
     (mesasResp.data ?? []) as { id: string; numero: string; capacidad: number }[]
   )
+    .filter((m) => !m.numero.startsWith('_'))
     .slice()
     .sort((a, b) => {
       const na = parseInt(a.numero, 10);
