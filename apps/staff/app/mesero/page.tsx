@@ -116,12 +116,12 @@ export default async function MeseroPage() {
 
   const comandasListasArr = (comandasListasRaw ?? []) as {
     id: string;
+    sesion_id: string;
     numero_diario: number;
     estado: string;
     total: number;
     creada_en: string;
     mesero_atendiendo_id: string | null;
-    sesion_id: string;
     origen: string;
     sesion_clientes: { nombre: string } | { nombre: string }[] | null;
     sesiones:
@@ -260,6 +260,7 @@ export default async function MeseroPage() {
         } | null;
         return {
           id: c.id,
+          sesionId: c.sesion_id,
           numeroDiario: c.numero_diario,
           total: c.total,
           creadaEn: c.creada_en,

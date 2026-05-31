@@ -302,7 +302,7 @@ export type FormaPagoBackend = 'efectivo' | 'tarjeta' | 'transferencia' | 'no_se
 export async function confirmarPago(input: {
   llamadoId: string;
   metodoConfirmado: FormaPagoBackend;
-  conPropina: boolean;
+  propinaMonto: number;
 }): Promise<ConfirmarPagoResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
@@ -342,7 +342,7 @@ export async function confirmarPago(input: {
     .neq('estado', 'cancelada');
 
   const subtotal = (comandasSesion ?? []).reduce((acc, c) => acc + (c.total as number), 0);
-  const propina = input.conPropina ? Math.round(subtotal * 0.1) : 0;
+  const propina = Math.max(0, Math.min(Math.round(input.propinaMonto || 0), subtotal * 2));
   const total = subtotal + propina;
 
   const { error: errorPago } = await supabase.from('pagos').insert({
@@ -826,7 +826,7 @@ export async function obtenerResumenSesion(input: { mesaId: string }): Promise<R
 export async function confirmarPagoMesero(input: {
   sesionId: string;
   metodoConfirmado: FormaPagoBackend;
-  conPropina: boolean;
+  propinaMonto: number;
 }): Promise<ConfirmarPagoResultado> {
   const validacion = await validarStaffMesero();
   if (!validacion.ok) return validacion;
@@ -860,7 +860,9 @@ export async function confirmarPagoMesero(input: {
   }
 
   const subtotal = comandasSesion.reduce((acc, c) => acc + (c.total as number), 0);
-  const propina = input.conPropina ? Math.round(subtotal * 0.1) : 0;
+  // La propina la define el mesero en el modal (monto ya calculado).
+  // Sanitizamos: no negativa, redondeada, y con un techo razonable.
+  const propina = Math.max(0, Math.min(Math.round(input.propinaMonto || 0), subtotal * 2));
   const total = subtotal + propina;
 
   const { error: errorPago } = await admin.from('pagos').insert({

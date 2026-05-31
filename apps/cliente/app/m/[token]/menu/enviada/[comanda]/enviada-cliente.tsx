@@ -27,7 +27,10 @@ export type ComandaConItems = {
 
 type EstadoTono = 'pending' | 'progress' | 'done';
 
-const ETIQUETAS_ESTADO: Record<string, { label: string; tono: EstadoTono }> = {
+const ETIQUETAS_ESTADO: Record<
+  string,
+  { label: string; tono: EstadoTono }
+> = {
   pendiente: { label: 'En cola', tono: 'pending' },
   en_preparacion: { label: 'Preparando', tono: 'progress' },
   lista: { label: 'Lista', tono: 'progress' },
@@ -73,9 +76,7 @@ export function ComandaEnviadaCliente({
     let cancelado = false;
 
     async function setup() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (cancelado) return;
       if (session?.access_token) {
         supabase.realtime.setAuth(session.access_token);
@@ -110,13 +111,17 @@ export function ComandaEnviadaCliente({
                   : c,
               );
 
-              if (fila.id === comandaActualId && fila.estado === 'cancelada') {
+              if (
+                fila.id === comandaActualId &&
+                fila.estado === 'cancelada'
+              ) {
                 const tieneOtrasActivas = actualizadas.some(
                   (c) => c.id !== fila.id && c.estado !== 'cancelada',
                 );
                 if (!tieneOtrasActivas) {
                   setModalCancelacion({
-                    motivo: fila.motivo_cancelacion ?? 'La cocina cancelo tu pedido.',
+                    motivo:
+                      fila.motivo_cancelacion ?? 'La cocina cancelo tu pedido.',
                   });
                 }
               }
@@ -166,13 +171,20 @@ export function ComandaEnviadaCliente({
   const cantidadActivas = comandas.filter((c) => c.estado !== 'cancelada').length;
   const todasEntregadas =
     cantidadActivas > 0 &&
-    comandas.filter((c) => c.estado !== 'cancelada').every((c) => c.estado === 'entregada');
+    comandas
+      .filter((c) => c.estado !== 'cancelada')
+      .every((c) => c.estado === 'entregada');
   const ultimaComanda =
-    comandas.find((c) => c.id === comandaActualId) ?? comandas[comandas.length - 1]!;
+    comandas.find((c) => c.id === comandaActualId) ??
+    comandas[comandas.length - 1]!;
 
   return (
-    <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
+    <main
+      className="min-h-screen flex flex-col"
+      style={{ background: 'var(--color-paper)' }}
+    >
       <div className="flex-1 px-5 py-8 max-w-md mx-auto w-full">
+        {/* HERO de confirmacion */}
         <section
           className="rounded-[var(--radius-lg)] p-6 mb-6 text-center"
           style={{ background: colorMarca, color: 'white' }}
@@ -194,7 +206,9 @@ export function ComandaEnviadaCliente({
           <h1 className="font-[family-name:var(--font-display)] text-4xl tracking-[-0.02em] mb-2">
             Listo, {nombreCliente}!
           </h1>
-          <p className="text-lg opacity-95 leading-snug font-medium">Tu pedido esta en la cocina</p>
+          <p className="text-lg opacity-95 leading-snug font-medium">
+            Tu pedido esta en la cocina
+          </p>
           {ultimaComanda.tiempo_estimado_min !== null ? (
             <div
               className="inline-flex items-center gap-1.5 mt-3 px-3 py-1.5 rounded-full"
@@ -257,7 +271,10 @@ export function ComandaEnviadaCliente({
               >
                 Total acumulado
               </p>
-              <p className="text-base mt-1 font-medium" style={{ color: 'var(--color-ink-soft)' }}>
+              <p
+                className="text-base mt-1 font-medium"
+                style={{ color: 'var(--color-ink-soft)' }}
+              >
                 {cantidadActivas} pedido{cantidadActivas === 1 ? '' : 's'}
                 {comandas.length > cantidadActivas
                   ? ` - ${comandas.length - cantidadActivas} cancelado${comandas.length - cantidadActivas === 1 ? '' : 's'}`
@@ -273,6 +290,7 @@ export function ComandaEnviadaCliente({
           </div>
         </section>
 
+        {/* Botones principales */}
         <div className="space-y-2 mb-6">
           <Link
             href={`/m/${qrToken}/menu`}
@@ -315,15 +333,22 @@ export function ComandaEnviadaCliente({
           )}
         </div>
 
+        {/* "Necesitas algo?" secundario */}
         <div
           className="rounded-[var(--radius-md)] border bg-white px-4 py-4 flex items-center justify-between gap-3"
           style={{ borderColor: 'var(--color-border)' }}
         >
           <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold" style={{ color: 'var(--color-ink)' }}>
+            <p
+              className="text-base font-semibold"
+              style={{ color: 'var(--color-ink)' }}
+            >
               Necesitas algo?
             </p>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+            <p
+              className="text-sm mt-0.5"
+              style={{ color: 'var(--color-ink-soft)' }}
+            >
               Cubiertos, mas servilletas, una consulta...
             </p>
           </div>
@@ -346,7 +371,7 @@ export function ComandaEnviadaCliente({
           className="text-sm uppercase tracking-[0.14em] font-medium"
           style={{ color: 'var(--color-muted)' }}
         >
-          Servido con <span style={{ color: 'var(--color-ink)' }}>EnPura</span>
+          Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
         </p>
       </footer>
 
@@ -470,13 +495,19 @@ function ComandaCard({
                       textDecoration: estaCancelada ? 'line-through' : 'none',
                     }}
                   >
-                    <span className="font-semibold" style={{ color: 'var(--color-muted)' }}>
+                    <span
+                      className="font-semibold"
+                      style={{ color: 'var(--color-muted)' }}
+                    >
                       {item.cantidad}x
                     </span>{' '}
                     {item.nombre_snapshot}
                   </p>
                   {item.nota ? (
-                    <p className="text-base mt-1 italic" style={{ color: 'var(--color-ink-soft)' }}>
+                    <p
+                      className="text-base mt-1 italic"
+                      style={{ color: 'var(--color-ink-soft)' }}
+                    >
                       {item.nota}
                     </p>
                   ) : null}
@@ -540,7 +571,11 @@ function ComandaCard({
   );
 }
 
-function EstadoPill({ etiqueta }: { etiqueta: { label: string; tono: EstadoTono } }) {
+function EstadoPill({
+  etiqueta,
+}: {
+  etiqueta: { label: string; tono: EstadoTono };
+}) {
   const estilos: Record<EstadoTono, { bg: string; fg: string }> = {
     pending: { bg: 'var(--color-paper-deep)', fg: 'var(--color-ink-soft)' },
     progress: { bg: '#fef3c7', fg: '#92400e' },
@@ -609,10 +644,7 @@ function ModalPedidoCancelado({
           className="rounded-[var(--radius-md)] border px-3 py-2.5 mb-5 text-left"
           style={{ borderColor: '#fecaca', background: '#fef2f2' }}
         >
-          <p
-            className="text-sm uppercase tracking-[0.12em] mb-1 font-semibold"
-            style={{ color: '#b91c1c' }}
-          >
+          <p className="text-sm uppercase tracking-[0.12em] mb-1 font-semibold" style={{ color: '#b91c1c' }}>
             Motivo de la cocina
           </p>
           <p className="text-base" style={{ color: '#7f1d1d' }}>

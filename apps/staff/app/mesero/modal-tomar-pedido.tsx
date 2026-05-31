@@ -503,7 +503,7 @@ export function ModalTomarPedido({
  * Sub-modal de cobro. Lo abre el mesero desde el modal de pedido.
  * Llama confirmarPagoMesero (cierra la mesa por sesionId, sin llamado).
  */
-function PanelCobroMesero({
+export function PanelCobroMesero({
   sesionId,
   mesaNumero,
   subtotal,
@@ -518,12 +518,18 @@ function PanelCobroMesero({
   onCerrar: () => void;
   onCobrado: () => void;
 }) {
-  const [conPropina, setConPropina] = useState(true);
+  const [propinaPct, setPropinaPct] = useState('');
+  const [propinaManual, setPropinaManual] = useState('');
+  const propinaMonto = propinaManual !== ''
+    ? Math.max(0, Math.round(Number(propinaManual) || 0))
+    : propinaPct !== ''
+      ? Math.max(0, Math.round((subtotal * (Number(propinaPct) || 0)) / 100))
+      : 0;
   const [metodo, setMetodo] = useState<FormaPagoBackend>('efectivo');
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const propina = conPropina ? Math.round(subtotal * 0.1) : 0;
+  const propina = propinaMonto;
   const total = subtotal + propina;
 
   function confirmar() {
@@ -532,7 +538,7 @@ function PanelCobroMesero({
       const r = await confirmarPagoMesero({
         sesionId,
         metodoConfirmado: metodo,
-        conPropina,
+        propinaMonto,
       });
       if (!r.ok) {
         setError(r.error);
@@ -582,37 +588,46 @@ function PanelCobroMesero({
                 ${subtotal.toLocaleString('es-CO')}
               </span>
             </div>
-            <label className="flex items-center justify-between gap-3 py-2 cursor-pointer select-none">
-              <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
-                Propina (10%)
-              </span>
-              <div className="flex items-center gap-2">
-                {conPropina ? (
-                  <span
-                    className="text-sm font-[family-name:var(--font-mono)]"
-                    style={{ color: 'var(--color-ink)' }}
-                  >
+            <div className="py-2">
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
+                  Propina (opcional)
+                </span>
+                {propina > 0 ? (
+                  <span className="text-sm font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>
                     ${propina.toLocaleString('es-CO')}
                   </span>
                 ) : null}
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={conPropina}
-                  onClick={() => setConPropina((v) => !v)}
-                  className="relative h-6 w-11 rounded-full transition-colors"
-                  style={{
-                    background: conPropina ? colorMarca : 'var(--color-paper-deep)',
-                    border: `1px solid ${conPropina ? colorMarca : 'var(--color-border-strong)'}`,
-                  }}
-                >
-                  <span
-                    className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform"
-                    style={{ transform: conPropina ? 'translateX(20px)' : 'translateX(0)' }}
-                  />
-                </button>
               </div>
-            </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    value={propinaPct}
+                    onChange={(e) => { setPropinaPct(e.target.value); setPropinaManual(''); }}
+                    placeholder="%"
+                    className="w-full h-10 pl-3 pr-7 rounded-[var(--radius-md)] border text-sm"
+                    style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'var(--color-paper)' }}
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--color-muted)' }}>%</span>
+                </div>
+                <div className="relative flex-1">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--color-muted)' }}>$</span>
+                  <input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    value={propinaManual}
+                    onChange={(e) => { setPropinaManual(e.target.value); setPropinaPct(''); }}
+                    placeholder="Monto"
+                    className="w-full h-10 pl-7 pr-3 rounded-[var(--radius-md)] border text-sm"
+                    style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'var(--color-paper)' }}
+                  />
+                </div>
+              </div>
+            </div>
             <div
               className="border-t pt-3 mt-2 flex items-center justify-between"
               style={{ borderColor: 'var(--color-border)' }}
