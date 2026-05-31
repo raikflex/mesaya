@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
-import { EquipoManager, type Miembro } from './equipo-manager';
+import { EquipoManager, type Miembro, type RolStaff } from './equipo-manager';
 
 export const metadata = { title: 'Equipo · EnPura' };
 export const dynamic = 'force-dynamic';
@@ -34,9 +34,26 @@ export default async function EquipoPage() {
       .order('nombre', { ascending: true }),
   ]);
 
-  const miembros: Miembro[] = ((miembrosRaw ?? []) as Miembro[]).filter(
-    (m) => m.rol === 'cocina' || m.rol === 'mesero',
-  );
+  // Traer los roles multi de cada miembro desde perfil_roles.
+  const idsStaff = ((miembrosRaw ?? []) as { id: string }[]).map((m) => m.id);
+  const { data: rolesRaw } = idsStaff.length
+    ? await supabase.from('perfil_roles').select('perfil_id, rol').in('perfil_id', idsStaff)
+    : { data: [] };
+  const rolesPorPerfil = new Map<string, RolStaff[]>();
+  for (const r of (rolesRaw ?? []) as { perfil_id: string; rol: RolStaff }[]) {
+    const arr = rolesPorPerfil.get(r.perfil_id) ?? [];
+    arr.push(r.rol);
+    rolesPorPerfil.set(r.perfil_id, arr);
+  }
+
+  const miembros: Miembro[] = ((miembrosRaw ?? []) as { id: string; nombre: string; rol: string }[])
+    .filter((m) => m.rol === 'cocina' || m.rol === 'mesero' || m.rol === 'domiciliario' || m.rol === 'lavaplatos')
+    .map((m) => ({
+      id: m.id,
+      nombre: m.nombre,
+      rol: (m.rol === 'cocina' ? 'cocina' : 'mesero') as 'mesero' | 'cocina',
+      roles: rolesPorPerfil.get(m.id) ?? [],
+    }));
 
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu negocio';
 

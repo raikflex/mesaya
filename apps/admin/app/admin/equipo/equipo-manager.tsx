@@ -7,11 +7,14 @@ import {
   eliminarCuentaEquipo,
   type CrearCuentaState,
 } from '../onboarding/paso-8/actions';
+import { agregarRol, quitarRol, type RolStaff as RolStaffAction } from './actions';
 
+export type RolStaff = 'dueno' | 'mesero' | 'domiciliario' | 'cocina' | 'lavaplatos';
 export type Miembro = {
   id: string;
   nombre: string;
   rol: 'mesero' | 'cocina';
+  roles: RolStaff[];
 };
 
 const initialAdd: CrearCuentaState = { ok: false };
@@ -386,8 +389,9 @@ function ItemMiembro({ miembro }: { miembro: Miembro }) {
           {miembro.nombre}
         </p>
         <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-          {miembro.rol === 'cocina' ? 'Cocina' : 'Mesero'}
+          {miembro.rol === 'cocina' ? 'Cocina' : 'Mesero'} · rol principal
         </p>
+        <RolesCheckboxes perfilId={miembro.id} rolesActuales={miembro.roles} />
       </div>
       <form action={eliminarCuentaEquipo} className="shrink-0">
         <input type="hidden" name="id" value={miembro.id} />
@@ -440,5 +444,70 @@ function IconMesero() {
         strokeLinecap="round"
       />
     </svg>
+  );
+}
+const ROLES_ASIGNABLES: { valor: RolStaffAction; label: string }[] = [
+  { valor: 'mesero', label: 'Mesero' },
+  { valor: 'domiciliario', label: 'Domiciliario' },
+  { valor: 'cocina', label: 'Cocina' },
+];
+
+function RolesCheckboxes({
+  perfilId,
+  rolesActuales,
+}: {
+  perfilId: string;
+  rolesActuales: RolStaffAction[];
+}) {
+  const [roles, setRoles] = useState<RolStaffAction[]>(rolesActuales);
+  const [pendiente, setPendiente] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle(rol: RolStaffAction) {
+    setError(null);
+    setPendiente(rol);
+    const tiene = roles.includes(rol);
+    // Optimista
+    setRoles((rs) => (tiene ? rs.filter((r) => r !== rol) : [...rs, rol]));
+    const r = tiene
+      ? await quitarRol({ perfilId, rol })
+      : await agregarRol({ perfilId, rol });
+    if (!r.ok) {
+      // Revertir
+      setRoles((rs) => (tiene ? [...rs, rol] : rs.filter((x) => x !== rol)));
+      setError(r.error);
+    }
+    setPendiente(null);
+  }
+
+  return (
+    <div className="mt-2">
+      <div className="flex flex-wrap gap-1.5">
+        {ROLES_ASIGNABLES.map((opt) => {
+          const activo = roles.includes(opt.valor);
+          return (
+            <button
+              key={opt.valor}
+              type="button"
+              onClick={() => toggle(opt.valor)}
+              disabled={pendiente === opt.valor}
+              className="text-[0.7rem] px-2 py-1 rounded-full border transition-colors disabled:opacity-50"
+              style={{
+                borderColor: activo ? 'var(--color-ink)' : 'var(--color-border-strong)',
+                background: activo ? 'var(--color-ink)' : 'white',
+                color: activo ? 'white' : 'var(--color-ink-soft)',
+              }}
+            >
+              {activo ? '✓ ' : ''}{opt.label}
+            </button>
+          );
+        })}
+      </div>
+      {error ? (
+        <p className="text-[0.7rem] mt-1" style={{ color: 'var(--color-danger)' }}>
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
