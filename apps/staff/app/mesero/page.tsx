@@ -23,6 +23,23 @@ export default async function MeseroPage() {
   const perfil = await obtenerPerfilStaff('mesero');
   const supabase = await createClient();
 
+  // Leer los roles multi del usuario para filtrar que ve (capa 3).
+  // El dueno siempre ve todo. Para los demas: si tiene rol 'mesero' ve mesas,
+  // si tiene 'domiciliario' ve domicilios. Default permisivo: si no tiene
+  // ninguno de los dos (caso raro), ve todo para no quedar bloqueado.
+  const { data: rolesRaw } = await supabase
+    .from('perfil_roles')
+    .select('rol')
+    .eq('perfil_id', perfil.id);
+  const misRoles = (rolesRaw ?? []).map((r) => r.rol as string);
+  const esDueno = perfil.rol === 'dueno';
+  const tieneMesero = misRoles.includes('mesero');
+  const tieneDomiciliario = misRoles.includes('domiciliario');
+  // Si no tiene ninguno de los roles operativos, ve todo (no bloquear).
+  const sinRolesOperativos = !tieneMesero && !tieneDomiciliario;
+  const puedeVerMesas = esDueno || tieneMesero || sinRolesOperativos;
+  const puedeVerDomicilios = esDueno || tieneDomiciliario || sinRolesOperativos;
+
   // Verificar si la pantalla de cocina esta activa. Si no lo esta, el mesero
   // ve una seccion extra "En preparacion" donde maneja el ciclo de vida de
   // las comandas (pendiente -> en_preparacion -> lista) manualmente.
@@ -416,6 +433,8 @@ export default async function MeseroPage() {
       sesionesAbiertasInicial={sesionesAbiertas}
       cocinaActiva={cocinaActiva}
       menu={menu}
+      puedeVerMesas={puedeVerMesas}
+      puedeVerDomicilios={puedeVerDomicilios}
     />
   );
 }

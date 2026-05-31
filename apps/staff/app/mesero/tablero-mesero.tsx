@@ -117,6 +117,8 @@ export function TableroMesero({
   sesionesAbiertasInicial,
   cocinaActiva,
   menu,
+  puedeVerMesas,
+  puedeVerDomicilios,
 }: {
   perfilId: string;
   perfilNombre: string;
@@ -128,6 +130,8 @@ export function TableroMesero({
   sesionesAbiertasInicial: SesionAbiertaResumen[];
   cocinaActiva: boolean;
   menu: CategoriaMenu[];
+  puedeVerMesas: boolean;
+  puedeVerDomicilios: boolean;
 }) {
   const [cola, setCola] = useState<ColaMesero>(colaInicial);
   const [mesaParaPedido, setMesaParaPedido] = useState<{
@@ -244,29 +248,41 @@ export function TableroMesero({
     };
   }, [restauranteId, router]);
 
-  const total = cola.llamados.length + cola.comandasListas.length + cola.pagos.length + cola.comandasEnPreparacion.length;
+  // Capa 3: separar comandas de mesa vs domicilio segun rol.
+  const comandasMesas = cola.comandasListas.filter((c) => !c.entrega);
+  const comandasDomicilios = cola.comandasListas.filter((c) => c.entrega);
+  // Lo que ve cada quien segun sus roles.
+  const comandasListasVisibles = [
+    ...(puedeVerMesas ? comandasMesas : []),
+    ...(puedeVerDomicilios ? comandasDomicilios : []),
+  ];
+  const llamadosVisibles = puedeVerMesas ? cola.llamados : [];
+  const pagosVisibles = puedeVerMesas ? cola.pagos : [];
+  const enPrepVisibles = puedeVerMesas ? cola.comandasEnPreparacion : [];
+
+  const total = llamadosVisibles.length + comandasListasVisibles.length + pagosVisibles.length + enPrepVisibles.length;
 
   return (
     <main className="min-h-screen flex flex-col" style={{ background: 'var(--color-paper)' }}>
       <Header perfilNombre={perfilNombre} restauranteNombre={restauranteNombre} colorMarca={colorMarca} totalItems={total} />
       <div className="flex-1 px-5 lg:px-8 py-6 max-w-[1400px] mx-auto w-full">
-        {mesasInfo.length > 0 ? (
+        {puedeVerMesas && mesasInfo.length > 0 ? (
           <div className="mb-6">
             <MapaMesas mesas={mesasInfo} sesionesAbiertasIniciales={sesionesAbiertasInicial} restauranteId={restauranteId} colorMarca={colorMarca} variante="mesero" onTomarPedido={(mesa, modo, sesion) => setMesaParaPedido({ mesa, modo, sesion })} />
           </div>
         ) : null}
-        {!cocinaActiva ? (
+        {puedeVerMesas && !cocinaActiva ? (
           <div className="mb-6">
-            <SeccionEnPreparacion comandas={cola.comandasEnPreparacion} colorMarca={colorMarca} />
+            <SeccionEnPreparacion comandas={enPrepVisibles} colorMarca={colorMarca} />
           </div>
         ) : null}
         {total === 0 ? (
           <EstadoVacio colorMarca={colorMarca} />
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <SeccionLlamados llamados={cola.llamados} colorMarca={colorMarca} perfilId={perfilId} />
-            <SeccionComandasListas comandas={cola.comandasListas} colorMarca={colorMarca} perfilId={perfilId} />
-            <SeccionPagos pagos={cola.pagos} colorMarca={colorMarca} perfilId={perfilId} />
+            {puedeVerMesas ? <SeccionLlamados llamados={llamadosVisibles} colorMarca={colorMarca} perfilId={perfilId} /> : null}
+            <SeccionComandasListas comandas={comandasListasVisibles} colorMarca={colorMarca} perfilId={perfilId} />
+            {puedeVerMesas ? <SeccionPagos pagos={pagosVisibles} colorMarca={colorMarca} perfilId={perfilId} /> : null}
           </div>
         )}
       </div>
