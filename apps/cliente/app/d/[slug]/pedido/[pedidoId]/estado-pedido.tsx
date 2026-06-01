@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { enviarReviewExterno } from './actions';
+import { BannerInstalar } from '../../../../banner-instalar';
 
 type EstadoEntrega = 'pendiente' | 'en_preparacion' | 'en_camino' | 'listo_pickup' | 'entregado';
 type TipoPedido = 'domicilio' | 'pickup';
@@ -181,6 +182,11 @@ export function EstadoPedido({
             <Calificacion pedidoId={pedidoId} nombreNegocio={nombreNegocio} colorMarca={colorMarca} />
           </div>
         ) : null}
+
+        {/* Banner para instalar la app (se auto-oculta si ya esta instalada) */}
+        <div className="mt-5">
+          <BannerInstalar colorMarca={colorMarca} />
+        </div>
       </div>
 
       <footer className="py-6 text-center">

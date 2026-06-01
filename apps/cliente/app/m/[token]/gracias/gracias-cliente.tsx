@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { enviarReview } from './actions';
-
+import { BannerInstalar } from '../../../banner-instalar';
 type EstadoFinal = 'pendiente' | 'enviado' | 'saltado';
 
 export function GraciasCliente({
@@ -238,6 +238,11 @@ export function GraciasCliente({
             mensaje={`Gracias por visitar ${nombreNegocio}. Ya puedes cerrar esta página.`}
           />
         ) : null}
+
+        {/* Banner para instalar la app (se auto-oculta si ya esta instalada) */}
+        <div className="mt-5">
+          <BannerInstalar colorMarca={colorMarca} />
+        </div>
       </div>
 
       <footer className="py-6 text-center">
