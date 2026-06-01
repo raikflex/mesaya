@@ -15,6 +15,7 @@ export type SesionAbiertaResumen = {
   abiertaEn: string;
   totalAcumulado: number;
   comandasCount: number;
+  tienePendientesEntrega: boolean;
 };
 
 // Modo con el que se abre el modal de tomar pedido desde el mapa.
@@ -101,12 +102,14 @@ export function MapaMesas({
           }>
         ).map((s) => {
           const comandasNoCanceladas = (s.comandas ?? []).filter((c) => c.estado !== 'cancelada');
+          const tienePendientesEntrega = comandasNoCanceladas.some((c) => c.estado === 'lista');
           return {
             sesionId: s.id,
             mesaId: s.mesa_id,
             abiertaEn: s.abierta_en,
             totalAcumulado: comandasNoCanceladas.reduce((acc, c) => acc + (c.total ?? 0), 0),
             comandasCount: comandasNoCanceladas.length,
+            tienePendientesEntrega,
           };
         });
 
@@ -311,7 +314,13 @@ function CardMesa({
             <button
               type="button"
               onClick={() => onTomarPedido(mesa, 'cobrar', sesionPrecargada)}
-              className="h-8 rounded-[var(--radius-sm)] text-[0.7rem] font-medium text-white transition-opacity hover:opacity-80"
+              disabled={sesion?.tienePendientesEntrega ?? false}
+              title={
+                sesion?.tienePendientesEntrega
+                  ? 'Entrega los platos listos antes de cobrar'
+                  : undefined
+              }
+              className="h-8 rounded-[var(--radius-sm)] text-[0.7rem] font-medium text-white transition-opacity hover:opacity-80 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:opacity-40"
               style={{ background: colorMarca }}
             >
               Cobrar

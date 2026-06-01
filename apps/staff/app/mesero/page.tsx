@@ -373,12 +373,16 @@ export default async function MeseroPage() {
     }>
   ).map((s) => {
     const comandasNoCanceladas = (s.comandas ?? []).filter((c) => c.estado !== 'cancelada');
+    // Bloquea cobro solo si hay comandas 'lista' (cocina termino, falta que el
+    // mesero las entregue). Las que siguen en cocina no bloquean.
+    const tienePendientesEntrega = comandasNoCanceladas.some((c) => c.estado === 'lista');
     return {
       sesionId: s.id,
       mesaId: s.mesa_id,
       abiertaEn: s.abierta_en,
       totalAcumulado: comandasNoCanceladas.reduce((acc, c) => acc + (c.total ?? 0), 0),
       comandasCount: comandasNoCanceladas.length,
+      tienePendientesEntrega,
     };
   });
 
