@@ -36,13 +36,19 @@ export async function GET() {
     .eq('id', perfil.restaurante_id as string)
     .single();
 
-  const { data: mesas } = await supabase
+  const { data: mesasRaw } = await supabase
     .from('mesas')
     .select('numero, qr_token, capacidad')
     .eq('restaurante_id', perfil.restaurante_id as string)
     .order('numero', { ascending: true });
 
-  if (!mesas || mesas.length === 0) {
+  // Excluir mesas virtuales de domicilio/pickup (las que empiezan con "_").
+  // No tienen sentido como QR fisico para poner en una mesa.
+  const mesas = (mesasRaw ?? []).filter(
+    (m) => !(m.numero as string).startsWith('_'),
+  );
+
+  if (mesas.length === 0) {
     return NextResponse.json({ error: 'Sin mesas' }, { status: 400 });
   }
 
