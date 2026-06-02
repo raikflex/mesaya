@@ -59,15 +59,18 @@ export function ComandaEnviadaCliente({
 }) {
   const router = useRouter();
   const [comandas, setComandas] = useState<ComandaConItems[]>(comandasIniciales);
+  const [mostrarHero, setMostrarHero] = useState(true);
   const idsRef = useRef<Set<string>>(new Set(comandasIniciales.map((c) => c.id)));
   const [modalCancelacion, setModalCancelacion] = useState<{
     motivo: string;
   } | null>(null);
 
+  // El hero de confirmacion se oculta a los 15s para que la comanda (que
+  // muestra el estado real) pase a primer plano y no confunda al cliente.
   useEffect(() => {
-    setComandas(comandasIniciales);
-    idsRef.current = new Set(comandasIniciales.map((c) => c.id));
-  }, [comandasIniciales]);
+    const t = setTimeout(() => setMostrarHero(false), 15000);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     const supabase = createClient();
@@ -184,7 +187,8 @@ export function ComandaEnviadaCliente({
       style={{ background: 'var(--color-paper)' }}
     >
       <div className="flex-1 px-5 py-8 max-w-md mx-auto w-full">
-        {/* HERO de confirmacion */}
+        {/* HERO de confirmacion: se oculta a los 15s */}
+        {mostrarHero ? (
         <section
           className="rounded-[var(--radius-lg)] p-6 mb-6 text-center"
           style={{ background: colorMarca, color: 'white' }}
@@ -233,6 +237,7 @@ export function ComandaEnviadaCliente({
             Pedido #{ultimaComanda.numero_diario.toString().padStart(3, '0')}
           </p>
         </section>
+        ) : null}
 
         <p
           className="text-base text-center mb-6 font-medium"
@@ -371,7 +376,7 @@ export function ComandaEnviadaCliente({
           className="text-sm uppercase tracking-[0.14em] font-medium"
           style={{ color: 'var(--color-muted)' }}
         >
-          Servido con <span style={{ color: 'var(--color-ink)' }}>MesaYA</span>
+          Servido con <span style={{ color: 'var(--color-ink)' }}>EnPura</span>
         </p>
       </footer>
 
