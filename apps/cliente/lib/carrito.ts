@@ -70,7 +70,7 @@ export function agregarItem(
     const existente = actualizado[idx]!;
     actualizado[idx] = {
       ...existente,
-      cantidad: Math.min(99, existente.cantidad + nuevo.cantidad),
+      cantidad: Math.min(20, existente.cantidad + nuevo.cantidad),
       notas: nuevo.notas, // Reemplaza las notas con las nuevas.
       agregadoEn: Date.now(),
     };
@@ -94,7 +94,7 @@ export function actualizarCantidad(
     return actualizado;
   }
   const actualizado = carrito.map((i) =>
-    i.productoId === productoId ? { ...i, cantidad: Math.min(99, cantidad) } : i,
+    i.productoId === productoId ? { ...i, cantidad: Math.min(20, cantidad) } : i,
   );
   guardarCarrito(qrToken, actualizado);
   return actualizado;
@@ -118,4 +118,18 @@ export function calcularTotal(items: ItemCarrito[]): number {
 
 export function totalUnidades(items: ItemCarrito[]): number {
   return items.reduce((acc, i) => acc + i.cantidad, 0);
+}
+
+export function actualizarNota(
+  qrToken: string,
+  productoId: string,
+  notas: string | null,
+): ItemCarrito[] {
+  const carrito = leerCarrito(qrToken);
+  const limpia = notas && notas.trim().length > 0 ? notas.trim().slice(0, 200) : null;
+  const actualizado = carrito.map((i) =>
+    i.productoId === productoId ? { ...i, notas: limpia } : i,
+  );
+  guardarCarrito(qrToken, actualizado);
+  return actualizado;
 }

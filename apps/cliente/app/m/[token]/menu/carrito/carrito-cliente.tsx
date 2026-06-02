@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@mesaya/database/client';
 import {
   actualizarCantidad,
+  actualizarNota,
   calcularTotal,
   eliminarItem,
   leerCarrito,
@@ -79,6 +80,11 @@ export function CarritoCliente({
     setItems(actualizado);
   }
 
+  function cambiarNota(productoId: string, notas: string) {
+    const actualizado = actualizarNota(qrToken, productoId, notas);
+    setItems(actualizado);
+  }
+
   async function obtenerAuthUserId(): Promise<string | null> {
     const supabase = createClient();
 
@@ -129,7 +135,7 @@ export function CarritoCliente({
       if (!authUserId) {
         setEnvio({
           fase: 'error',
-          mensaje: 'No pudimos iniciar tu sesión. Intenta de nuevo.',
+          mensaje: 'No pudimos iniciar tu sesion. Intenta de nuevo.',
         });
         return;
       }
@@ -151,15 +157,15 @@ export function CarritoCliente({
       }
 
       vaciarCarrito(qrToken);
-      // Guardar la última comanda para que /llamar-mesero y /pedir-cuenta
-      // tengan un "Volver" que apunte a la pantalla de confirmación.
+      // Guardar la ultima comanda para que /llamar-mesero y /pedir-cuenta
+      // tengan un "Volver" que apunte a la pantalla de confirmacion.
       guardarUltimaComandaId(qrToken, resultado.comandaId);
       router.push(`/m/${qrToken}/menu/enviada/${resultado.comandaId}`);
     } catch (err) {
       console.error('[enviarComanda]', err);
       setEnvio({
         fase: 'error',
-        mensaje: 'Algo falló. Por favor intenta de nuevo.',
+        mensaje: 'Algo fallo. Por favor intenta de nuevo.',
       });
     }
   }
@@ -184,7 +190,7 @@ export function CarritoCliente({
         style={{ background: 'var(--color-paper)' }}
       >
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          Cargando…
+          Cargando...
         </p>
       </main>
     );
@@ -264,6 +270,7 @@ export function CarritoCliente({
                   item={item}
                   onCambiarCantidad={(c) => cambiarCantidad(item.productoId, c)}
                   onEliminar={() => quitar(item.productoId)}
+                  onCambiarNota={(n) => cambiarNota(item.productoId, n)}
                 />
               ))}
             </ul>
@@ -367,7 +374,7 @@ function PantallaCuentaRegresiva({
           className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
           style={{ color: 'var(--color-ink)' }}
         >
-          Enviando tu pedido…
+          Enviando tu pedido...
         </h2>
         <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-ink-soft)' }}>
           Si quieres cambiar algo, cancela ahora. En {segundosRestantes} segundo
@@ -442,7 +449,7 @@ function PantallaEnviando({ colorMarca }: { colorMarca: string }) {
           className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
           style={{ color: 'var(--color-ink)' }}
         >
-          Enviando a cocina…
+          Enviando a cocina...
         </h2>
         <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
           Un momento, estamos avisando.
@@ -507,7 +514,7 @@ function PantallaError({
             className="w-full h-12 grid place-items-center rounded-[var(--radius-md)] text-sm"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Volver al menú
+            Volver al menu
           </Link>
         </div>
       </div>
@@ -519,10 +526,12 @@ function ItemFila({
   item,
   onCambiarCantidad,
   onEliminar,
+  onCambiarNota,
 }: {
   item: ItemCarrito;
   onCambiarCantidad: (n: number) => void;
   onEliminar: () => void;
+  onCambiarNota: (n: string) => void;
 }) {
   const subtotal = item.precio * item.cantidad;
 
@@ -533,14 +542,6 @@ function ItemFila({
           <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
             {item.nombre}
           </p>
-          {item.notas ? (
-            <p
-              className="text-xs mt-1 italic leading-relaxed"
-              style={{ color: 'var(--color-ink-soft)' }}
-            >
-              {item.notas}
-            </p>
-          ) : null}
           <p
             className="text-xs mt-1.5 font-[family-name:var(--font-mono)]"
             style={{ color: 'var(--color-muted)' }}
@@ -565,6 +566,22 @@ function ItemFila({
             />
           </svg>
         </button>
+      </div>
+
+      {/* Nota para la cocina, siempre visible */}
+      <div className="mb-3">
+        <textarea
+          value={item.notas ?? ''}
+          onChange={(e) => onCambiarNota(e.target.value.slice(0, 200))}
+          placeholder="Nota para la cocina (opcional): sin cebolla, termino medio..."
+          rows={2}
+          className="w-full px-3 py-2 rounded-[var(--radius-md)] border text-sm resize-none focus:outline-none focus:ring-1"
+          style={{
+            borderColor: 'var(--color-border-strong)',
+            color: 'var(--color-ink)',
+            background: 'var(--color-paper)',
+          }}
+        />
       </div>
 
       <div className="flex items-center justify-between gap-3">
@@ -593,7 +610,7 @@ function ItemFila({
           <button
             type="button"
             onClick={() => onCambiarCantidad(item.cantidad + 1)}
-            disabled={item.cantidad >= 99}
+            disabled={item.cantidad >= 20}
             aria-label="Aumentar cantidad"
             className="size-12 grid place-items-center rounded-[var(--radius-md)] border transition-colors disabled:opacity-40"
             style={{
@@ -644,13 +661,13 @@ function EstadoVacio({ qrToken, colorMarca }: { qrToken: string; colorMarca: str
         className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
         style={{ color: 'var(--color-ink)' }}
       >
-        Tu pedido está vacío.
+        Tu pedido esta vacio.
       </h2>
       <p
         className="text-sm leading-relaxed mb-6 max-w-xs mx-auto"
         style={{ color: 'var(--color-ink-soft)' }}
       >
-        Vuelve al menú y agrega lo que quieras pedir.
+        Vuelve al menu y agrega lo que quieras pedir.
       </p>
       <Link
         href={`/m/${qrToken}/menu`}
@@ -660,7 +677,7 @@ function EstadoVacio({ qrToken, colorMarca }: { qrToken: string; colorMarca: str
           color: 'var(--color-paper)',
         }}
       >
-        Volver al menú
+        Volver al menu
       </Link>
     </div>
   );
@@ -669,6 +686,7 @@ function EstadoVacio({ qrToken, colorMarca }: { qrToken: string; colorMarca: str
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
+
 function BotonVolverCarrito({ qrToken }: { qrToken: string }) {
   const [ultimaComandaId, setUltimaComandaId] = useState<string | null>(null);
 
@@ -680,7 +698,7 @@ function BotonVolverCarrito({ qrToken }: { qrToken: string }) {
   const href = ultimaComandaId
     ? `/m/${qrToken}/menu/enviada/${ultimaComandaId}`
     : `/m/${qrToken}/menu`;
-  const texto = ultimaComandaId ? 'Volver al pedido' : 'Volver al menú';
+  const texto = ultimaComandaId ? 'Volver al pedido' : 'Volver al menu';
 
   return (
     <Link

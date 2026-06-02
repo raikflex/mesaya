@@ -10,7 +10,9 @@ import {
   limpiarUltimaComandaId,
 } from '../../../../lib/cliente-session';
 import {
+  actualizarCantidad,
   calcularTotal,
+  guardarCarrito,
   leerCarrito,
   totalUnidades,
   type ItemCarrito,
@@ -165,12 +167,34 @@ export function MenuCliente({
     setCategoriaActiva(id);
   }
 
-  function abrirProducto(productoId: string) {
-    router.push(`/m/${qrToken}/menu/${productoId}`);
-  }
-
   function irAlCarrito() {
     router.push(`/m/${qrToken}/menu/carrito`);
+  }
+
+  // Cambia la cantidad de un producto en el carrito desde los botones +/-.
+  // Si el producto no estaba, lo agrega con sus datos (snapshot de precio/nombre).
+  function cambiarCantidad(producto: Producto, nuevaCantidad: number) {
+    const yaEsta = carrito.some((i) => i.productoId === producto.id);
+    if (yaEsta) {
+      const actualizado = actualizarCantidad(qrToken, producto.id, nuevaCantidad);
+      setCarrito(actualizado);
+      return;
+    }
+    // Producto nuevo: lo construimos y guardamos.
+    if (nuevaCantidad <= 0) return;
+    const conNuevo: ItemCarrito[] = [
+      ...carrito,
+      {
+        productoId: producto.id,
+        nombre: producto.nombre,
+        precio: producto.precio,
+        cantidad: Math.min(20, nuevaCantidad),
+        notas: null,
+        agregadoEn: Date.now(),
+      },
+    ];
+    guardarCarrito(qrToken, conNuevo);
+    setCarrito(conNuevo);
   }
 
   if (cargando) {
@@ -354,14 +378,18 @@ export function MenuCliente({
                   </p>
                 ) : (
                   <ul className="space-y-2">
-                    {g.productos.map((p) => (
-                      <ItemProducto
-                        key={p.id}
-                        producto={p}
-                        colorMarca={colorMarca}
-                        onAgregar={() => abrirProducto(p.id)}
-                      />
-                    ))}
+                    {g.productos.map((p) => {
+                      const enCarrito = carrito.find((i) => i.productoId === p.id);
+                      return (
+                        <ItemProducto
+                          key={p.id}
+                          producto={p}
+                          colorMarca={colorMarca}
+                          cantidad={enCarrito?.cantidad ?? 0}
+                          onCambiar={(nuevaCantidad) => cambiarCantidad(p, nuevaCantidad)}
+                        />
+                      );
+                    })}
                   </ul>
                 )}
               </section>
@@ -419,11 +447,13 @@ export function MenuCliente({
 function ItemProducto({
   producto,
   colorMarca,
-  onAgregar,
+  cantidad,
+  onCambiar,
 }: {
   producto: Producto;
   colorMarca: string;
-  onAgregar: () => void;
+  cantidad: number;
+  onCambiar: (nuevaCantidad: number) => void;
 }) {
   const sinStock = !producto.disponible;
 
@@ -431,17 +461,11 @@ function ItemProducto({
     <li
       className="rounded-[var(--radius-lg)] border bg-white"
       style={{
-        borderColor: 'var(--color-border)',
+        borderColor: cantidad > 0 ? colorMarca : 'var(--color-border)',
         opacity: sinStock ? 0.55 : 1,
       }}
     >
-      <button
-        type="button"
-        onClick={onAgregar}
-        disabled={sinStock}
-        aria-label={`Agregar ${producto.nombre}`}
-        className="w-full text-left px-4 py-3.5 flex items-start gap-3 disabled:cursor-not-allowed"
-      >
+      <div className="px-4 py-3.5 flex items-start gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p
@@ -456,10 +480,7 @@ function ItemProducto({
             {sinStock ? (
               <span
                 className="text-xs uppercase tracking-[0.1em] px-1.5 py-0.5 rounded"
-                style={{
-                  background: 'var(--color-paper-deep)',
-                  color: 'var(--color-muted)',
-                }}
+                style={{ background: 'var(--color-paper-deep)', color: 'var(--color-muted)' }}
               >
                 Sin stock
               </span>
@@ -478,25 +499,55 @@ function ItemProducto({
           </p>
         </div>
 
-        {!sinStock ? (
-          <span
-            className="size-9 rounded-full grid place-items-center shrink-0 mt-0.5 transition-transform"
-            style={{
-              background: colorMarca,
-              color: 'white',
-            }}
+        {sinStock ? null : cantidad === 0 ? (
+          <button
+            type="button"
+            onClick={() => onCambiar(1)}
+            aria-label={`Agregar ${producto.nombre}`}
+            className="size-9 rounded-full grid place-items-center shrink-0 mt-0.5 transition-transform active:scale-90"
+            style={{ background: colorMarca, color: 'white' }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path
-                d="M12 5v14M5 12h14"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-              />
+              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
-          </span>
-        ) : null}
-      </button>
+          </button>
+        ) : (
+          <div
+            className="flex items-center gap-1 shrink-0 mt-0.5 rounded-full"
+            style={{ border: `1px solid ${colorMarca}` }}
+          >
+            <button
+              type="button"
+              onClick={() => onCambiar(cantidad - 1)}
+              aria-label={`Quitar uno de ${producto.nombre}`}
+              className="size-9 rounded-full grid place-items-center transition-transform active:scale-90"
+              style={{ color: colorMarca }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+            <span
+              className="min-w-[1.5rem] text-center text-sm font-medium tabular-nums"
+              style={{ color: 'var(--color-ink)' }}
+            >
+              {cantidad}
+            </span>
+            <button
+              type="button"
+              onClick={() => onCambiar(cantidad + 1)}
+              disabled={cantidad >= 20}
+              aria-label={`Agregar uno de ${producto.nombre}`}
+              className="size-9 rounded-full grid place-items-center transition-transform active:scale-90 disabled:opacity-40"
+              style={{ background: colorMarca, color: 'white' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+        )}
+      </div>
     </li>
   );
 }
