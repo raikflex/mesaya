@@ -1,4 +1,4 @@
-'use server';
+﻿'use server';
 
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
@@ -19,7 +19,7 @@ async function validarStaffMesero(): Promise<
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return { ok: false, error: 'No tienes sesión activa.' };
+  if (!user) return { ok: false, error: 'No tienes sesion activa.' };
 
   const { data: perfil } = await supabase
     .from('perfiles')
@@ -30,7 +30,7 @@ async function validarStaffMesero(): Promise<
   if (!perfil) return { ok: false, error: 'No encontramos tu perfil.' };
 
   const rol = String(perfil.rol).toLowerCase().trim();
-  if (rol !== 'mesero' && rol !== 'dueno' && rol !== 'dueño') {
+  if (rol !== 'mesero' && rol !== 'dueno' && rol !== 'dueno') {
     return { ok: false, error: 'No tienes permisos de mesero.' };
   }
 
@@ -86,7 +86,7 @@ export async function tomarLlamado(input: { llamadoId: string }): Promise<TomarR
   if (!actualizado) {
     return {
       ok: false,
-      error: 'Otro mesero ya tomó este llamado. Refresca para ver.',
+      error: 'Otro mesero ya tomo este llamado. Refresca para ver.',
     };
   }
 
@@ -185,15 +185,12 @@ export async function tomarComanda(input: { comandaId: string }): Promise<TomarR
     return { ok: false, error: 'Esa comanda no es de tu restaurante.' };
   }
   if (comanda.estado !== 'lista') {
-    return { ok: false, error: 'La comanda no está lista para entregar.' };
+    return { ok: false, error: 'La comanda no esta lista todavia.' };
   }
 
   const { data: actualizado, error } = await supabase
     .from('comandas')
-    .update({
-      mesero_atendiendo_id: validacion.perfilId,
-      mesero_atendiendo_nombre: validacion.perfilNombre,
-    })
+    .update({ mesero_atendiendo_id: validacion.perfilId })
     .eq('id', input.comandaId)
     .is('mesero_atendiendo_id', null)
     .select('id')
@@ -203,7 +200,7 @@ export async function tomarComanda(input: { comandaId: string }): Promise<TomarR
     return { ok: false, error: 'No pudimos tomar la comanda. ' + error.message };
   }
   if (!actualizado) {
-    return { ok: false, error: 'Otro mesero ya tomó esta comanda.' };
+    return { ok: false, error: 'Otro mesero ya tomo esta comanda.' };
   }
 
   revalidatePath('/mesero');
@@ -260,18 +257,12 @@ export async function entregarComanda(input: { comandaId: string }): Promise<Tom
     return { ok: false, error: 'Esa comanda no es de tu restaurante.' };
   }
   if (comanda.estado !== 'lista') {
-    return { ok: false, error: 'La comanda no está lista todavía.' };
+    return { ok: false, error: 'La comanda no esta lista todavia.' };
   }
-  if (comanda.mesero_atendiendo_id !== validacion.perfilId) {
-    return {
-      ok: false,
-      error: 'Tienes que tomar la comanda primero antes de entregarla.',
-    };
-  }
-
+  // Sin requerir "tomar" primero: marcamos entregada y registramos quien la entrego.
   const { error } = await supabase
     .from('comandas')
-    .update({ estado: 'entregada' })
+    .update({ estado: 'entregada', mesero_atendiendo_id: validacion.perfilId })
     .eq('id', input.comandaId);
 
   if (error) {
@@ -309,8 +300,8 @@ export async function confirmarPago(input: {
 
   const supabase = await createClient();
 
-  // Leer también doc_tipo, doc_numero, doc_nombre del llamado (datos de
-  // facturación que el cliente pasó al pedir cuenta) para denormalizar a `pagos`.
+  // Leer tambien doc_tipo, doc_numero, doc_nombre del llamado (datos de
+  // facturacion que el cliente paso al pedir cuenta) para denormalizar a `pagos`.
   const { data: llamado } = await supabase
     .from('llamados_mesero')
     .select(
@@ -326,12 +317,7 @@ export async function confirmarPago(input: {
   if (llamado.estado !== 'pendiente') {
     return { ok: false, error: 'Ese llamado ya fue atendido.' };
   }
-  if (llamado.mesero_atendiendo_id !== validacion.perfilId) {
-    return {
-      ok: false,
-      error: 'Tienes que tomar el pago primero antes de cobrar.',
-    };
-  }
+  // Sin requerir "tomar" primero: cualquier mesero puede cobrar directo.
 
   const sesionId = llamado.sesion_id as string;
 
@@ -354,7 +340,7 @@ export async function confirmarPago(input: {
     estado: 'confirmado',
     confirmado_por_id: validacion.perfilId,
     confirmado_en: new Date().toISOString(),
-    // Denormalizar datos de facturación si el cliente los pidió
+    // Denormalizar datos de facturacion si el cliente los pidio
     doc_tipo: llamado.doc_tipo as string | null,
     doc_numero: llamado.doc_numero as string | null,
     doc_nombre: llamado.doc_nombre as string | null,
@@ -413,6 +399,7 @@ export async function confirmarPago(input: {
   revalidatePath('/cocina');
   return { ok: true };
 }
+
 export async function marcarComandaPreparando(input: {
   comandaId: string;
 }): Promise<TomarResultado> {
@@ -434,7 +421,7 @@ export async function marcarComandaPreparando(input: {
   if (comanda.estado !== 'pendiente') {
     return {
       ok: false,
-      error: 'Solo podés marcar como en preparación las comandas pendientes.',
+      error: 'Solo podes marcar como en preparacion las comandas pendientes.',
     };
   }
 
@@ -452,8 +439,8 @@ export async function marcarComandaPreparando(input: {
 }
 
 /**
- * Mesero marca que la comanda ya está lista para entregar (la recogió de la
- * cocina). Cambia estado: en_preparacion → lista.
+ * Mesero marca que la comanda ya esta lista para entregar (la recogio de la
+ * cocina). Cambia estado: en_preparacion -> lista.
  */
 export async function marcarComandaLista(input: { comandaId: string }): Promise<TomarResultado> {
   const validacion = await validarStaffMesero();
@@ -474,7 +461,7 @@ export async function marcarComandaLista(input: { comandaId: string }): Promise<
   if (comanda.estado !== 'en_preparacion' && comanda.estado !== 'pendiente') {
     return {
       ok: false,
-      error: 'Solo podés marcar como lista una comanda en preparación.',
+      error: 'Solo podes marcar como lista una comanda en preparacion.',
     };
   }
 
@@ -490,6 +477,7 @@ export async function marcarComandaLista(input: { comandaId: string }): Promise<
   revalidatePath('/mesero');
   return { ok: true };
 }
+
 type ItemComandaMesero = {
   productoId: string;
   cantidad: number;
@@ -697,12 +685,9 @@ export async function crearComandaMesero(input: {
   revalidatePath('/cocina');
   return { ok: true, comandaId, numeroDiario };
 }
+
 // =========================================================================
 // Cobro iniciado por el mesero (sin que el cliente pida la cuenta)
-// =========================================================================
-//
-// INTEGRACION: pegar todo este bloque al final de
-// apps/staff/app/mesero/actions.ts
 // =========================================================================
 
 export type ResumenSesionMesa =
@@ -914,29 +899,29 @@ export async function confirmarPagoMesero(input: {
 
 export async function marcarEstadoEntrega(input: {
   pedidoExternoId: string;
-  nuevoEstado: "en_camino" | "listo_pickup";
+  nuevoEstado: 'en_camino' | 'listo_pickup';
 }): Promise<{ ok: true } | { ok: false; error: string }> {
   const guard = await validarStaffMesero();
   if (!guard.ok) return { ok: false, error: guard.error };
   const admin = createServiceClient();
   const { data: pedido } = await admin
-    .from("pedidos_externos")
-    .select("id, restaurante_id, estado_entrega")
-    .eq("id", input.pedidoExternoId)
+    .from('pedidos_externos')
+    .select('id, restaurante_id, estado_entrega')
+    .eq('id', input.pedidoExternoId)
     .maybeSingle();
   if (!pedido || pedido.restaurante_id !== guard.restauranteId) {
-    return { ok: false, error: "No encontramos el pedido." };
+    return { ok: false, error: 'No encontramos el pedido.' };
   }
-  if (pedido.estado_entrega === "entregado") {
-    return { ok: false, error: "Este pedido ya fue entregado." };
+  if (pedido.estado_entrega === 'entregado') {
+    return { ok: false, error: 'Este pedido ya fue entregado.' };
   }
   const { error } = await admin
-    .from("pedidos_externos")
+    .from('pedidos_externos')
     .update({ estado_entrega: input.nuevoEstado })
-    .eq("id", input.pedidoExternoId);
+    .eq('id', input.pedidoExternoId);
   if (error) {
-    return { ok: false, error: "No pudimos actualizar el estado. Intenta de nuevo." };
+    return { ok: false, error: 'No pudimos actualizar el estado. Intenta de nuevo.' };
   }
-  revalidatePath("/mesero");
+  revalidatePath('/mesero');
   return { ok: true };
 }

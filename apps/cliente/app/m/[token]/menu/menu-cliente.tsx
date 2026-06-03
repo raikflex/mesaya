@@ -171,30 +171,27 @@ export function MenuCliente({
     router.push(`/m/${qrToken}/menu/carrito`);
   }
 
-  // Cambia la cantidad de un producto en el carrito desde los botones +/-.
-  // Si el producto no estaba, lo agrega con sus datos (snapshot de precio/nombre).
+  // Cambiar la cantidad de un producto en el carrito. Si el producto es nuevo
+  // (no estaba en el carrito), lo construye con sus datos antes de guardar.
   function cambiarCantidad(producto: Producto, nuevaCantidad: number) {
-    const yaEsta = carrito.some((i) => i.productoId === producto.id);
-    if (yaEsta) {
-      const actualizado = actualizarCantidad(qrToken, producto.id, nuevaCantidad);
+    const actualizado = actualizarCantidad(qrToken, producto.id, nuevaCantidad);
+    if (nuevaCantidad > 0 && !actualizado.find((i) => i.productoId === producto.id)) {
+      const conNuevo: ItemCarrito[] = [
+        ...actualizado,
+        {
+          productoId: producto.id,
+          nombre: producto.nombre,
+          precio: producto.precio,
+          cantidad: nuevaCantidad,
+          notas: null,
+          agregadoEn: Date.now(),
+        },
+      ];
+      guardarCarrito(qrToken, conNuevo);
+      setCarrito(conNuevo);
+    } else {
       setCarrito(actualizado);
-      return;
     }
-    // Producto nuevo: lo construimos y guardamos.
-    if (nuevaCantidad <= 0) return;
-    const conNuevo: ItemCarrito[] = [
-      ...carrito,
-      {
-        productoId: producto.id,
-        nombre: producto.nombre,
-        precio: producto.precio,
-        cantidad: Math.min(20, nuevaCantidad),
-        notas: null,
-        agregadoEn: Date.now(),
-      },
-    ];
-    guardarCarrito(qrToken, conNuevo);
-    setCarrito(conNuevo);
   }
 
   if (cargando) {

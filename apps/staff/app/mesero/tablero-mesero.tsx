@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
@@ -430,7 +430,7 @@ function Header({ perfilNombre, restauranteNombre, colorMarca, totalItems }: { p
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M3 11h18l-2 9H5l-2-9zM12 7v4M9 7v4M15 7v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
           <div className="min-w-0">
-            <p className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Mesero · {perfilNombre}</p>
+            <p className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Mesero Â· {perfilNombre}</p>
             <h1 className="font-[family-name:var(--font-display)] text-lg tracking-[-0.015em] truncate" style={{ color: 'var(--color-ink)' }}>{restauranteNombre}</h1>
           </div>
         </div>
@@ -527,10 +527,13 @@ function CardLlamado({ llamado, colorMarca, perfilId }: { llamado: LlamadoMesero
             <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink)' }}>"{llamado.nota}"</p>
           </div>
         ) : null}
-        {esMio ? <p className="text-[0.7rem] mt-2 italic" style={{ color: colorMarca }}>Estas atendiendo este llamado</p> : esDeOtro ? <p className="text-[0.7rem] mt-2 italic" style={{ color: 'var(--color-muted)' }}>Otro mesero esta atendiendo</p> : null}
         {error ? <p role="alert" className="mt-2 text-[0.7rem]" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
       </div>
-      <FooterAcciones esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending} onTomar={tomar} onLiberar={liberar} onAccionPrimaria={atender} textoAccionPrimaria="Atendido" />
+      <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+        <button type="button" onClick={atender} disabled={pending} className="w-full h-11 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>
+          Atendido
+        </button>
+      </div>
     </CardBase>
   );
 }
@@ -569,7 +572,7 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
             {comanda.items.map((item) => (
               <li key={item.id} className="text-sm">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-[family-name:var(--font-display)] text-base tabular-nums shrink-0" style={{ color: colorMarca }}>{item.cantidad}×</span>
+                  <span className="font-[family-name:var(--font-display)] text-base tabular-nums shrink-0" style={{ color: colorMarca }}>{item.cantidad}Ã—</span>
                   <span style={{ color: 'var(--color-ink)' }}>{item.nombre}</span>
                 </div>
                 {item.nota ? <p className="text-xs mt-0.5 ml-7 italic" style={{ color: 'var(--color-ink-soft)' }}>"{item.nota}"</p> : null}
@@ -584,7 +587,7 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
                 {comanda.entrega.tipo === 'domicilio' ? 'Entrega a domicilio' : 'Para recoger'}
               </p>
               <p className="text-xs font-medium" style={{ color: 'var(--color-ink)' }}>
-                {comanda.entrega.nombreCliente} · {comanda.entrega.telefono}
+                {comanda.entrega.nombreCliente} Â· {comanda.entrega.telefono}
               </p>
               {comanda.entrega.direccion ? <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>{comanda.entrega.direccion}</p> : null}
               {comanda.entrega.horaPedido ? <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>Hora: {comanda.entrega.horaPedido}</p> : null}
@@ -595,16 +598,16 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
                 className="mt-2.5 w-full h-9 rounded-[var(--radius-md)] border text-xs font-medium"
                 style={{ borderColor: colorMarca, color: colorMarca, background: 'white' }}
               >
-                Ver detalles{comanda.entrega.estadoEntrega === 'en_camino' ? ' · En camino' : comanda.entrega.estadoEntrega === 'listo_pickup' ? ' · Listo' : ''}
+                Ver detalles{comanda.entrega.estadoEntrega === 'en_camino' ? ' Â· En camino' : comanda.entrega.estadoEntrega === 'listo_pickup' ? ' Â· Listo' : ''}
               </button>
             </div>
           ) : null}
 
-          {esMio ? <p className="text-[0.7rem] mt-2 italic" style={{ color: colorMarca }}>Estas llevando este pedido</p> : esDeOtro ? <p className="text-[0.7rem] mt-2 italic" style={{ color: 'var(--color-muted)' }}>Otro mesero lo esta llevando</p> : null}
+          {esDomicilio ? null : <p className="text-[0.7rem] mt-2" style={{ color: 'var(--color-ink-soft)' }}>Lleva el pedido a la mesa y marcalo</p>}
           {error ? <p role="alert" className="mt-2 text-[0.7rem]" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
         </div>
         {esDomicilio ? null : (
-          <FooterAcciones esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending} onTomar={tomar} onLiberar={liberar} onAccionPrimaria={entregar} textoAccionPrimaria="Entregar" infoExtra={`$${comanda.total.toLocaleString('es-CO')}`} />
+          <div className="px-4 py-3 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--color-border)' }}><span className="font-[family-name:var(--font-mono)] text-sm" style={{ color: 'var(--color-ink-soft)' }}>${comanda.total.toLocaleString('es-CO')}</span><button type="button" onClick={entregar} disabled={pending} className="flex-1 h-11 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>Entregado</button></div>
         )}
       </CardBase>
 
@@ -661,10 +664,14 @@ function CardPago({ pago, colorMarca, perfilId }: { pago: PagoMesero; colorMarca
           <p className="text-[0.7rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>{pago.propinaSugerida ? 'Total con propina' : 'Total acumulado'}</p>
           <p className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]" style={{ color: 'var(--color-ink)' }}>${(pago.totalAcumulado + (pago.propinaSugerida ?? 0)).toLocaleString('es-CO')}</p>
           {pago.propinaSugerida ? <p className="text-[0.7rem] mt-1" style={{ color: 'var(--color-muted)' }}>Subtotal ${pago.totalAcumulado.toLocaleString('es-CO')} + propina ${pago.propinaSugerida.toLocaleString('es-CO')}</p> : null}
-          {esMio ? <p className="text-[0.7rem] mt-2 italic" style={{ color: colorMarca }}>Estas cobrando esta mesa</p> : esDeOtro ? <p className="text-[0.7rem] mt-2 italic" style={{ color: 'var(--color-muted)' }}>Otro mesero esta cobrando</p> : null}
+          <p className="text-[0.7rem] mt-2" style={{ color: 'var(--color-ink-soft)' }}>Acercate a la mesa para cobrar</p>
           {error ? <p role="alert" className="mt-2 text-[0.7rem]" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
         </div>
-        <FooterAcciones esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending} onTomar={tomar} onLiberar={liberar} onAccionPrimaria={abrirModal} textoAccionPrimaria="Cobrar" />
+        <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+          <button type="button" onClick={abrirModal} disabled={pending} className="w-full h-11 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>
+            Ver detalles
+          </button>
+        </div>
       </CardBase>
       {modalAbierto ? <ModalCobrar pago={pago} colorMarca={colorMarca} onCerrar={() => setModalAbierto(false)} /> : null}
     </>
@@ -708,7 +715,7 @@ function ModalCobrar({ pago, colorMarca, onCerrar }: { pago: PagoMesero; colorMa
           {pago.comandas.length > 0 ? (
             <div className="rounded-[var(--radius-md)] border bg-white" style={{ borderColor: 'var(--color-border)' }}>
               <div className="px-4 py-2.5 border-b flex items-center justify-between" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
-                <p className="text-[0.7rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Detalle · {pago.cantidadComandas} {pago.cantidadComandas === 1 ? 'comanda' : 'comandas'}</p>
+                <p className="text-[0.7rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Detalle Â· {pago.cantidadComandas} {pago.cantidadComandas === 1 ? 'comanda' : 'comandas'}</p>
               </div>
               <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
                 {pago.comandas.map((c, idxC) => (
@@ -721,7 +728,7 @@ function ModalCobrar({ pago, colorMarca, onCerrar }: { pago: PagoMesero; colorMa
                       {c.items.map((it, idxI) => (
                         <li key={idxI} className="text-sm">
                           <div className="flex items-baseline gap-2">
-                            <span className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0 w-7" style={{ color: 'var(--color-muted)' }}>{it.cantidad}×</span>
+                            <span className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0 w-7" style={{ color: 'var(--color-muted)' }}>{it.cantidad}Ã—</span>
                             <span className="flex-1" style={{ color: 'var(--color-ink)' }}>{it.nombre}</span>
                             <span className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0" style={{ color: 'var(--color-ink-soft)' }}>${(it.precio * it.cantidad).toLocaleString('es-CO')}</span>
                           </div>
@@ -811,12 +818,12 @@ function FooterAcciones({ esMio, esDeOtro, colorMarca, pending, onTomar, onLiber
         {esMio ? (
           <>
             <button type="button" onClick={onLiberar} disabled={pending} className="text-xs underline disabled:opacity-50" style={{ color: 'var(--color-muted)' }}>Liberar</button>
-            <button type="button" onClick={onAccionPrimaria} disabled={pending} className="text-xs font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Procesando...' : `${textoAccionPrimaria} →`}</button>
+            <button type="button" onClick={onAccionPrimaria} disabled={pending} className="text-xs font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Procesando...' : `${textoAccionPrimaria} â†’`}</button>
           </>
         ) : esDeOtro ? (
           <span className="text-xs italic" style={{ color: 'var(--color-muted)' }}>En atencion</span>
         ) : (
-          <button type="button" onClick={onTomar} disabled={pending} className="text-xs font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Tomando...' : 'Tomar →'}</button>
+          <button type="button" onClick={onTomar} disabled={pending} className="text-xs font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Tomando...' : 'Tomar â†’'}</button>
         )}
       </div>
     </footer>
