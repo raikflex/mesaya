@@ -69,6 +69,7 @@ export default async function MeseroPage() {
       doc_numero,
       doc_nombre,
       forma_pago_preferida,
+      propina_sugerida,
       nota,
       sesiones (
         mesas (numero)
@@ -90,6 +91,7 @@ export default async function MeseroPage() {
     doc_numero: string | null;
     doc_nombre: string | null;
     forma_pago_preferida: string | null;
+    propina_sugerida: number | null;
     nota: string | null;
     sesiones:
       | { mesas: { numero: string } | { numero: string }[] | null }
@@ -329,6 +331,7 @@ export default async function MeseroPage() {
         totalAcumulado: totalPorSesion.get(l.sesion_id) ?? 0,
         cantidadComandas: countPorSesion.get(l.sesion_id) ?? 0,
         formaPagoPreferida: l.forma_pago_preferida,
+        propinaSugerida: l.propina_sugerida,
         docTipo: l.doc_tipo,
         docNumero: l.doc_numero,
         docNombre: l.doc_nombre,

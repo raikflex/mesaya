@@ -35,7 +35,7 @@ export type PedirCuentaResultado =
 
 export async function pedirCuenta(input: {
   qrToken: string;
-  conPropina: boolean;
+  propinaMonto: number;
   formaPago: FormaPago;
   factura?: DatosFactura | null;
 }): Promise<PedirCuentaResultado> {
@@ -137,13 +137,11 @@ export async function pedirCuenta(input: {
 
   // Para que el mesero vea estos datos al cobrar, los guardamos en el llamado.
   // Cuando se confirma el pago, se denormalizan a la tabla `pagos`.
+  const propinaMonto = Math.max(0, Math.min(Math.round(input.propinaMonto || 0), 9999999));
   const lineas = [
-    `Propina: ${input.conPropina ? 'SÃ­ (10%)' : 'No'}`,
+    `Propina: ${propinaMonto > 0 ? '$' + propinaMonto.toLocaleString('es-CO') : 'No'}`,
     `Forma de pago preferida: ${ETIQUETAS_FORMA_PAGO[input.formaPago]}`,
   ];
-  if (factura) {
-    lineas.push(`Factura: ${factura.tipoDoc} ${factura.numero} Â· ${factura.nombre}`);
-  }
 
   const { data: nuevo, error } = await admin
     .from('llamados_mesero')
@@ -154,6 +152,7 @@ export async function pedirCuenta(input: {
       motivo: 'pago',
       estado: 'pendiente',
       forma_pago_preferida: input.formaPago,
+      propina_sugerida: propinaMonto > 0 ? propinaMonto : null,
       doc_tipo: factura?.tipoDoc ?? null,
       doc_numero: factura?.numero.trim() ?? null,
       doc_nombre: factura?.nombre.trim() ?? null,

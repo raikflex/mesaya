@@ -93,6 +93,7 @@ export type PagoMesero = {
   totalAcumulado: number;
   cantidadComandas: number;
   formaPagoPreferida: string | null;
+  propinaSugerida: number | null;
   docTipo: string | null;
   docNumero: string | null;
   docNombre: string | null;
@@ -317,7 +318,7 @@ async function traerPagoCompleto(llamadoId: string): Promise<PagoMesero | null> 
   const supabase = createClient();
   const { data: llamado } = await supabase
     .from('llamados_mesero')
-    .select(`id, creado_en, mesero_atendiendo_id, sesion_id, doc_tipo, doc_numero, doc_nombre, forma_pago_preferida, sesiones (mesas (numero))`)
+    .select(`id, creado_en, mesero_atendiendo_id, sesion_id, doc_tipo, doc_numero, doc_nombre, forma_pago_preferida, propina_sugerida, sesiones (mesas (numero))`)
     .eq('id', llamadoId)
     .maybeSingle();
   if (!llamado) return null;
@@ -355,6 +356,7 @@ async function traerPagoCompleto(llamadoId: string): Promise<PagoMesero | null> 
     totalAcumulado,
     cantidadComandas: comandasArr.length,
     formaPagoPreferida: (llamado.forma_pago_preferida as string | null) ?? null,
+    propinaSugerida: (llamado.propina_sugerida as number | null) ?? null,
     docTipo: (llamado.doc_tipo as string | null) ?? null,
     docNumero: (llamado.doc_numero as string | null) ?? null,
     docNombre: (llamado.doc_nombre as string | null) ?? null,
@@ -656,8 +658,9 @@ function CardPago({ pago, colorMarca, perfilId }: { pago: PagoMesero; colorMarca
           <TiempoTranscurrido fecha={pago.creadoEn} />
         </header>
         <div className="px-4 py-3">
-          <p className="text-[0.7rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Total acumulado</p>
-          <p className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]" style={{ color: 'var(--color-ink)' }}>${pago.totalAcumulado.toLocaleString('es-CO')}</p>
+          <p className="text-[0.7rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>{pago.propinaSugerida ? 'Total con propina' : 'Total acumulado'}</p>
+          <p className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]" style={{ color: 'var(--color-ink)' }}>${(pago.totalAcumulado + (pago.propinaSugerida ?? 0)).toLocaleString('es-CO')}</p>
+          {pago.propinaSugerida ? <p className="text-[0.7rem] mt-1" style={{ color: 'var(--color-muted)' }}>Subtotal ${pago.totalAcumulado.toLocaleString('es-CO')} + propina ${pago.propinaSugerida.toLocaleString('es-CO')}</p> : null}
           {esMio ? <p className="text-[0.7rem] mt-2 italic" style={{ color: colorMarca }}>Estas cobrando esta mesa</p> : esDeOtro ? <p className="text-[0.7rem] mt-2 italic" style={{ color: 'var(--color-muted)' }}>Otro mesero esta cobrando</p> : null}
           {error ? <p role="alert" className="mt-2 text-[0.7rem]" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
         </div>
@@ -670,7 +673,11 @@ function CardPago({ pago, colorMarca, perfilId }: { pago: PagoMesero; colorMarca
 
 function ModalCobrar({ pago, colorMarca, onCerrar }: { pago: PagoMesero; colorMarca: string; onCerrar: () => void }) {
   const [propinaPct, setPropinaPct] = useState('');
-  const [propinaManual, setPropinaManual] = useState('');
+  // Precargar con la propina que el cliente sugirio al pedir la cuenta.
+  // El mesero la confirma o la ajusta si el cliente cambio de opinion.
+  const [propinaManual, setPropinaManual] = useState(
+    pago.propinaSugerida ? String(pago.propinaSugerida) : '',
+  );
   const [metodo, setMetodo] = useState<FormaPagoBackend>('efectivo');
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -749,6 +756,7 @@ function ModalCobrar({ pago, colorMarca, onCerrar }: { pago: PagoMesero; colorMa
                 <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Propina (opcional)</span>
                 {propina > 0 ? <span className="text-sm font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>${propina.toLocaleString('es-CO')}</span> : null}
               </div>
+              {pago.propinaSugerida ? <p className="text-[0.7rem] mb-2 px-2 py-1.5 rounded" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>El cliente sugirio ${pago.propinaSugerida.toLocaleString('es-CO')} de propina. Puedes ajustarlo si pago distinto.</p> : null}
               <div className="flex gap-2">
                 <div className="relative flex-1">
                   <input type="number" inputMode="numeric" min={0} value={propinaPct} onChange={(e) => { setPropinaPct(e.target.value); setPropinaManual(''); }} placeholder="%" className="w-full h-10 pl-3 pr-7 rounded-[var(--radius-md)] border text-sm" style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'var(--color-paper)' }} />

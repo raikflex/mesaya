@@ -9,7 +9,7 @@ import { borrarTimerLlamado, calcularSegundosRestantes } from '../../../../lib/t
 import { cancelarLlamado } from '../llamar-mesero/actions';
 import { pedirCuenta, type FormaPago, type TipoDoc } from './actions';
 
-const PORCENTAJE_PROPINA = 0.1;
+const PORCENTAJES_PROPINA = [5, 10, 15];
 
 type ItemFila = {
   id: string;
@@ -30,13 +30,13 @@ type ComandaPorCliente = {
 
 const FORMAS_PAGO: { value: FormaPago; label: string; descripcion: string }[] = [
   { value: 'efectivo', label: 'Efectivo', descripcion: 'Pago en monedas y billetes' },
-  { value: 'tarjeta', label: 'Tarjeta', descripcion: 'Débito o crédito en datafono' },
+  { value: 'tarjeta', label: 'Tarjeta', descripcion: 'Debito o credito en datafono' },
   {
     value: 'transferencia',
     label: 'Transferencia / PSE',
     descripcion: 'Nequi, Bancolombia, Daviplata',
   },
-  { value: 'no_seguro', label: 'Aún no decido', descripcion: 'Le digo al mesero al llegar' },
+  { value: 'no_seguro', label: 'Aun no decido', descripcion: 'Le digo al mesero al llegar' },
 ];
 
 export function PedirCuentaCliente({
@@ -63,11 +63,14 @@ export function PedirCuentaCliente({
   sesionId: string | null;
 }) {
   const router = useRouter();
-  const [conPropina, setConPropina] = useState(false);
+  // Propina: monto en pesos. 0 = sin propina. El cliente elige con botones
+  // rapidos (% del subtotal) o escribe un monto personalizado.
+  const [propinaMonto, setPropinaMonto] = useState(0);
+  const [montoManual, setMontoManual] = useState('');
   const [formaPago, setFormaPago] = useState<FormaPago>('efectivo');
-  // Factura opcional: la mayoría de clientes no pide. Si abre el toggle,
+  // Factura opcional: la mayoria de clientes no pide. Si abre el toggle,
   // aparecen los 3 campos. Sin esto el INSERT a llamados_mesero deja
-  // doc_* en null y el mesero no ve sección de factura.
+  // doc_* en null y el mesero no ve seccion de factura.
   const [quiereFactura, setQuiereFactura] = useState(false);
   const [tipoDoc, setTipoDoc] = useState<TipoDoc>('CC');
   const [numeroDoc, setNumeroDoc] = useState('');
@@ -183,17 +186,17 @@ export function PedirCuentaCliente({
             className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-3"
             style={{ color: 'var(--color-ink)' }}
           >
-            Aún no hiciste tu pedido.
+            Aun no hiciste tu pedido.
           </h1>
           <p className="text-sm leading-relaxed mb-8" style={{ color: 'var(--color-ink-soft)' }}>
-            Pide algo del menú primero. Cuando termines, regresas aquí para pedir la cuenta.
+            Pide algo del menu primero. Cuando termines, regresas aqui para pedir la cuenta.
           </p>
           <Link
             href={`/m/${qrToken}/menu`}
             className="inline-flex items-center justify-center h-11 px-5 rounded-[var(--radius-md)] text-sm font-medium"
             style={{ background: colorMarca, color: 'white' }}
           >
-            Ir al menú
+            Ir al menu
           </Link>
         </div>
       </main>
@@ -201,22 +204,43 @@ export function PedirCuentaCliente({
   }
 
   const subtotal = comandas.reduce((acc, c) => acc + c.total, 0);
-  const propina = conPropina ? Math.round(subtotal * PORCENTAJE_PROPINA) : 0;
+  const propina = propinaMonto;
   const totalFinal = subtotal + propina;
+
+  // Que boton rapido esta activo (para resaltar), comparando el monto.
+  const pctActivo = PORCENTAJES_PROPINA.find(
+    (pct) => Math.round(subtotal * (pct / 100)) === propinaMonto && propinaMonto > 0,
+  );
+
+  // Elegir propina por porcentaje del subtotal (botones rapidos).
+  function elegirPorcentaje(pct: number) {
+    setPropinaMonto(Math.round(subtotal * (pct / 100)));
+    setMontoManual('');
+  }
+  // Escribir un monto personalizado en pesos.
+  function elegirMontoManual(valor: string) {
+    const limpio = valor.replace(/[^\d]/g, '');
+    setMontoManual(limpio);
+    setPropinaMonto(limpio ? parseInt(limpio, 10) : 0);
+  }
+  function sinPropina() {
+    setPropinaMonto(0);
+    setMontoManual('');
+  }
 
   function pedir() {
     setError(null);
 
-    // Validación local de factura antes de enviar
+    // Validacion local de factura antes de enviar
     if (quiereFactura) {
       const num = numeroDoc.trim();
       const nom = nombreDoc.trim();
       if (num.length < 3) {
-        setError('Ingresa el número de documento.');
+        setError('Ingresa el numero de documento.');
         return;
       }
       if (nom.length < 3) {
-        setError('Ingresa el nombre o razón social.');
+        setError('Ingresa el nombre o razon social.');
         return;
       }
     }
@@ -224,7 +248,7 @@ export function PedirCuentaCliente({
     startTransition(async () => {
       const resultado = await pedirCuenta({
         qrToken,
-        conPropina,
+        propinaMonto,
         formaPago,
         factura: quiereFactura
           ? {
@@ -252,7 +276,7 @@ export function PedirCuentaCliente({
         totalFinal={totalFinal}
         llamado={llamadoActivo}
         urlVolver={urlVolver}
-        conPropina={conPropina}
+        propinaMonto={propinaMonto}
         formaPago={formaPago}
       />
     );
@@ -338,7 +362,7 @@ export function PedirCuentaCliente({
                 <ul className="space-y-1">
                   {c.items.map((it) => (
                     <li key={it.id} className="text-xs leading-relaxed flex items-start gap-2">
-                      <span style={{ color: 'var(--color-muted)' }}>{it.cantidad}×</span>
+                      <span style={{ color: 'var(--color-muted)' }}>{it.cantidad}x</span>
                       <span className="flex-1" style={{ color: 'var(--color-ink-soft)' }}>
                         {it.nombre_snapshot}
                         {it.nota ? (
@@ -359,7 +383,7 @@ export function PedirCuentaCliente({
           className="rounded-[var(--radius-lg)] border bg-white p-5 mb-5"
           style={{ borderColor: 'var(--color-border)' }}
         >
-          <div className="space-y-2 text-sm">
+          <div className="space-y-3 text-sm">
             <div className="flex items-center justify-between">
               <span style={{ color: 'var(--color-ink-soft)' }}>Subtotal</span>
               <span
@@ -370,20 +394,13 @@ export function PedirCuentaCliente({
               </span>
             </div>
 
-            <label
-              className="flex items-center justify-between gap-3 py-2 cursor-pointer select-none"
-              htmlFor="toggle-propina"
-            >
-              <div className="flex-1 min-w-0">
-                <span className="text-sm block" style={{ color: 'var(--color-ink-soft)' }}>
-                  Propina sugerida (10%)
+            {/* Propina: botones rapidos + monto personalizado */}
+            <div className="pt-1">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>
+                  Propina <span style={{ color: 'var(--color-muted)' }}>(voluntaria)</span>
                 </span>
-                <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
-                  Voluntaria. Decides tú.
-                </span>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {conPropina ? (
+                {propina > 0 ? (
                   <span
                     className="text-sm font-[family-name:var(--font-mono)]"
                     style={{ color: 'var(--color-ink)' }}
@@ -391,30 +408,68 @@ export function PedirCuentaCliente({
                     ${propina.toLocaleString('es-CO')}
                   </span>
                 ) : null}
+              </div>
+              <div className="grid grid-cols-4 gap-2">
                 <button
-                  id="toggle-propina"
                   type="button"
-                  role="switch"
-                  aria-checked={conPropina}
-                  onClick={() => setConPropina((v) => !v)}
-                  className="relative h-6 w-11 rounded-full transition-colors"
+                  onClick={sinPropina}
+                  className="h-10 rounded-[var(--radius-md)] border text-sm font-medium transition-colors"
                   style={{
-                    background: conPropina ? colorMarca : 'var(--color-paper-deep)',
-                    border: `1px solid ${conPropina ? colorMarca : 'var(--color-border-strong)'}`,
+                    borderColor: propinaMonto === 0 ? colorMarca : 'var(--color-border-strong)',
+                    background: propinaMonto === 0 ? colorMarca : 'white',
+                    color: propinaMonto === 0 ? 'white' : 'var(--color-ink)',
+                    borderWidth: propinaMonto === 0 ? 1.5 : 1,
                   }}
                 >
-                  <span
-                    className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform"
-                    style={{
-                      transform: conPropina ? 'translateX(20px)' : 'translateX(0)',
-                    }}
-                  />
+                  No
                 </button>
+                {PORCENTAJES_PROPINA.map((pct) => {
+                  const activo = pctActivo === pct;
+                  return (
+                    <button
+                      key={pct}
+                      type="button"
+                      onClick={() => elegirPorcentaje(pct)}
+                      className="h-10 rounded-[var(--radius-md)] border text-sm font-medium transition-colors"
+                      style={{
+                        borderColor: activo ? colorMarca : 'var(--color-border-strong)',
+                        background: activo ? colorMarca : 'white',
+                        color: activo ? 'white' : 'var(--color-ink)',
+                        borderWidth: activo ? 1.5 : 1,
+                      }}
+                    >
+                      {pct}%
+                    </button>
+                  );
+                })}
               </div>
-            </label>
+              <div className="mt-2">
+                <div
+                  className="flex items-center gap-2 px-3 h-10 rounded-[var(--radius-md)] border"
+                  style={{
+                    borderColor: montoManual ? colorMarca : 'var(--color-border-strong)',
+                    background: 'var(--color-paper)',
+                    borderWidth: montoManual ? 1.5 : 1,
+                  }}
+                >
+                  <span className="text-sm" style={{ color: 'var(--color-muted)' }}>
+                    $
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    value={montoManual}
+                    onChange={(e) => elegirMontoManual(e.target.value)}
+                    placeholder="Otro monto"
+                    className="flex-1 bg-transparent text-sm focus:outline-none"
+                    style={{ color: 'var(--color-ink)' }}
+                  />
+                </div>
+              </div>
+            </div>
 
             <div
-              className="border-t pt-3 mt-2 flex items-center justify-between"
+              className="border-t pt-3 mt-1 flex items-center justify-between"
               style={{ borderColor: 'var(--color-border)' }}
             >
               <span className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>
@@ -435,7 +490,7 @@ export function PedirCuentaCliente({
             className="text-xs uppercase tracking-[0.14em] mb-3"
             style={{ color: 'var(--color-muted)' }}
           >
-            ¿Cómo prefieres pagar?
+            Como prefieres pagar?
           </p>
           <div className="space-y-2">
             {FORMAS_PAGO.map((f) => (
@@ -511,7 +566,7 @@ export function PedirCuentaCliente({
               </span>
               <div className="text-left min-w-0">
                 <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-                  ¿Necesitas factura?
+                  Necesitas factura?
                 </p>
                 <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                   Si lo activas, agrega tu documento.
@@ -559,7 +614,7 @@ export function PedirCuentaCliente({
                   className="block text-xs uppercase tracking-[0.12em] mb-1.5"
                   style={{ color: 'var(--color-muted)' }}
                 >
-                  Número
+                  Numero
                 </label>
                 <input
                   id="numeroDoc"
@@ -587,7 +642,7 @@ export function PedirCuentaCliente({
                   className="block text-xs uppercase tracking-[0.12em] mb-1.5"
                   style={{ color: 'var(--color-muted)' }}
                 >
-                  {tipoDoc === 'NIT' ? 'Razón social' : 'Nombre completo'}
+                  {tipoDoc === 'NIT' ? 'Razon social' : 'Nombre completo'}
                 </label>
                 <input
                   id="nombreDoc"
@@ -615,7 +670,7 @@ export function PedirCuentaCliente({
           className="text-xs text-center mb-2 leading-relaxed px-2"
           style={{ color: 'var(--color-muted)' }}
         >
-          Al pedir la cuenta, el mesero llega a tu mesa con la información que elegiste. La cuenta
+          Al pedir la cuenta, el mesero llega a tu mesa con la informacion que elegiste. La cuenta
           es para toda la mesa.
         </p>
 
@@ -645,7 +700,7 @@ export function PedirCuentaCliente({
           className="w-full max-w-md mx-auto h-12 rounded-[var(--radius-md)] text-base font-medium flex items-center justify-between px-5 transition-opacity disabled:opacity-60"
           style={{ background: colorMarca, color: 'white' }}
         >
-          <span>{pending ? 'Avisando…' : 'Pedir la cuenta'}</span>
+          <span>{pending ? 'Avisando...' : 'Pedir la cuenta'}</span>
           <span className="font-[family-name:var(--font-mono)]">
             ${totalFinal.toLocaleString('es-CO')}
           </span>
@@ -663,7 +718,7 @@ function PantallaCuentaPedida({
   totalFinal,
   llamado,
   urlVolver,
-  conPropina,
+  propinaMonto,
   formaPago,
 }: {
   qrToken: string;
@@ -673,7 +728,7 @@ function PantallaCuentaPedida({
   totalFinal: number;
   llamado: { id: string; creado_en: string; mesero_atendiendo_nombre?: string | null };
   urlVolver: string;
-  conPropina: boolean;
+  propinaMonto: number;
   formaPago: FormaPago;
 }) {
   const router = useRouter();
@@ -698,7 +753,7 @@ function PantallaCuentaPedida({
         return;
       }
       borrarTimerLlamado(llamado.id);
-      const crearRes = await pedirCuenta({ qrToken, conPropina, formaPago });
+      const crearRes = await pedirCuenta({ qrToken, propinaMonto, formaPago });
       if (!crearRes.ok) {
         setError(crearRes.error);
         return;
@@ -763,7 +818,7 @@ function PantallaCuentaPedida({
                 className="w-full h-11 rounded-[var(--radius-md)] text-xs font-medium border transition-colors disabled:opacity-50"
                 style={{ borderColor: colorMarca, color: colorMarca, background: 'white' }}
               >
-                {pending ? 'Avisando…' : 'Volver a llamar al mesero'}
+                {pending ? 'Avisando...' : 'Volver a llamar al mesero'}
               </button>
             ) : (
               <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
@@ -774,7 +829,7 @@ function PantallaCuentaPedida({
                 >
                   {minutos}:{segs.toString().padStart(2, '0')}
                 </span>
-                , podrás llamarlo de nuevo
+                , podras llamarlo de nuevo
               </p>
             )}
           </div>
