@@ -495,10 +495,10 @@ function CabeceraSeccion({ titulo, descripcion, count, bgColor, fgColor }: { tit
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
       <div>
-        <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em]" style={{ color: 'var(--color-ink)' }}>{titulo}</h2>
-        <p className="text-sm mt-0.5" style={{ color: 'var(--color-muted)' }}>{descripcion}</p>
+        <h2 className="font-[family-name:var(--font-display)] text-xl tracking-[-0.015em]" style={{ color: 'var(--color-ink)' }}>{titulo}</h2>
+        <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-muted)' }}>{descripcion}</p>
       </div>
-      <span className="text-sm uppercase tracking-[0.1em] px-2.5 py-1 rounded-full font-medium shrink-0" style={{ background: bgColor, color: fgColor }}>{count}</span>
+      <span className="text-xs uppercase tracking-[0.1em] px-2.5 py-1 rounded-full font-medium shrink-0" style={{ background: bgColor, color: fgColor }}>{count}</span>
     </div>
   );
 }
@@ -516,21 +516,21 @@ function CardLlamado({ llamado, colorMarca, perfilId }: { llamado: LlamadoMesero
   return (
     <CardBase esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending}>
       <header className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-        <span className="text-sm px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>Mesa {llamado.mesaNumero}</span>
+        <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>Mesa {llamado.mesaNumero}</span>
         <TiempoTranscurrido fecha={llamado.creadoEn} />
       </header>
       <div className="px-4 py-3">
-        <p className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>{llamado.motivo === 'campana' ? 'Necesita ayuda' : 'Llamado del cliente'}</p>
+        <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>{llamado.motivo === 'campana' ? 'Necesita ayuda' : 'Llamado del cliente'}</p>
         {llamado.nota ? (
           <div className="mt-2 rounded-[var(--radius-md)] border px-3 py-2" style={{ borderColor: '#fde68a', background: '#fefce8' }}>
-            <p className="text-xs uppercase tracking-[0.12em] mb-0.5" style={{ color: '#92400e' }}>El cliente dice</p>
-            <p className="text-base leading-relaxed" style={{ color: 'var(--color-ink)' }}>"{llamado.nota}"</p>
+            <p className="text-[0.65rem] uppercase tracking-[0.12em] mb-0.5" style={{ color: '#92400e' }}>El cliente dice</p>
+            <p className="text-sm leading-relaxed" style={{ color: 'var(--color-ink)' }}>"{llamado.nota}"</p>
           </div>
         ) : null}
-        {error ? <p role="alert" className="mt-2 text-sm" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
+        {error ? <p role="alert" className="mt-2 text-[0.7rem]" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
       </div>
       <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
-        <button type="button" onClick={atender} disabled={pending} className="w-full h-12 rounded-[var(--radius-md)] text-base font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>
+        <button type="button" onClick={atender} disabled={pending} className="w-full h-11 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>
           Atendido
         </button>
       </div>
@@ -555,27 +555,27 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
       <CardBase esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending}>
         <header className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex items-center gap-3 min-w-0">
-            <span className="font-[family-name:var(--font-display)] text-lg tabular-nums" style={{ color: 'var(--color-ink)' }}>#{comanda.numeroDiario.toString().padStart(3, '0')}</span>
+            <span className="font-[family-name:var(--font-display)] text-base tabular-nums" style={{ color: 'var(--color-ink)' }}>#{comanda.numeroDiario.toString().padStart(3, '0')}</span>
             {esDomicilio ? (
-              <span className="text-sm px-2 py-0.5 rounded-full font-medium" style={{ background: comanda.origen === 'domicilio' ? '#dbeafe' : '#dcfce7', color: comanda.origen === 'domicilio' ? '#1e40af' : '#166534' }}>
+              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: comanda.origen === 'domicilio' ? '#dbeafe' : '#dcfce7', color: comanda.origen === 'domicilio' ? '#1e40af' : '#166534' }}>
                 {comanda.origen === 'domicilio' ? 'Domicilio' : 'Para recoger'}
               </span>
             ) : (
-              <span className="text-sm px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>Mesa {comanda.mesaNumero}</span>
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>Mesa {comanda.mesaNumero}</span>
             )}
           </div>
           <TiempoTranscurrido fecha={comanda.creadaEn} />
         </header>
         <div className="px-4 py-3">
-          <p className="text-sm uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--color-muted)' }}>{comanda.clienteNombre}</p>
+          <p className="text-[0.7rem] uppercase tracking-[0.1em] mb-2" style={{ color: 'var(--color-muted)' }}>{comanda.clienteNombre}</p>
           <ul className="space-y-1.5">
             {comanda.items.map((item) => (
-              <li key={item.id} className="text-base">
+              <li key={item.id} className="text-sm">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-[family-name:var(--font-display)] text-lg tabular-nums shrink-0" style={{ color: colorMarca }}>{item.cantidad}Ã—</span>
+                  <span className="font-[family-name:var(--font-display)] text-base tabular-nums shrink-0" style={{ color: colorMarca }}>{item.cantidad}Ã—</span>
                   <span style={{ color: 'var(--color-ink)' }}>{item.nombre}</span>
                 </div>
-                {item.nota ? <p className="text-sm mt-0.5 ml-7 italic" style={{ color: 'var(--color-ink-soft)' }}>"{item.nota}"</p> : null}
+                {item.nota ? <p className="text-xs mt-0.5 ml-7 italic" style={{ color: 'var(--color-ink-soft)' }}>"{item.nota}"</p> : null}
               </li>
             ))}
           </ul>
@@ -583,19 +583,19 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
           {/* Datos de entrega + boton ver detalles */}
           {comanda.entrega ? (
             <div className="mt-3 pt-3 border-t rounded-[var(--radius-md)] p-2.5" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
-              <p className="text-xs uppercase tracking-[0.12em] mb-1.5" style={{ color: 'var(--color-muted)' }}>
+              <p className="text-[0.65rem] uppercase tracking-[0.12em] mb-1.5" style={{ color: 'var(--color-muted)' }}>
                 {comanda.entrega.tipo === 'domicilio' ? 'Entrega a domicilio' : 'Para recoger'}
               </p>
-              <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+              <p className="text-xs font-medium" style={{ color: 'var(--color-ink)' }}>
                 {comanda.entrega.nombreCliente} Â· {comanda.entrega.telefono}
               </p>
-              {comanda.entrega.direccion ? <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>{comanda.entrega.direccion}</p> : null}
-              {comanda.entrega.horaPedido ? <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>Hora: {comanda.entrega.horaPedido}</p> : null}
-              {comanda.entrega.notasEntrega ? <p className="text-sm mt-0.5 italic" style={{ color: 'var(--color-ink-soft)' }}>{comanda.entrega.notasEntrega}</p> : null}
+              {comanda.entrega.direccion ? <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>{comanda.entrega.direccion}</p> : null}
+              {comanda.entrega.horaPedido ? <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>Hora: {comanda.entrega.horaPedido}</p> : null}
+              {comanda.entrega.notasEntrega ? <p className="text-xs mt-0.5 italic" style={{ color: 'var(--color-ink-soft)' }}>{comanda.entrega.notasEntrega}</p> : null}
               <button
                 type="button"
                 onClick={() => setModalAbierto(true)}
-                className="mt-2.5 w-full h-10 rounded-[var(--radius-md)] border text-sm font-medium"
+                className="mt-2.5 w-full h-9 rounded-[var(--radius-md)] border text-xs font-medium"
                 style={{ borderColor: colorMarca, color: colorMarca, background: 'white' }}
               >
                 Ver detalles{comanda.entrega.estadoEntrega === 'en_camino' ? ' Â· En camino' : comanda.entrega.estadoEntrega === 'listo_pickup' ? ' Â· Listo' : ''}
@@ -603,11 +603,11 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
             </div>
           ) : null}
 
-          {esDomicilio ? null : <p className="text-sm mt-2" style={{ color: 'var(--color-ink-soft)' }}>Lleva el pedido a la mesa y marcalo</p>}
-          {error ? <p role="alert" className="mt-2 text-sm" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
+          {esDomicilio ? null : <p className="text-[0.7rem] mt-2" style={{ color: 'var(--color-ink-soft)' }}>Lleva el pedido a la mesa y marcalo</p>}
+          {error ? <p role="alert" className="mt-2 text-[0.7rem]" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
         </div>
         {esDomicilio ? null : (
-          <div className="px-4 py-3 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--color-border)' }}><span className="font-[family-name:var(--font-mono)] text-base" style={{ color: 'var(--color-ink-soft)' }}>${comanda.total.toLocaleString('es-CO')}</span><button type="button" onClick={entregar} disabled={pending} className="flex-1 h-12 rounded-[var(--radius-md)] text-base font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>Entregado</button></div>
+          <div className="px-4 py-3 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--color-border)' }}><span className="font-[family-name:var(--font-mono)] text-sm" style={{ color: 'var(--color-ink-soft)' }}>${comanda.total.toLocaleString('es-CO')}</span><button type="button" onClick={entregar} disabled={pending} className="flex-1 h-11 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>Entregado</button></div>
         )}
       </CardBase>
 
@@ -653,22 +653,22 @@ function CardPago({ pago, colorMarca, perfilId }: { pago: PagoMesero; colorMarca
       <CardBase esMio={esMio} esDeOtro={esDeOtro} colorMarca={colorMarca} pending={pending}>
         <header className="px-4 py-3 flex items-center justify-between gap-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
           <div className="flex items-center gap-2 min-w-0 flex-wrap">
-            <span className="text-sm px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>Mesa {pago.mesaNumero}</span>
-            <span className="text-sm" style={{ color: 'var(--color-muted)' }}>{pago.cantidadComandas} pedido{pago.cantidadComandas === 1 ? '' : 's'}</span>
-            {formaPago ? <span className="text-xs uppercase tracking-[0.05em] px-1.5 py-0.5 rounded font-medium" style={{ background: formaPago.bg, color: formaPago.fg }}>{formaPago.label}</span> : null}
-            {tieneFactura ? <span className="text-xs uppercase tracking-[0.1em] px-1.5 py-0.5 rounded font-medium" style={{ background: '#dbeafe', color: '#1e40af' }}>Pide factura</span> : null}
+            <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>Mesa {pago.mesaNumero}</span>
+            <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>{pago.cantidadComandas} pedido{pago.cantidadComandas === 1 ? '' : 's'}</span>
+            {formaPago ? <span className="text-[0.65rem] uppercase tracking-[0.05em] px-1.5 py-0.5 rounded font-medium" style={{ background: formaPago.bg, color: formaPago.fg }}>{formaPago.label}</span> : null}
+            {tieneFactura ? <span className="text-[0.65rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded font-medium" style={{ background: '#dbeafe', color: '#1e40af' }}>Pide factura</span> : null}
           </div>
           <TiempoTranscurrido fecha={pago.creadoEn} />
         </header>
         <div className="px-4 py-3">
-          <p className="text-sm uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>{pago.propinaSugerida ? 'Total con propina' : 'Total acumulado'}</p>
-          <p className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em]" style={{ color: 'var(--color-ink)' }}>${(pago.totalAcumulado + (pago.propinaSugerida ?? 0)).toLocaleString('es-CO')}</p>
-          {pago.propinaSugerida ? <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>Subtotal ${pago.totalAcumulado.toLocaleString('es-CO')} + propina ${pago.propinaSugerida.toLocaleString('es-CO')}</p> : null}
-          <p className="text-sm mt-2" style={{ color: 'var(--color-ink-soft)' }}>Acercate a la mesa para cobrar</p>
-          {error ? <p role="alert" className="mt-2 text-sm" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
+          <p className="text-[0.7rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>{pago.propinaSugerida ? 'Total con propina' : 'Total acumulado'}</p>
+          <p className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em]" style={{ color: 'var(--color-ink)' }}>${(pago.totalAcumulado + (pago.propinaSugerida ?? 0)).toLocaleString('es-CO')}</p>
+          {pago.propinaSugerida ? <p className="text-[0.7rem] mt-1" style={{ color: 'var(--color-muted)' }}>Subtotal ${pago.totalAcumulado.toLocaleString('es-CO')} + propina ${pago.propinaSugerida.toLocaleString('es-CO')}</p> : null}
+          <p className="text-[0.7rem] mt-2" style={{ color: 'var(--color-ink-soft)' }}>Acercate a la mesa para cobrar</p>
+          {error ? <p role="alert" className="mt-2 text-[0.7rem]" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
         </div>
         <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
-          <button type="button" onClick={abrirModal} disabled={pending} className="w-full h-12 rounded-[var(--radius-md)] text-base font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>
+          <button type="button" onClick={abrirModal} disabled={pending} className="w-full h-11 rounded-[var(--radius-md)] text-sm font-medium transition-opacity disabled:opacity-60" style={{ background: colorMarca, color: 'white' }}>
             Ver detalles
           </button>
         </div>
@@ -708,31 +708,31 @@ function ModalCobrar({ pago, colorMarca, onCerrar }: { pago: PagoMesero; colorMa
     <div className="fixed inset-0 z-50 grid place-items-center px-4 py-8" style={{ background: 'rgba(26, 24, 20, 0.6)' }} onClick={onCerrar}>
       <div className="w-full max-w-md rounded-[var(--radius-lg)] bg-white overflow-hidden" style={{ maxHeight: '90vh', overflowY: 'auto' }} onClick={(e) => e.stopPropagation()}>
         <header className="px-5 py-4 border-b" style={{ borderColor: 'var(--color-border)' }}>
-          <p className="text-xs uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Cobrar Mesa {pago.mesaNumero}</p>
+          <p className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Cobrar Mesa {pago.mesaNumero}</p>
           <h2 className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em] mt-1" style={{ color: 'var(--color-ink)' }}>Confirmar pago</h2>
         </header>
         <div className="px-5 py-4 space-y-4">
           {pago.comandas.length > 0 ? (
             <div className="rounded-[var(--radius-md)] border bg-white" style={{ borderColor: 'var(--color-border)' }}>
               <div className="px-4 py-2.5 border-b flex items-center justify-between" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
-                <p className="text-sm uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Detalle Â· {pago.cantidadComandas} {pago.cantidadComandas === 1 ? 'comanda' : 'comandas'}</p>
+                <p className="text-[0.7rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Detalle Â· {pago.cantidadComandas} {pago.cantidadComandas === 1 ? 'comanda' : 'comandas'}</p>
               </div>
               <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
                 {pago.comandas.map((c, idxC) => (
                   <li key={`${c.numeroDiario}-${idxC}`} className="px-4 py-3">
                     <div className="flex items-baseline justify-between mb-2">
-                      <p className="font-[family-name:var(--font-display)] text-base tabular-nums" style={{ color: 'var(--color-ink)' }}>Comanda #{c.numeroDiario.toString().padStart(3, '0')}</p>
-                      <span className="font-[family-name:var(--font-mono)] text-sm" style={{ color: 'var(--color-ink-soft)' }}>${c.total.toLocaleString('es-CO')}</span>
+                      <p className="font-[family-name:var(--font-display)] text-sm tabular-nums" style={{ color: 'var(--color-ink)' }}>Comanda #{c.numeroDiario.toString().padStart(3, '0')}</p>
+                      <span className="font-[family-name:var(--font-mono)] text-xs" style={{ color: 'var(--color-ink-soft)' }}>${c.total.toLocaleString('es-CO')}</span>
                     </div>
                     <ul className="space-y-1">
                       {c.items.map((it, idxI) => (
-                        <li key={idxI} className="text-base">
+                        <li key={idxI} className="text-sm">
                           <div className="flex items-baseline gap-2">
-                            <span className="font-[family-name:var(--font-mono)] text-sm tabular-nums shrink-0 w-7" style={{ color: 'var(--color-muted)' }}>{it.cantidad}Ã—</span>
+                            <span className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0 w-7" style={{ color: 'var(--color-muted)' }}>{it.cantidad}Ã—</span>
                             <span className="flex-1" style={{ color: 'var(--color-ink)' }}>{it.nombre}</span>
-                            <span className="font-[family-name:var(--font-mono)] text-sm tabular-nums shrink-0" style={{ color: 'var(--color-ink-soft)' }}>${(it.precio * it.cantidad).toLocaleString('es-CO')}</span>
+                            <span className="font-[family-name:var(--font-mono)] text-xs tabular-nums shrink-0" style={{ color: 'var(--color-ink-soft)' }}>${(it.precio * it.cantidad).toLocaleString('es-CO')}</span>
                           </div>
-                          {it.nota ? <p className="text-sm ml-9 italic mt-0.5" style={{ color: 'var(--color-muted)' }}>"{it.nota}"</p> : null}
+                          {it.nota ? <p className="text-[0.7rem] ml-9 italic mt-0.5" style={{ color: 'var(--color-muted)' }}>"{it.nota}"</p> : null}
                         </li>
                       ))}
                     </ul>
@@ -744,58 +744,58 @@ function ModalCobrar({ pago, colorMarca, onCerrar }: { pago: PagoMesero; colorMa
 
           {pago.docNumero ? (
             <div className="rounded-[var(--radius-md)] border p-4" style={{ borderColor: '#3b82f6', background: '#eff6ff' }}>
-              <p className="text-xs uppercase tracking-[0.14em] mb-2" style={{ color: '#1e40af' }}>El cliente pidio factura</p>
-              <dl className="space-y-1 text-base">
-                <div className="flex items-baseline gap-2"><dt className="text-sm uppercase tracking-[0.1em] w-20 shrink-0" style={{ color: '#1e40af' }}>Tipo</dt><dd className="font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>{pago.docTipo}</dd></div>
-                <div className="flex items-baseline gap-2"><dt className="text-sm uppercase tracking-[0.1em] w-20 shrink-0" style={{ color: '#1e40af' }}>Numero</dt><dd className="font-[family-name:var(--font-mono)] select-all" style={{ color: 'var(--color-ink)' }}>{pago.docNumero}</dd></div>
-                <div className="flex items-baseline gap-2"><dt className="text-sm uppercase tracking-[0.1em] w-20 shrink-0" style={{ color: '#1e40af' }}>Nombre</dt><dd className="select-all" style={{ color: 'var(--color-ink)' }}>{pago.docNombre}</dd></div>
+              <p className="text-[0.65rem] uppercase tracking-[0.14em] mb-2" style={{ color: '#1e40af' }}>El cliente pidio factura</p>
+              <dl className="space-y-1 text-sm">
+                <div className="flex items-baseline gap-2"><dt className="text-[0.7rem] uppercase tracking-[0.1em] w-20 shrink-0" style={{ color: '#1e40af' }}>Tipo</dt><dd className="font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>{pago.docTipo}</dd></div>
+                <div className="flex items-baseline gap-2"><dt className="text-[0.7rem] uppercase tracking-[0.1em] w-20 shrink-0" style={{ color: '#1e40af' }}>Numero</dt><dd className="font-[family-name:var(--font-mono)] select-all" style={{ color: 'var(--color-ink)' }}>{pago.docNumero}</dd></div>
+                <div className="flex items-baseline gap-2"><dt className="text-[0.7rem] uppercase tracking-[0.1em] w-20 shrink-0" style={{ color: '#1e40af' }}>Nombre</dt><dd className="select-all" style={{ color: 'var(--color-ink)' }}>{pago.docNombre}</dd></div>
               </dl>
             </div>
           ) : null}
 
           <div className="rounded-[var(--radius-md)] border p-4" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
-            <div className="flex items-center justify-between text-base">
+            <div className="flex items-center justify-between text-sm">
               <span style={{ color: 'var(--color-ink-soft)' }}>Subtotal</span>
               <span className="font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>${pago.totalAcumulado.toLocaleString('es-CO')}</span>
             </div>
             <div className="py-2">
               <div className="flex items-center justify-between gap-3 mb-2">
-                <span className="text-base" style={{ color: 'var(--color-ink-soft)' }}>Propina (opcional)</span>
-                {propina > 0 ? <span className="text-base font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>${propina.toLocaleString('es-CO')}</span> : null}
+                <span className="text-sm" style={{ color: 'var(--color-ink-soft)' }}>Propina (opcional)</span>
+                {propina > 0 ? <span className="text-sm font-[family-name:var(--font-mono)]" style={{ color: 'var(--color-ink)' }}>${propina.toLocaleString('es-CO')}</span> : null}
               </div>
-              {pago.propinaSugerida ? <p className="text-sm mb-2 px-2 py-1.5 rounded" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>El cliente sugirio ${pago.propinaSugerida.toLocaleString('es-CO')} de propina. Puedes ajustarlo si pago distinto.</p> : null}
+              {pago.propinaSugerida ? <p className="text-[0.7rem] mb-2 px-2 py-1.5 rounded" style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}>El cliente sugirio ${pago.propinaSugerida.toLocaleString('es-CO')} de propina. Puedes ajustarlo si pago distinto.</p> : null}
               <div className="flex gap-2">
                 <div className="relative flex-1">
-                  <input type="number" inputMode="numeric" min={0} value={propinaPct} onChange={(e) => { setPropinaPct(e.target.value); setPropinaManual(''); }} placeholder="%" className="w-full h-11 pl-3 pr-7 rounded-[var(--radius-md)] border text-base" style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'var(--color-paper)' }} />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base" style={{ color: 'var(--color-muted)' }}>%</span>
+                  <input type="number" inputMode="numeric" min={0} value={propinaPct} onChange={(e) => { setPropinaPct(e.target.value); setPropinaManual(''); }} placeholder="%" className="w-full h-10 pl-3 pr-7 rounded-[var(--radius-md)] border text-sm" style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'var(--color-paper)' }} />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--color-muted)' }}>%</span>
                 </div>
                 <div className="relative flex-1">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-base" style={{ color: 'var(--color-muted)' }}>$</span>
-                  <input type="number" inputMode="numeric" min={0} value={propinaManual} onChange={(e) => { setPropinaManual(e.target.value); setPropinaPct(''); }} placeholder="Monto" className="w-full h-11 pl-7 pr-3 rounded-[var(--radius-md)] border text-base" style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'var(--color-paper)' }} />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm" style={{ color: 'var(--color-muted)' }}>$</span>
+                  <input type="number" inputMode="numeric" min={0} value={propinaManual} onChange={(e) => { setPropinaManual(e.target.value); setPropinaPct(''); }} placeholder="Monto" className="w-full h-10 pl-7 pr-3 rounded-[var(--radius-md)] border text-sm" style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'var(--color-paper)' }} />
                 </div>
               </div>
             </div>
             <div className="border-t pt-3 mt-2 flex items-center justify-between" style={{ borderColor: 'var(--color-border)' }}>
-              <span className="text-lg font-medium" style={{ color: 'var(--color-ink)' }}>Total</span>
-              <span className="font-[family-name:var(--font-display)] text-3xl" style={{ color: 'var(--color-ink)' }}>${total.toLocaleString('es-CO')}</span>
+              <span className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>Total</span>
+              <span className="font-[family-name:var(--font-display)] text-2xl" style={{ color: 'var(--color-ink)' }}>${total.toLocaleString('es-CO')}</span>
             </div>
           </div>
 
           <div>
-            <p className="text-sm uppercase tracking-[0.14em] mb-2" style={{ color: 'var(--color-muted)' }}>Metodo de pago</p>
+            <p className="text-xs uppercase tracking-[0.14em] mb-2" style={{ color: 'var(--color-muted)' }}>Metodo de pago</p>
             <div className="grid grid-cols-2 gap-2">
               {([{ v: 'efectivo', l: 'Efectivo' }, { v: 'tarjeta', l: 'Tarjeta' }, { v: 'transferencia', l: 'Transferencia' }, { v: 'no_seguro', l: 'Otro' }] as const).map((opt) => (
-                <button key={opt.v} type="button" onClick={() => setMetodo(opt.v)} className="h-11 rounded-[var(--radius-md)] border text-base transition-colors" style={{ borderColor: metodo === opt.v ? colorMarca : 'var(--color-border-strong)', borderWidth: metodo === opt.v ? 1.5 : 1, background: metodo === opt.v ? 'var(--color-paper)' : 'white', color: metodo === opt.v ? colorMarca : 'var(--color-ink)' }}>{opt.l}</button>
+                <button key={opt.v} type="button" onClick={() => setMetodo(opt.v)} className="h-10 rounded-[var(--radius-md)] border text-sm transition-colors" style={{ borderColor: metodo === opt.v ? colorMarca : 'var(--color-border-strong)', borderWidth: metodo === opt.v ? 1.5 : 1, background: metodo === opt.v ? 'var(--color-paper)' : 'white', color: metodo === opt.v ? colorMarca : 'var(--color-ink)' }}>{opt.l}</button>
               ))}
             </div>
           </div>
 
-          {error ? <p role="alert" className="text-sm text-center" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
-          <p className="text-sm text-center px-2" style={{ color: 'var(--color-muted)' }}>Al confirmar, la mesa se cierra y todas las comandas pendientes se marcan como entregadas.</p>
+          {error ? <p role="alert" className="text-xs text-center" style={{ color: 'var(--color-danger)' }}>{error}</p> : null}
+          <p className="text-[0.7rem] text-center px-2" style={{ color: 'var(--color-muted)' }}>Al confirmar, la mesa se cierra y todas las comandas pendientes se marcan como entregadas.</p>
         </div>
         <footer className="px-5 py-4 border-t flex items-center gap-3" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
-          <button type="button" onClick={onCerrar} disabled={pending} className="flex-1 h-12 rounded-[var(--radius-md)] text-base border" style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'white' }}>Cancelar</button>
-          <button type="button" onClick={confirmar} disabled={pending} className="flex-1 h-12 rounded-[var(--radius-md)] text-base font-medium disabled:opacity-50" style={{ background: colorMarca, color: 'white' }}>{pending ? 'Cobrando...' : 'Confirmar y cerrar'}</button>
+          <button type="button" onClick={onCerrar} disabled={pending} className="flex-1 h-11 rounded-[var(--radius-md)] text-sm border" style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink)', background: 'white' }}>Cancelar</button>
+          <button type="button" onClick={confirmar} disabled={pending} className="flex-1 h-11 rounded-[var(--radius-md)] text-sm font-medium disabled:opacity-50" style={{ background: colorMarca, color: 'white' }}>{pending ? 'Cobrando...' : 'Confirmar y cerrar'}</button>
         </footer>
       </div>
     </div>
@@ -813,17 +813,17 @@ function CardBase({ children, esMio, esDeOtro, colorMarca, pending }: { children
 function FooterAcciones({ esMio, esDeOtro, colorMarca, pending, onTomar, onLiberar, onAccionPrimaria, textoAccionPrimaria, infoExtra }: { esMio: boolean; esDeOtro: boolean; colorMarca: string; pending: boolean; onTomar: () => void; onLiberar: () => void; onAccionPrimaria: () => void; textoAccionPrimaria: string; infoExtra?: string }) {
   return (
     <footer className="px-4 py-2.5 border-t flex items-center justify-between gap-3" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
-      {infoExtra ? <span className="text-sm" style={{ color: 'var(--color-muted)' }}>{infoExtra}</span> : <span />}
+      {infoExtra ? <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>{infoExtra}</span> : <span />}
       <div className="flex items-center gap-3">
         {esMio ? (
           <>
-            <button type="button" onClick={onLiberar} disabled={pending} className="text-sm underline disabled:opacity-50" style={{ color: 'var(--color-muted)' }}>Liberar</button>
-            <button type="button" onClick={onAccionPrimaria} disabled={pending} className="text-sm font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Procesando...' : `${textoAccionPrimaria} â†’`}</button>
+            <button type="button" onClick={onLiberar} disabled={pending} className="text-xs underline disabled:opacity-50" style={{ color: 'var(--color-muted)' }}>Liberar</button>
+            <button type="button" onClick={onAccionPrimaria} disabled={pending} className="text-xs font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Procesando...' : `${textoAccionPrimaria} â†’`}</button>
           </>
         ) : esDeOtro ? (
-          <span className="text-sm italic" style={{ color: 'var(--color-muted)' }}>En atencion</span>
+          <span className="text-xs italic" style={{ color: 'var(--color-muted)' }}>En atencion</span>
         ) : (
-          <button type="button" onClick={onTomar} disabled={pending} className="text-sm font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Tomando...' : 'Tomar â†’'}</button>
+          <button type="button" onClick={onTomar} disabled={pending} className="text-xs font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Tomando...' : 'Tomar â†’'}</button>
         )}
       </div>
     </footer>
@@ -833,7 +833,7 @@ function FooterAcciones({ esMio, esDeOtro, colorMarca, pending, onTomar, onLiber
 function SeccionVacia({ mensaje, borderColor }: { mensaje: string; borderColor: string }) {
   return (
     <div className="rounded-[var(--radius-lg)] border-2 border-dashed py-10 px-4 text-center" style={{ borderColor }}>
-      <p className="text-sm italic" style={{ color: 'var(--color-muted)' }}>{mensaje}</p>
+      <p className="text-xs italic" style={{ color: 'var(--color-muted)' }}>{mensaje}</p>
     </div>
   );
 }
@@ -844,8 +844,9 @@ function TiempoTranscurrido({ fecha }: { fecha: string }) {
     const interval = setInterval(() => { setTexto(formatearTiempo(fecha)); }, 30_000);
     return () => clearInterval(interval);
   }, [fecha]);
-  return <span className="text-sm tabular-nums" style={{ color: 'var(--color-muted)' }}>{texto}</span>;
+  return <span className="text-[0.7rem] tabular-nums" style={{ color: 'var(--color-muted)' }}>{texto}</span>;
 }
+
 function formatearTiempo(fecha: string): string {
   const ahora = Date.now();
   const desde = new Date(fecha).getTime();
