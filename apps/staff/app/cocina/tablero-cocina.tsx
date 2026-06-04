@@ -101,7 +101,8 @@ export function TableroCocina({
               if (enriquecida) {
                 idsRef.current.add(enriquecida.id);
                 setComandas((cs) => [...cs, enriquecida]);
-                if (enriquecida.estado === 'pendiente') {
+                // Suena el ding cuando entra una comanda nueva por preparar.
+                if (enriquecida.estado === 'pendiente' || enriquecida.estado === 'en_preparacion') {
                   reproducirDing();
                 }
               }
@@ -173,15 +174,14 @@ export function TableroCocina({
     };
   }, [restauranteId]);
 
-  function moverComanda(comandaId: string, nuevoEstado: 'en_preparacion' | 'lista') {
+  function moverComanda(comandaId: string, nuevoEstado: 'lista') {
     setComandas((cs) => cs.map((c) => (c.id === comandaId ? { ...c, estado: nuevoEstado } : c)));
   }
 
-  const pendientes = comandas
-    .filter((c) => c.estado === 'pendiente')
-    .sort((a, b) => a.creadaEn.localeCompare(b.creadaEn));
-  const enPreparacion = comandas
-    .filter((c) => c.estado === 'en_preparacion')
+  // Una sola fila de trabajo: todo lo que la cocina tiene que preparar
+  // (haya nacido pendiente o en_preparacion). Un boton lo pasa a "lista".
+  const porPreparar = comandas
+    .filter((c) => c.estado === 'pendiente' || c.estado === 'en_preparacion')
     .sort((a, b) => a.creadaEn.localeCompare(b.creadaEn));
   const listas = comandas
     .filter((c) => c.estado === 'lista')
@@ -200,21 +200,13 @@ export function TableroCocina({
         {comandas.length === 0 ? (
           <EstadoVacio colorMarca={colorMarca} />
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <Seccion
-              titulo="En cola"
-              descripcion="Esperando que las tomes"
-              comandas={pendientes}
+              titulo="Por preparar"
+              descripcion="Marca cada pedido cuando este listo"
+              comandas={porPreparar}
               colorMarca={colorMarca}
               tono="pending"
-              onMover={moverComanda}
-            />
-            <Seccion
-              titulo="Preparando"
-              descripcion="En cocina ahora mismo"
-              comandas={enPreparacion}
-              colorMarca={colorMarca}
-              tono="progress"
               onMover={moverComanda}
             />
             <Seccion
@@ -364,7 +356,7 @@ function Header({
               className="text-[0.65rem] uppercase tracking-[0.14em]"
               style={{ color: 'var(--color-muted)' }}
             >
-              Cocina · {perfilNombre}
+              Cocina - {perfilNombre}
             </p>
             <h1
               className="font-[family-name:var(--font-display)] text-lg tracking-[-0.015em] truncate"
@@ -461,8 +453,8 @@ function Seccion({
   descripcion: string;
   comandas: ComandaCocina[];
   colorMarca: string;
-  tono: 'pending' | 'progress' | 'done';
-  onMover: (id: string, nuevoEstado: 'en_preparacion' | 'lista') => void;
+  tono: 'pending' | 'done';
+  onMover: (id: string, nuevoEstado: 'lista') => void;
 }) {
   const colores: Record<typeof tono, { bg: string; fg: string; border: string }> = {
     pending: {
@@ -470,7 +462,6 @@ function Seccion({
       fg: 'var(--color-ink-soft)',
       border: 'var(--color-border)',
     },
-    progress: { bg: '#fef3c7', fg: '#92400e', border: '#fde68a' },
     done: { bg: '#dcfce7', fg: '#166534', border: '#bbf7d0' },
   };
   const c = colores[tono];
@@ -480,17 +471,17 @@ function Seccion({
       <div className="mb-3 flex items-baseline justify-between gap-3">
         <div>
           <h2
-            className="font-[family-name:var(--font-display)] text-xl tracking-[-0.015em]"
+            className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em]"
             style={{ color: 'var(--color-ink)' }}
           >
             {titulo}
           </h2>
-          <p className="text-[0.7rem] mt-0.5" style={{ color: 'var(--color-muted)' }}>
+          <p className="text-sm mt-0.5" style={{ color: 'var(--color-muted)' }}>
             {descripcion}
           </p>
         </div>
         <span
-          className="text-xs uppercase tracking-[0.1em] px-2.5 py-1 rounded-full font-medium shrink-0"
+          className="text-sm uppercase tracking-[0.1em] px-2.5 py-1 rounded-full font-medium shrink-0"
           style={{ background: c.bg, color: c.fg }}
         >
           {comandas.length}
@@ -502,7 +493,7 @@ function Seccion({
           className="rounded-[var(--radius-lg)] border-2 border-dashed py-10 px-4 text-center"
           style={{ borderColor: c.border }}
         >
-          <p className="text-xs italic" style={{ color: 'var(--color-muted)' }}>
+          <p className="text-sm italic" style={{ color: 'var(--color-muted)' }}>
             Sin comandas en esta etapa.
           </p>
         </div>
@@ -532,8 +523,8 @@ function CardComanda({
 }: {
   comanda: ComandaCocina;
   colorMarca: string;
-  tono: 'pending' | 'progress' | 'done';
-  onMover: (id: string, nuevoEstado: 'en_preparacion' | 'lista') => void;
+  tono: 'pending' | 'done';
+  onMover: (id: string, nuevoEstado: 'lista') => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -543,14 +534,13 @@ function CardComanda({
   function avanzar() {
     setError(null);
     desbloquearAudio();
-    const nuevoEstado: 'en_preparacion' | 'lista' = tono === 'pending' ? 'en_preparacion' : 'lista';
-
-    onMover(comanda.id, nuevoEstado);
+    // Un solo paso: de por preparar directo a lista.
+    onMover(comanda.id, 'lista');
 
     startTransition(async () => {
       const resultado = await cambiarEstadoComanda({
         comandaId: comanda.id,
-        nuevoEstado,
+        nuevoEstado: 'lista',
       });
       if (!resultado.ok) {
         setError(resultado.error);
@@ -562,8 +552,7 @@ function CardComanda({
     <article
       className="rounded-[var(--radius-lg)] border bg-white overflow-hidden transition-shadow"
       style={{
-        borderColor:
-          tono === 'progress' ? '#fde68a' : tono === 'done' ? '#bbf7d0' : 'var(--color-border)',
+        borderColor: tono === 'done' ? '#bbf7d0' : 'var(--color-border)',
         borderWidth: tono === 'pending' ? 1 : 1.5,
         opacity: pending ? 0.6 : 1,
       }}
@@ -574,14 +563,14 @@ function CardComanda({
       >
         <div className="flex items-center gap-3 min-w-0">
           <span
-            className="font-[family-name:var(--font-display)] text-base tabular-nums"
+            className="font-[family-name:var(--font-display)] text-lg tabular-nums"
             style={{ color: 'var(--color-ink)' }}
           >
             #{comanda.numeroDiario.toString().padStart(3, '0')}
           </span>
           {esDomicilio ? (
             <span
-              className="text-xs px-2 py-0.5 rounded-full font-medium"
+              className="text-sm px-2 py-0.5 rounded-full font-medium"
               style={{
                 background: comanda.origen === 'domicilio' ? '#dbeafe' : '#dcfce7',
                 color: comanda.origen === 'domicilio' ? '#1e40af' : '#166534',
@@ -591,7 +580,7 @@ function CardComanda({
             </span>
           ) : (
             <span
-              className="text-xs px-2 py-0.5 rounded-full"
+              className="text-sm px-2 py-0.5 rounded-full"
               style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}
             >
               Mesa {comanda.mesaNumero}
@@ -603,18 +592,37 @@ function CardComanda({
 
       <div className="px-4 py-3">
         <p
-          className="text-[0.7rem] uppercase tracking-[0.1em] mb-2"
+          className="text-sm uppercase tracking-[0.1em] mb-2"
           style={{ color: 'var(--color-muted)' }}
         >
           {comanda.clienteNombre}
         </p>
 
+        {/* Encabezado de columnas: deja claro que el numero es la cantidad */}
+        <div
+          className="flex items-baseline gap-2 pb-1.5 mb-1.5 border-b"
+          style={{ borderColor: 'var(--color-border)' }}
+        >
+          <span
+            className="text-xs uppercase tracking-[0.1em] shrink-0 w-7"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Unid.
+          </span>
+          <span
+            className="text-xs uppercase tracking-[0.1em]"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Producto
+          </span>
+        </div>
+
         <ul className="space-y-2">
           {comanda.items.map((item) => (
-            <li key={item.id} className="text-sm">
+            <li key={item.id} className="text-base">
               <div className="flex items-baseline gap-2">
                 <span
-                  className="font-[family-name:var(--font-display)] text-base tabular-nums shrink-0"
+                  className="font-[family-name:var(--font-display)] text-lg tabular-nums shrink-0 w-7"
                   style={{ color: colorMarca }}
                 >
                   {item.cantidad}×
@@ -625,10 +633,10 @@ function CardComanda({
               </div>
               {item.nota ? (
                 <p
-                  className="text-xs mt-1 ml-7 italic leading-relaxed"
+                  className="text-sm mt-1 ml-9 italic leading-relaxed"
                   style={{ color: 'var(--color-ink-soft)' }}
                 >
-                  «{item.nota}»
+                  "{item.nota}"
                 </p>
               ) : null}
             </li>
@@ -642,26 +650,26 @@ function CardComanda({
             style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
           >
             <p
-              className="text-[0.65rem] uppercase tracking-[0.12em] mb-1.5"
+              className="text-xs uppercase tracking-[0.12em] mb-1.5"
               style={{ color: 'var(--color-muted)' }}
             >
               {comanda.entrega.tipo === 'domicilio' ? 'Entrega' : 'Recogida'}
             </p>
-            <p className="text-xs font-medium" style={{ color: 'var(--color-ink)' }}>
-              {comanda.entrega.nombreCliente} · {comanda.entrega.telefono}
+            <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+              {comanda.entrega.nombreCliente} - {comanda.entrega.telefono}
             </p>
             {comanda.entrega.direccion ? (
-              <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                 {comanda.entrega.direccion}
               </p>
             ) : null}
             {comanda.entrega.horaPedido ? (
-              <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                 Hora: {comanda.entrega.horaPedido}
               </p>
             ) : null}
             {comanda.entrega.notasEntrega ? (
-              <p className="text-xs mt-0.5 italic" style={{ color: 'var(--color-ink-soft)' }}>
+              <p className="text-sm mt-0.5 italic" style={{ color: 'var(--color-ink-soft)' }}>
                 {comanda.entrega.notasEntrega}
               </p>
             ) : null}
@@ -671,7 +679,7 @@ function CardComanda({
         {error ? (
           <p
             role="alert"
-            className="mt-3 text-[0.7rem] text-center"
+            className="mt-3 text-sm text-center"
             style={{ color: 'var(--color-danger)' }}
           >
             {error}
@@ -686,7 +694,7 @@ function CardComanda({
           background: 'var(--color-paper)',
         }}
       >
-        <span className="text-[0.7rem]" style={{ color: 'var(--color-muted)' }}>
+        <span className="text-sm" style={{ color: 'var(--color-muted)' }}>
           Total ${comanda.total.toLocaleString('es-CO')}
         </span>
         <div className="flex items-center gap-3 shrink-0">
@@ -694,7 +702,7 @@ function CardComanda({
             <BotonCancelarComanda comandaId={comanda.id} numeroComanda={comanda.numeroDiario} />
           ) : null}
           {tono === 'done' ? (
-            <span className="text-xs italic" style={{ color: 'var(--color-muted)' }}>
+            <span className="text-sm italic" style={{ color: 'var(--color-muted)' }}>
               Esperando al mesero
             </span>
           ) : (
@@ -702,14 +710,10 @@ function CardComanda({
               type="button"
               onClick={avanzar}
               disabled={pending}
-              className="text-xs font-medium transition-opacity disabled:opacity-40"
+              className="text-sm font-medium transition-opacity disabled:opacity-40"
               style={{ color: colorMarca }}
             >
-              {pending
-                ? 'Actualizando...'
-                : tono === 'pending'
-                  ? 'Empezar a preparar →'
-                  : 'Marcar como lista →'}
+              {pending ? 'Actualizando...' : 'Marcar como lista'}
             </button>
           )}
         </div>
@@ -729,7 +733,7 @@ function TiempoTranscurrido({ creadaEn }: { creadaEn: string }) {
   }, [creadaEn]);
 
   return (
-    <span className="text-[0.7rem] tabular-nums" style={{ color: 'var(--color-muted)' }}>
+    <span className="text-sm tabular-nums" style={{ color: 'var(--color-muted)' }}>
       {texto}
     </span>
   );
