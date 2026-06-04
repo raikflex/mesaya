@@ -430,7 +430,7 @@ function Header({ perfilNombre, restauranteNombre, colorMarca, totalItems }: { p
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden><path d="M3 11h18l-2 9H5l-2-9zM12 7v4M9 7v4M15 7v4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </div>
           <div className="min-w-0">
-            <p className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Mesero Â· {perfilNombre}</p>
+            <p className="text-[0.65rem] uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Mesero · {perfilNombre}</p>
             <h1 className="font-[family-name:var(--font-display)] text-lg tracking-[-0.015em] truncate" style={{ color: 'var(--color-ink)' }}>{restauranteNombre}</h1>
           </div>
         </div>
@@ -572,7 +572,7 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
             {comanda.items.map((item) => (
               <li key={item.id} className="text-base">
                 <div className="flex items-baseline gap-2">
-                  <span className="font-[family-name:var(--font-display)] text-lg tabular-nums shrink-0" style={{ color: colorMarca }}>{item.cantidad}Ã—</span>
+                  <span className="font-[family-name:var(--font-display)] text-lg tabular-nums shrink-0" style={{ color: colorMarca }}>{item.cantidad}x</span>
                   <span style={{ color: 'var(--color-ink)' }}>{item.nombre}</span>
                 </div>
                 {item.nota ? <p className="text-sm mt-0.5 ml-7 italic" style={{ color: 'var(--color-ink-soft)' }}>"{item.nota}"</p> : null}
@@ -587,7 +587,7 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
                 {comanda.entrega.tipo === 'domicilio' ? 'Entrega a domicilio' : 'Para recoger'}
               </p>
               <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-                {comanda.entrega.nombreCliente} Â· {comanda.entrega.telefono}
+                {comanda.entrega.nombreCliente} - {comanda.entrega.telefono}
               </p>
               {comanda.entrega.direccion ? <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>{comanda.entrega.direccion}</p> : null}
               {comanda.entrega.horaPedido ? <p className="text-sm mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>Hora: {comanda.entrega.horaPedido}</p> : null}
@@ -598,7 +598,7 @@ function CardComanda({ comanda, colorMarca, perfilId }: { comanda: ComandaListaM
                 className="mt-2.5 w-full h-10 rounded-[var(--radius-md)] border text-sm font-medium"
                 style={{ borderColor: colorMarca, color: colorMarca, background: 'white' }}
               >
-                Ver detalles{comanda.entrega.estadoEntrega === 'en_camino' ? ' Â· En camino' : comanda.entrega.estadoEntrega === 'listo_pickup' ? ' Â· Listo' : ''}
+                Ver detalles{comanda.entrega.estadoEntrega === 'en_camino' ? ' - En camino' : comanda.entrega.estadoEntrega === 'listo_pickup' ? ' - Listo' : ''}
               </button>
             </div>
           ) : null}
@@ -715,7 +715,7 @@ function ModalCobrar({ pago, colorMarca, onCerrar }: { pago: PagoMesero; colorMa
           {pago.comandas.length > 0 ? (
             <div className="rounded-[var(--radius-md)] border bg-white" style={{ borderColor: 'var(--color-border)' }}>
               <div className="px-4 py-2.5 border-b flex items-center justify-between" style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}>
-                <p className="text-sm uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Detalle Â· {pago.cantidadComandas} {pago.cantidadComandas === 1 ? 'comanda' : 'comandas'}</p>
+                <p className="text-sm uppercase tracking-[0.14em]" style={{ color: 'var(--color-muted)' }}>Detalle - {pago.cantidadComandas} {pago.cantidadComandas === 1 ? 'comanda' : 'comandas'}</p>
               </div>
               <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
                 {pago.comandas.map((c, idxC) => (
@@ -728,7 +728,7 @@ function ModalCobrar({ pago, colorMarca, onCerrar }: { pago: PagoMesero; colorMa
                       {c.items.map((it, idxI) => (
                         <li key={idxI} className="text-base">
                           <div className="flex items-baseline gap-2">
-                            <span className="font-[family-name:var(--font-mono)] text-sm tabular-nums shrink-0 w-7" style={{ color: 'var(--color-muted)' }}>{it.cantidad}Ã—</span>
+                            <span className="font-[family-name:var(--font-mono)] text-sm tabular-nums shrink-0 w-7" style={{ color: 'var(--color-muted)' }}>{it.cantidad}×</span>
                             <span className="flex-1" style={{ color: 'var(--color-ink)' }}>{it.nombre}</span>
                             <span className="font-[family-name:var(--font-mono)] text-sm tabular-nums shrink-0" style={{ color: 'var(--color-ink-soft)' }}>${(it.precio * it.cantidad).toLocaleString('es-CO')}</span>
                           </div>
@@ -818,12 +818,12 @@ function FooterAcciones({ esMio, esDeOtro, colorMarca, pending, onTomar, onLiber
         {esMio ? (
           <>
             <button type="button" onClick={onLiberar} disabled={pending} className="text-sm underline disabled:opacity-50" style={{ color: 'var(--color-muted)' }}>Liberar</button>
-            <button type="button" onClick={onAccionPrimaria} disabled={pending} className="text-sm font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Procesando...' : `${textoAccionPrimaria} â†’`}</button>
+            <button type="button" onClick={onAccionPrimaria} disabled={pending} className="text-sm font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Procesando...' : `${textoAccionPrimaria}`}</button>
           </>
         ) : esDeOtro ? (
           <span className="text-sm italic" style={{ color: 'var(--color-muted)' }}>En atencion</span>
         ) : (
-          <button type="button" onClick={onTomar} disabled={pending} className="text-sm font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Tomando...' : 'Tomar â†’'}</button>
+          <button type="button" onClick={onTomar} disabled={pending} className="text-sm font-medium disabled:opacity-50" style={{ color: colorMarca }}>{pending ? 'Tomando...' : 'Tomar'}</button>
         )}
       </div>
     </footer>
