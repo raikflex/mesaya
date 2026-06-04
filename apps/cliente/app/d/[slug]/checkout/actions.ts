@@ -167,7 +167,7 @@ export async function crearPedidoExterno(input: {
       sesion_id: sesionId,
       sesion_cliente_id: sesionClienteId,
       numero_diario: 0,
-      estado: 'pendiente',
+      estado: 'en_preparacion',
       total,
       tiempo_estimado_min: tiempoEstimadoMin,
       origen: input.tipo,
