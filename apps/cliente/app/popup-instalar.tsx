@@ -7,110 +7,156 @@ import {
   dispararInstall,
 } from '../lib/pwa-install';
 
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-};
-
 /**
- * VERSION DEBUG TEMPORAL del pop-up de instalar.
- * Muestra una caja de diagnostico SIEMPRE visible (abajo a la derecha) con
- * el estado de la deteccion, para entender por que no aparece el pop-up real
- * en Android. Una vez diagnosticado, volver a la version normal.
+ * Pop-up (modal) que sugiere instalar EnPura como acceso directo, pensado
+ * para mostrarse al FINAL de la visita en mesa (pedido enviado o gracias).
+ * Mensaje orientado a domicilios: "pedi de este y muchos otros restaurantes".
+ *
+ * - Android/Chrome: usa el evento beforeinstallprompt capturado globalmente
+ *   (ver lib/pwa-install.ts). El boton dispara el prompt nativo. Lee el evento
+ *   del modulo global porque Chrome lo dispara temprano y este pop-up aparece
+ *   tarde (despues de calificar/saltar); registrar el listener aca seria tarde.
+ * - iOS/Safari: muestra instrucciones (Compartir -> Agregar a inicio).
+ * - Si ya esta instalada (standalone), no aparece.
+ * - Aparece con un pequeno delay para no saltar de golpe. Se cierra con X o
+ *   tocando afuera.
+ *
+ * Controlar cuando montar este componente desde el padre (ej: solo cuando el
+ * cliente ya califico/salto, o el pedido esta activo y no cancelado).
  */
 export function PopupInstalar({ colorMarca }: { colorMarca: string }) {
   const [esIOS, setEsIOS] = useState(false);
-  const [standalone, setStandalone] = useState(false);
   const [hayPrompt, setHayPrompt] = useState(false);
-  const [eventoLlego, setEventoLlego] = useState(false);
-  const [montado, setMontado] = useState(false);
+  const [montar, setMontar] = useState(false);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    setMontado(true);
-
-    const sa =
+    // No mostrar si ya esta instalada (modo standalone).
+    const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true;
-    setStandalone(sa);
+    if (standalone) return;
 
     const ua = window.navigator.userAgent.toLowerCase();
     const iOS = /iphone|ipad|ipod/.test(ua);
-    setEsIOS(iOS);
 
-    // Ver si ya habia un evento capturado globalmente.
-    if (obtenerPromptInstall()) {
-      setHayPrompt(true);
-      setEventoLlego(true);
+    if (iOS) {
+      // iOS no dispara beforeinstallprompt; mostramos instrucciones.
+      setEsIOS(true);
+      setMontar(true);
+      return;
     }
 
-    // Suscribirse por si llega despues.
+    // Android/Chrome: leer el evento ya capturado globalmente. Si todavia no
+    // llego, suscribirse para enterarnos cuando llegue.
+    if (obtenerPromptInstall()) {
+      setHayPrompt(true);
+      setMontar(true);
+    }
     const desuscribir = suscribirInstall(() => {
       const hay = !!obtenerPromptInstall();
       setHayPrompt(hay);
-      if (hay) setEventoLlego(true);
+      if (hay) setMontar(true);
     });
-
-    // ADEMAS: escuchar directo aca tambien, por si el modulo global fallo.
-    function onLocal() {
-      setEventoLlego(true);
-    }
-    window.addEventListener('beforeinstallprompt', onLocal);
-
-    return () => {
-      desuscribir();
-      window.removeEventListener('beforeinstallprompt', onLocal);
-    };
+    return desuscribir;
   }, []);
 
-  async function probarInstalar() {
+  // Pequeno delay antes de mostrar, para que no aparezca de golpe.
+  useEffect(() => {
+    if (!montar) return;
+    const t = setTimeout(() => setVisible(true), 600);
+    return () => clearTimeout(t);
+  }, [montar]);
+
+  async function instalar() {
     const outcome = await dispararInstall();
-    alert('Resultado de instalar: ' + String(outcome));
+    // Sea aceptado o no, cerramos el pop-up.
+    if (outcome) setVisible(false);
   }
 
-  if (!montado) return null;
+  if (!montar || !visible) return null;
 
   return (
     <div
-      style={{
-        position: 'fixed',
-        bottom: 12,
-        left: 12,
-        right: 12,
-        zIndex: 9999,
-        background: '#1a1a1a',
-        color: 'white',
-        borderRadius: 12,
-        padding: 16,
-        fontFamily: 'monospace',
-        fontSize: 13,
-        lineHeight: 1.6,
-        boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
-      }}
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center px-4 py-6"
+      style={{ background: 'rgba(26, 24, 20, 0.6)' }}
+      onClick={() => setVisible(false)}
     >
-      <div style={{ fontWeight: 'bold', marginBottom: 8, color: colorMarca === '#fff' ? '#fff' : '#ff9ec7' }}>
-        DIAGNOSTICO INSTALL (temporal)
-      </div>
-      <div>iOS detectado: <b>{esIOS ? 'SI' : 'NO'}</b></div>
-      <div>Ya instalada (standalone): <b>{standalone ? 'SI' : 'NO'}</b></div>
-      <div>Evento beforeinstallprompt llego: <b style={{ color: eventoLlego ? '#7CFC00' : '#ff6b6b' }}>{eventoLlego ? 'SI' : 'NO (todavia)'}</b></div>
-      <div>Prompt disponible para usar: <b>{hayPrompt ? 'SI' : 'NO'}</b></div>
-      <button
-        type="button"
-        onClick={probarInstalar}
-        style={{
-          marginTop: 12,
-          width: '100%',
-          height: 44,
-          background: hayPrompt ? '#7CFC00' : '#555',
-          color: hayPrompt ? '#000' : '#aaa',
-          border: 'none',
-          borderRadius: 8,
-          fontSize: 15,
-          fontWeight: 'bold',
-        }}
+      <div
+        className="w-full max-w-sm rounded-[var(--radius-lg)] bg-white overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
       >
-        {hayPrompt ? 'Probar instalar ahora' : 'Sin evento (boton inactivo)'}
-      </button>
+        {/* Cabecera con icono */}
+        <div className="px-6 pt-6 pb-2 flex items-start justify-between gap-3">
+          <div
+            className="size-14 rounded-[var(--radius-md)] grid place-items-center shrink-0"
+            style={{ background: '#1a1a1a' }}
+          >
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <circle cx="12" cy="12" r="7" stroke="#ff3b30" strokeWidth="1.9" />
+              <path d="M12 8v4.3l3 1.7" stroke="#ff3b30" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <button
+            type="button"
+            onClick={() => setVisible(false)}
+            aria-label="Cerrar"
+            className="size-8 grid place-items-center rounded-full shrink-0"
+            style={{ background: 'var(--color-paper-deep)', color: 'var(--color-ink-soft)' }}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+              <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+
+        <div className="px-6 pb-6">
+          <h2
+            className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.02em] leading-tight"
+            style={{ color: 'var(--color-ink)' }}
+          >
+            Lleva EnPura contigo
+          </h2>
+          <p className="text-sm mt-2 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+            Agregando el acceso directo, puedes pedir a domicilio de este y muchos otros
+            restaurantes con EnPura.
+          </p>
+
+          {esIOS ? (
+            <div
+              className="mt-4 rounded-[var(--radius-md)] border px-4 py-3"
+              style={{ borderColor: 'var(--color-border-strong)', background: 'var(--color-paper)' }}
+            >
+              <p className="text-sm" style={{ color: 'var(--color-ink)' }}>
+                Toca{' '}
+                <span className="font-medium">Compartir</span>{' '}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden className="inline align-[-2px]">
+                  <path d="M12 16V4M8 8l4-4 4 4M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>{' '}
+                y luego <span className="font-medium">Agregar a inicio</span>.
+              </p>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={instalar}
+              className="mt-5 w-full h-12 rounded-[var(--radius-md)] text-base font-medium"
+              style={{ background: colorMarca, color: 'white' }}
+            >
+              Agregar acceso directo
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setVisible(false)}
+            className="mt-3 w-full text-sm underline"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Ahora no
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
