@@ -5,7 +5,7 @@ import {
   obtenerPromptInstall,
   suscribirInstall,
   dispararInstall,
-} from '@/lib/pwa-install';
+} from '../lib/pwa-install';
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>;

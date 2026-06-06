@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Fraunces, Geist } from 'next/font/google';
 import './globals.css';
-import { RegistrarInstall } from '@/app/registrar-install';
+import { RegistrarInstall } from './registrar-install';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
