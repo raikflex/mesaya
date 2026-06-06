@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createClient } from '@mesaya/database/client';
 import { borrarSesionCliente } from '../../../../../../lib/cliente-session';
 import { cerrarSesionAbandonada } from '../../../cerrar-sesion-actions';
+import { PopupInstalar } from '@/app/popup-instalar';
 
 export type ComandaConItems = {
   id: string;
@@ -387,7 +388,9 @@ export function ComandaEnviadaCliente({
           colorMarca={colorMarca}
           nombreNegocio={nombreNegocio}
         />
-      ) : null}
+      ) : (
+        <PopupInstalar colorMarca={colorMarca} />
+      )}
     </main>
   );
 }

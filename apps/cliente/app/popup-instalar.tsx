@@ -1,33 +1,37 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-
-type BeforeInstallPromptEvent = Event & {
-  prompt: () => Promise<void>;
-  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-};
+import {
+  obtenerPromptInstall,
+  suscribirInstall,
+  dispararInstall,
+} from '../lib/pwa-install';
 
 /**
  * Pop-up (modal) que sugiere instalar EnPura como acceso directo, pensado
- * para mostrarse al FINAL de la visita en mesa (despues de calificar/saltar).
+ * para mostrarse al FINAL de la visita en mesa (pedido enviado o gracias).
  * Mensaje orientado a domicilios: "pedi de este y muchos otros restaurantes".
  *
- * - Android/Chrome: captura beforeinstallprompt y el boton dispara el prompt nativo.
+ * - Android/Chrome: usa el evento beforeinstallprompt capturado globalmente
+ *   (ver lib/pwa-install.ts). El boton dispara el prompt nativo. Lee el evento
+ *   del modulo global porque Chrome lo dispara temprano y este pop-up aparece
+ *   tarde (despues de calificar/saltar); registrar el listener aca seria tarde.
  * - iOS/Safari: muestra instrucciones (Compartir -> Agregar a inicio).
  * - Si ya esta instalada (standalone), no aparece.
- * - Aparece con un pequeno delay para no saltar de golpe. Se cierra con X o tocando afuera.
+ * - Aparece con un pequeno delay para no saltar de golpe. Se cierra con X o
+ *   tocando afuera.
  *
- * Controlar cuando montar este componente desde el padre (ej: solo cuando
- * el cliente ya califico o salto).
+ * Controlar cuando montar este componente desde el padre (ej: solo cuando el
+ * cliente ya califico/salto, o el pedido esta activo y no cancelado).
  */
 export function PopupInstalar({ colorMarca }: { colorMarca: string }) {
-  const [promptEvent, setPromptEvent] = useState<BeforeInstallPromptEvent | null>(null);
   const [esIOS, setEsIOS] = useState(false);
+  const [hayPrompt, setHayPrompt] = useState(false);
   const [montar, setMontar] = useState(false);
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // No mostrar si ya esta instalada.
+    // No mostrar si ya esta instalada (modo standalone).
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as unknown as { standalone?: boolean }).standalone === true;
@@ -37,17 +41,24 @@ export function PopupInstalar({ colorMarca }: { colorMarca: string }) {
     const iOS = /iphone|ipad|ipod/.test(ua);
 
     if (iOS) {
+      // iOS no dispara beforeinstallprompt; mostramos instrucciones.
       setEsIOS(true);
       setMontar(true);
-    } else {
-      function onBeforeInstall(e: Event) {
-        e.preventDefault();
-        setPromptEvent(e as BeforeInstallPromptEvent);
-        setMontar(true);
-      }
-      window.addEventListener('beforeinstallprompt', onBeforeInstall);
-      return () => window.removeEventListener('beforeinstallprompt', onBeforeInstall);
+      return;
     }
+
+    // Android/Chrome: leer el evento ya capturado globalmente. Si todavia no
+    // llego, suscribirse para enterarnos cuando llegue.
+    if (obtenerPromptInstall()) {
+      setHayPrompt(true);
+      setMontar(true);
+    }
+    const desuscribir = suscribirInstall(() => {
+      const hay = !!obtenerPromptInstall();
+      setHayPrompt(hay);
+      if (hay) setMontar(true);
+    });
+    return desuscribir;
   }, []);
 
   // Pequeno delay antes de mostrar, para que no aparezca de golpe.
@@ -58,11 +69,9 @@ export function PopupInstalar({ colorMarca }: { colorMarca: string }) {
   }, [montar]);
 
   async function instalar() {
-    if (!promptEvent) return;
-    await promptEvent.prompt();
-    await promptEvent.userChoice;
-    setPromptEvent(null);
-    setVisible(false);
+    const outcome = await dispararInstall();
+    // Sea aceptado o no, cerramos el pop-up.
+    if (outcome) setVisible(false);
   }
 
   if (!montar || !visible) return null;

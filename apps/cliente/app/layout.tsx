@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Fraunces, Geist } from 'next/font/google';
 import './globals.css';
+import { RegistrarInstall } from '@/app/registrar-install';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
@@ -30,7 +31,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${fraunces.variable} ${geist.variable}`}>
-      <body>{children}</body>
+      <body><RegistrarInstall />{children}</body>
     </html>
   );
 }
