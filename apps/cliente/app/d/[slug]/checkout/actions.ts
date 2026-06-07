@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache';
 import { createServiceClient } from '@mesaya/database/service';
+import { estaAbiertoAhora, type HorarioDia, type ExcepcionDia } from '../../../../lib/horarios';
+
 
 type ItemPedido = {
   productoId: string;
@@ -69,6 +71,40 @@ export async function crearPedidoExterno(input: {
     return { ok: false, error: 'Este restaurante no acepta pedidos para recoger.' };
 
   const restauranteId = restaurante.id as string;
+
+  // Defense in depth: revalidar horario en el servidor. Evita que un pedido
+  // entre si el cliente dejo la pagina abierta y el restaurante ya cerro.
+  const hoyHorario = new Date().toISOString().slice(0, 10);
+  const en30DiasHorario = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const [{ data: horariosRaw }, { data: excepcionesRaw }] = await Promise.all([
+    admin
+      .from('horarios_atencion')
+      .select('dia_semana, abierto, hora_apertura, hora_cierre')
+      .eq('restaurante_id', restauranteId)
+      .order('dia_semana', { ascending: true }),
+    admin
+      .from('excepciones_horario')
+      .select('fecha, abierto, hora_apertura, hora_cierre, nota')
+      .eq('restaurante_id', restauranteId)
+      .gte('fecha', hoyHorario)
+      .lte('fecha', en30DiasHorario)
+      .order('fecha', { ascending: true }),
+  ]);
+  const horarios: HorarioDia[] = (horariosRaw ?? []).map((h) => ({
+    dia_semana: h.dia_semana as number,
+    abierto: h.abierto as boolean,
+    hora_apertura: (h.hora_apertura as string | null) ?? null,
+    hora_cierre: (h.hora_cierre as string | null) ?? null,
+  }));
+  const excepciones: ExcepcionDia[] = (excepcionesRaw ?? []).map((e) => ({
+    fecha: e.fecha as string,
+    abierto: e.abierto as boolean,
+    hora_apertura: (e.hora_apertura as string | null) ?? null,
+    hora_cierre: (e.hora_cierre as string | null) ?? null,
+    nota: (e.nota as string | null) ?? null,
+  }));
+  if (!estaAbiertoAhora(horarios, excepciones).abierto)
+    return { ok: false, error: 'El restaurante esta cerrado en este momento.' };
 
   // 2) Crear una mesa virtual UNICA para este pedido externo.
   // No reusamos una sola mesa _domicilio compartida porque el indice
