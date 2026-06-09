@@ -24,13 +24,16 @@ export default async function ConfiguracionPage() {
 
   const { data: restaurante } = await supabase
     .from('restaurantes')
-    .select('nombre_publico, color_marca, cocina_activa')
+    .select('nombre_publico, color_marca, cocina_activa, acepta_domicilios, acepta_pickup, slug')
     .eq('id', perfil.restaurante_id as string)
     .single();
 
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu negocio';
   const color = (restaurante?.color_marca as string) ?? '#9a3f6b';
   const cocinaActiva = (restaurante?.cocina_activa as boolean) ?? false;
+  const aceptaDomicilios = (restaurante?.acepta_domicilios as boolean) ?? false;
+  const aceptaPickup = (restaurante?.acepta_pickup as boolean) ?? false;
+  const slug = (restaurante?.slug as string | null) ?? '';
 
   return (
     <PanelShell currentPage="configuracion" nombreNegocio={nombreNegocio}>
@@ -54,6 +57,9 @@ export default async function ConfiguracionPage() {
           nombreInicial={nombreNegocio}
           colorInicial={color}
           cocinaActivaInicial={cocinaActiva}
+          aceptaDomiciliosInicial={aceptaDomicilios}
+          aceptaPickupInicial={aceptaPickup}
+          slugInicial={slug}
         />
       </main>
     </PanelShell>
