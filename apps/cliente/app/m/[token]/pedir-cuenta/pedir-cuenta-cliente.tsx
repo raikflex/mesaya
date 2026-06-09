@@ -320,7 +320,7 @@ export function PedirCuentaCliente({
           className="text-xs uppercase tracking-[0.14em] mb-1"
           style={{ color: 'var(--color-muted)' }}
         >
-          Mesa {numeroMesa} · {nombreNegocio}
+          Mesa {numeroMesa} - {nombreNegocio}
         </p>
         <h1
           className="font-[family-name:var(--font-display)] text-3xl tracking-[-0.02em] leading-[1.1] mb-6"
@@ -338,7 +338,7 @@ export function PedirCuentaCliente({
               className="text-xs uppercase tracking-[0.14em]"
               style={{ color: 'var(--color-muted)' }}
             >
-              Detalle de la mesa · {comandas.length} pedido
+              Detalle de la mesa - {comandas.length} pedido
               {comandas.length === 1 ? '' : 's'}
             </p>
           </div>
@@ -350,7 +350,7 @@ export function PedirCuentaCliente({
                     className="text-xs uppercase tracking-[0.1em]"
                     style={{ color: 'var(--color-muted)' }}
                   >
-                    #{c.numeroDiario.toString().padStart(3, '0')} · {c.cliente}
+                    #{c.numeroDiario.toString().padStart(3, '0')} - {c.cliente}
                   </p>
                   <span
                     className="font-[family-name:var(--font-mono)] text-sm"
@@ -671,7 +671,17 @@ export function PedirCuentaCliente({
           style={{ color: 'var(--color-muted)' }}
         >
           Al pedir la cuenta, el mesero llega a tu mesa con la informacion que elegiste. La cuenta
-          es para toda la mesa.
+          es para toda la mesa. Al continuar, aceptas nuestra{' '}
+          <a
+            href="/politica-datos"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            Politica de Datos
+          </a>
+          .
         </p>
 
         {error ? (
@@ -802,7 +812,7 @@ function PantallaCuentaPedida({
           </span>
         </p>
         <p className="text-xs mb-8" style={{ color: 'var(--color-muted)' }}>
-          Mesa {numeroMesa} · {nombreNegocio}
+          Mesa {numeroMesa} - {nombreNegocio}
         </p>
 
         {segundosRestantes !== null ? (

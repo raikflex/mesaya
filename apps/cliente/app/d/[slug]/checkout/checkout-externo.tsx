@@ -15,13 +15,13 @@ type TipoPedido = 'domicilio' | 'pickup';
 // Paises soportados para el telefono. digitos = cantidad esperada del numero
 // local (sin prefijo). Colombia primero (caso principal).
 const PAISES = [
-  { codigo: 'CO', nombre: 'Colombia', prefijo: '+57', bandera: '🇨🇴', digitos: 10 },
-  { codigo: 'VE', nombre: 'Venezuela', prefijo: '+58', bandera: '🇻🇪', digitos: 10 },
-  { codigo: 'EC', nombre: 'Ecuador', prefijo: '+593', bandera: '🇪🇨', digitos: 9 },
-  { codigo: 'PE', nombre: 'Peru', prefijo: '+51', bandera: '🇵🇪', digitos: 9 },
-  { codigo: 'PA', nombre: 'Panama', prefijo: '+507', bandera: '🇵🇦', digitos: 8 },
-  { codigo: 'MX', nombre: 'Mexico', prefijo: '+52', bandera: '🇲🇽', digitos: 10 },
-  { codigo: 'US', nombre: 'USA', prefijo: '+1', bandera: '🇺🇸', digitos: 10 },
+  { codigo: 'CO', nombre: 'Colombia', prefijo: '+57', digitos: 10 },
+  { codigo: 'VE', nombre: 'Venezuela', prefijo: '+58', digitos: 10 },
+  { codigo: 'EC', nombre: 'Ecuador', prefijo: '+593', digitos: 9 },
+  { codigo: 'PE', nombre: 'Peru', prefijo: '+51', digitos: 9 },
+  { codigo: 'PA', nombre: 'Panama', prefijo: '+507', digitos: 8 },
+  { codigo: 'MX', nombre: 'Mexico', prefijo: '+52', digitos: 10 },
+  { codigo: 'US', nombre: 'USA', prefijo: '+1', digitos: 10 },
 ] as const;
 
 export function CheckoutExterno({
@@ -241,7 +241,7 @@ export function CheckoutExterno({
                     style={{ color: 'var(--color-ink)' }}
                   >
                     <span className="mr-1.5" style={{ color: colorMarca }}>
-                      {item.cantidad}×
+                      {item.cantidad}x
                     </span>
                     {item.nombre}
                   </p>
@@ -322,7 +322,7 @@ export function CheckoutExterno({
               >
                 {PAISES.map((p) => (
                   <option key={p.codigo} value={p.codigo}>
-                    {p.bandera} {p.codigo} {p.prefijo}
+                    {p.codigo} {p.prefijo}
                   </option>
                 ))}
               </select>
@@ -445,6 +445,19 @@ export function CheckoutExterno({
           backdropFilter: 'blur(8px)',
         }}
       >
+        <p className="max-w-md mx-auto text-xs text-center leading-relaxed mb-3" style={{ color: 'var(--color-muted)' }}>
+          Al confirmar, aceptas nuestra{' '}
+          <a
+            href="/politica-datos"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline"
+            style={{ color: 'var(--color-ink-soft)' }}
+          >
+            Politica de Datos
+          </a>
+          . Tus datos se usan solo para tu pedido.
+        </p>
         <button
           type="button"
           onClick={confirmar}

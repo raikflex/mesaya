@@ -22,7 +22,7 @@ export function FormularioNombre({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  // Si ya tenía sesión iniciada en este token, redirigir directo al menú.
+  // Si ya tenia sesion iniciada en este token, redirigir directo al menu.
   useEffect(() => {
     const sesion = leerSesionCliente(qrToken);
     if (sesion) {
@@ -40,7 +40,7 @@ export function FormularioNombre({
       return;
     }
     if (limpio.length > 50) {
-      setError('El nombre es muy largo. Máximo 50 caracteres.');
+      setError('El nombre es muy largo. Maximo 50 caracteres.');
       return;
     }
 
@@ -77,7 +77,7 @@ export function FormularioNombre({
         className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] mb-2 text-center"
         style={{ color: 'var(--color-ink)' }}
       >
-        ¿Cómo te llamas?
+        Como te llamas?
       </h2>
       <p
         className="text-sm leading-relaxed text-center mb-6"
@@ -130,11 +130,21 @@ export function FormularioNombre({
           color: 'var(--color-paper)',
         }}
       >
-        {pending ? 'Un momento…' : `Ver menú · Mesa ${numeroMesa}`}
+        {pending ? 'Un momento...' : `Ver menu - Mesa ${numeroMesa}`}
       </button>
 
-      <p className="text-xs mt-4 text-center" style={{ color: 'var(--color-muted)' }}>
-        Tu nombre solo lo verá el restaurante.
+      <p className="text-xs mt-4 text-center leading-relaxed" style={{ color: 'var(--color-muted)' }}>
+        Al continuar, aceptas nuestra{' '}
+        <a
+          href="/politica-datos"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline"
+          style={{ color: 'var(--color-ink-soft)' }}
+        >
+          Politica de Datos
+        </a>
+        . Tu nombre solo lo vera el restaurante.
       </p>
     </form>
   );
