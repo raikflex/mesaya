@@ -4,12 +4,14 @@ import { useActionState, useState } from 'react';
 import { Button, Field, Input, cn } from '@mesaya/ui';
 import { guardarDatosNegocio, type Paso1State } from './actions';
 
+type ModoCocina = 'con_pantalla' | 'sin_pantalla' | 'impresion';
+
 interface InitialValues {
   nombre_publico: string;
   nit: string | null;
   direccion: string | null;
   color_marca: string;
-  cocina_activa: boolean;
+  modo_cocina: ModoCocina;
 }
 
 const initialState: Paso1State = { ok: false };
@@ -18,10 +20,10 @@ const PALETTE = [
   { hex: '#c0432e', nombre: 'Terracota' },
   { hex: '#1a1814', nombre: 'Tinta' },
   { hex: '#2f5d3a', nombre: 'Bosque' },
-  { hex: '#264653', nombre: 'Petróleo' },
+  { hex: '#264653', nombre: 'Petroleo' },
   { hex: '#9a3f6b', nombre: 'Buganvilia' },
   { hex: '#b07a2e', nombre: 'Mostaza' },
-  { hex: '#3a4a8c', nombre: 'Añil' },
+  { hex: '#3a4a8c', nombre: 'Anil' },
   { hex: '#5a3a8a', nombre: 'Berenjena' },
 ] as const;
 
@@ -35,7 +37,7 @@ export function BusinessInfoForm({
   const [state, formAction, pending] = useActionState(guardarDatosNegocio, initialState);
   const [nombre, setNombre] = useState(initial.nombre_publico);
   const [color, setColor] = useState(initial.color_marca);
-  const [cocinaActiva, setCocinaActiva] = useState(initial.cocina_activa);
+  const [modoCocina, setModoCocina] = useState<ModoCocina>(initial.modo_cocina);
 
   return (
     <form action={formAction} className="grid gap-10 lg:grid-cols-[1fr_320px]">
@@ -43,7 +45,7 @@ export function BusinessInfoForm({
         <Field
           id="nombre_publico"
           label="Nombre del restaurante"
-          hint="Como aparece en la fachada. Lo verán los clientes."
+          hint="Como aparece en la fachada. Lo veran los clientes."
           error={state.fieldErrors?.nombre_publico}
         >
           <Input
@@ -52,7 +54,7 @@ export function BusinessInfoForm({
             type="text"
             required
             autoFocus
-            placeholder="Ej: Café Cumbre"
+            placeholder="Ej: Cafe Cumbre"
             defaultValue={initial.nombre_publico}
             onChange={(e) => setNombre(e.target.value)}
             maxLength={80}
@@ -63,7 +65,7 @@ export function BusinessInfoForm({
           <Field
             id="nit"
             label="NIT"
-            hint="Sin guion ni dígito de verificación."
+            hint="Sin guion ni digito de verificacion."
             error={state.fieldErrors?.nit}
           >
             <Input
@@ -79,7 +81,7 @@ export function BusinessInfoForm({
 
           <Field
             id="direccion"
-            label="Dirección"
+            label="Direccion"
             hint="Opcional por ahora."
             error={state.fieldErrors?.direccion}
           >
@@ -87,7 +89,7 @@ export function BusinessInfoForm({
               id="direccion"
               name="direccion"
               type="text"
-              placeholder="Calle 70 # 10-23, Bogotá"
+              placeholder="Calle 70 # 10-23, Bogota"
               defaultValue={initial.direccion ?? ''}
               maxLength={160}
             />
@@ -99,7 +101,7 @@ export function BusinessInfoForm({
           onChange={setColor}
           error={state.fieldErrors?.color_marca}
         />
-        <CocinaToggle value={cocinaActiva} onChange={setCocinaActiva} />
+        <ModoCocinaPicker value={modoCocina} onChange={setModoCocina} />
 
         {state.error ? (
           <div
@@ -120,7 +122,7 @@ export function BusinessInfoForm({
             Te quedan 7 pasos. Tarda 5 minutos.
           </p>
           <Button type="submit" size="lg" loading={pending}>
-            {pending ? 'Guardando…' : 'Siguiente · Meseros'}
+            {pending ? 'Guardando...' : 'Siguiente · Meseros'}
             <ArrowRight />
           </Button>
         </div>
@@ -155,7 +157,7 @@ function ColorMarcaPicker({
         Color de marca
       </label>
       <p className="text-xs leading-relaxed" style={{ color: 'var(--color-muted)' }}>
-        Es el acento que verá el cliente: el botón de pedir, los detalles. Mira el preview.
+        Es el acento que vera el cliente: el boton de pedir, los detalles. Mira el preview.
       </p>
 
       <input type="hidden" name="color_marca" value={value} />
@@ -308,7 +310,7 @@ function ClientPreview({
               className="h-12 rounded-xl text-white text-sm font-medium grid place-items-center transition-colors"
               style={{ background: color }}
             >
-              Pedir · 1 ítem
+              Pedir · 1 item
             </div>
             <p className="mt-3 text-[0.65rem] text-center text-stone-500">
               {dueno ? `Atiende ${dueno}` : 'EnPura'}
@@ -333,52 +335,89 @@ function ArrowRight() {
     </svg>
   );
 }
-function CocinaToggle({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) {
+
+const MODOS: { id: ModoCocina; titulo: string; descripcion: string; recomendado?: boolean }[] = [
+  {
+    id: 'impresion',
+    titulo: 'Impresion automatica',
+    descripcion:
+      'Las comandas salen solas en una impresora termica, sin pantalla. Dejas una tablet o PC con la impresora conectada. Lo mas comodo para no estar pendiente de una pantalla.',
+    recomendado: true,
+  },
+  {
+    id: 'con_pantalla',
+    titulo: 'Cocina con pantalla',
+    descripcion:
+      'La cocina ve los pedidos en una pantalla y los marca como listos. Vas a poder agregar cuentas de cocina mas adelante en el paso de Equipo.',
+  },
+  {
+    id: 'sin_pantalla',
+    titulo: 'Cocina sin pantalla',
+    descripcion:
+      'El mesero anota la comanda y se la pasa al chef fisicamente. Es el modelo mas simple, no necesita equipos extra.',
+  },
+];
+
+function ModoCocinaPicker({
+  value,
+  onChange,
+}: {
+  value: ModoCocina;
+  onChange: (v: ModoCocina) => void;
+}) {
   return (
-    <div
-      className="rounded-[var(--radius-md)] border p-4"
-      style={{
-        borderColor: value ? 'var(--color-border-strong)' : 'var(--color-border)',
-        background: value ? 'var(--color-paper)' : 'transparent',
-      }}
-    >
-      <label htmlFor="cocina_activa" className="flex items-start gap-3 cursor-pointer select-none">
-        <button
-          type="button"
-          role="switch"
-          aria-checked={value}
-          onClick={() => onChange(!value)}
-          className="relative h-6 w-11 rounded-full transition-colors mt-0.5 shrink-0"
-          style={{
-            background: value ? '#166534' : 'var(--color-paper-deep)',
-            border: `1px solid ${value ? '#166534' : 'var(--color-border-strong)'}`,
-          }}
-        >
-          <span
-            className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform"
-            style={{ transform: value ? 'translateX(20px)' : 'translateX(0)' }}
-          />
-        </button>
-        <input type="hidden" name="cocina_activa" value={value ? 'on' : 'off'} />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-            ¿Tu cocina usa pantalla para ver comandas?
-          </p>
-          <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
-            {value ? (
-              <>
-                La cocina ve los pedidos en una pantalla y los marca como listos. Vas a poder
-                agregar cuentas de cocina más adelante en el paso de Equipo.
-              </>
-            ) : (
-              <>
-                El mesero imprime o anota la comanda y se la pasa al chef físicamente. Es el modelo
-                de la mayoría de restaurantes pequeños — no necesita pantalla extra.
-              </>
-            )}
-          </p>
-        </div>
+    <div className="space-y-2">
+      <label className="block text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+        Como recibe los pedidos tu cocina
       </label>
+      <input type="hidden" name="modo_cocina" value={value} />
+
+      <div className="space-y-2">
+        {MODOS.map((modo) => {
+          const seleccionado = value === modo.id;
+          return (
+            <button
+              key={modo.id}
+              type="button"
+              onClick={() => onChange(modo.id)}
+              className="w-full text-left rounded-[var(--radius-md)] border p-4 transition-colors"
+              style={{
+                borderColor: seleccionado ? '#166534' : 'var(--color-border)',
+                background: seleccionado ? 'var(--color-paper)' : 'transparent',
+              }}
+            >
+              <div className="flex items-start gap-3">
+                <span
+                  className="size-5 rounded-full border-2 mt-0.5 shrink-0 grid place-items-center"
+                  style={{ borderColor: seleccionado ? '#166534' : 'var(--color-border-strong)' }}
+                >
+                  {seleccionado ? (
+                    <span className="size-2.5 rounded-full" style={{ background: '#166534' }} />
+                  ) : null}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                      {modo.titulo}
+                    </p>
+                    {modo.recomendado ? (
+                      <span
+                        className="text-[0.65rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded"
+                        style={{ background: '#dcfce7', color: '#166534' }}
+                      >
+                        Recomendado
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+                    {modo.descripcion}
+                  </p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

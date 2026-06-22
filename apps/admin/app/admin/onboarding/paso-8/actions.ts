@@ -23,9 +23,9 @@ async function getRestauranteId() {
 /* ============ CREAR CUENTA EQUIPO ============ */
 
 const cuentaSchema = z.object({
-  nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80 caracteres'),
-  email: z.string().trim().toLowerCase().email('Correo inválido'),
-  rol: z.enum(['mesero', 'cocina'], { message: 'Rol inválido' }),
+  nombre: z.string().trim().min(2, 'Minimo 2 caracteres').max(80, 'Maximo 80 caracteres'),
+  email: z.string().trim().toLowerCase().email('Correo invalido'),
+  rol: z.enum(['mesero', 'cocina'], { message: 'Rol invalido' }),
 });
 
 export type CrearCuentaState = {
@@ -70,7 +70,7 @@ export async function crearCuentaEquipo(
   }
 
   const { restauranteId } = await getRestauranteId();
-  if (!restauranteId) return { ok: false, error: 'Tu sesión expiró.' };
+  if (!restauranteId) return { ok: false, error: 'Tu sesion expiro.' };
 
   const datos = parsed.data;
   const password = generarPassword();
@@ -111,7 +111,7 @@ export async function crearCuentaEquipo(
   }
 
   // Revalidar AMBAS rutas: la del wizard onboarding y la del CRUD post-onboarding.
-  // Esto permite reusar el mismo action desde /admin/equipo sin duplicar lógica.
+  // Esto permite reusar el mismo action desde /admin/equipo sin duplicar logica.
   revalidatePath('/admin/onboarding/paso-8');
   revalidatePath('/admin/equipo');
 
@@ -146,7 +146,7 @@ export async function eliminarCuentaEquipo(formData: FormData) {
 
   if (!perfil) return;
 
-  // No permitir eliminar al dueño.
+  // No permitir eliminar al dueno.
   if (perfil.rol === 'dueno') return;
 
   await admin.auth.admin.deleteUser(id);
@@ -161,5 +161,32 @@ export async function cerrarOnboarding() {
   const { restauranteId } = await getRestauranteId();
   if (!restauranteId) redirect('/login');
 
+  const admin = createServiceClient();
+
+  // Al terminar el onboarding, el restaurante queda ACTIVO y arranca el
+  // trial de 15 dias automaticamente. Solo lo hacemos si todavia no estaba
+  // activado (para no reiniciar el trial si el dueno vuelve a pasar por aca).
+  const { data: restaurante } = await admin
+    .from('restaurantes')
+    .select('estado, primer_activacion_en')
+    .eq('id', restauranteId)
+    .maybeSingle();
+
+  if (restaurante && !restaurante.primer_activacion_en) {
+    const ahora = new Date();
+    const finTrial = new Date(ahora);
+    finTrial.setDate(finTrial.getDate() + 15);
+
+    await admin
+      .from('restaurantes')
+      .update({
+        estado: 'activo',
+        primer_activacion_en: ahora.toISOString(),
+        trial_termina_en: finTrial.toISOString(),
+      })
+      .eq('id', restauranteId);
+  }
+
+  revalidatePath('/admin');
   redirect('/admin');
 }

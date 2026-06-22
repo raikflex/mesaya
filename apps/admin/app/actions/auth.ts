@@ -6,15 +6,18 @@ import { createClient } from '@mesaya/database/server';
 
 /* ============ SIGNUP ============ */
 const signupSchema = z.object({
-  email: z.string().trim().toLowerCase().email('Correo inválido'),
-  password: z.string().min(8, 'Mínimo 8 caracteres').max(72, 'Máximo 72 caracteres'),
+  email: z.string().trim().toLowerCase().email('Correo invÃ¡lido'),
+  password: z.string().min(8, 'MÃ­nimo 8 caracteres').max(72, 'MÃ¡ximo 72 caracteres'),
   nombre: z.string().trim().min(2, 'Escribe tu nombre').max(80),
+  acepta_datos: z.literal('on', {
+    errorMap: () => ({ message: 'Debes autorizar el tratamiento de datos para continuar.' }),
+  }),
 });
 
 export type SignupState = {
   ok: boolean;
   error?: string;
-  fieldErrors?: Partial<Record<'email' | 'password' | 'nombre', string>>;
+  fieldErrors?: Partial<Record<'email' | 'password' | 'nombre' | 'acepta_datos', string>>;
 };
 
 export async function signupOwner(_prev: SignupState, formData: FormData): Promise<SignupState> {
@@ -22,13 +25,14 @@ export async function signupOwner(_prev: SignupState, formData: FormData): Promi
     email: formData.get('email'),
     password: formData.get('password'),
     nombre: formData.get('nombre'),
+    acepta_datos: formData.get('acepta_datos'),
   });
 
   if (!parsed.success) {
     const fieldErrors: SignupState['fieldErrors'] = {};
     for (const issue of parsed.error.issues) {
       const key = issue.path[0];
-      if (key === 'email' || key === 'password' || key === 'nombre') {
+      if (key === 'email' || key === 'password' || key === 'nombre' || key === 'acepta_datos') {
         fieldErrors[key] = issue.message;
       }
     }

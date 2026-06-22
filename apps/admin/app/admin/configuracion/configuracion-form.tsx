@@ -20,21 +20,21 @@ const PALETA_PRESET = [
 export function ConfiguracionForm({
   nombreInicial,
   colorInicial,
-  cocinaActivaInicial,
+  modoCocinaInicial,
   aceptaDomiciliosInicial,
   aceptaPickupInicial,
   slugInicial,
 }: {
   nombreInicial: string;
   colorInicial: string;
-  cocinaActivaInicial: boolean;
+  modoCocinaInicial: 'con_pantalla' | 'sin_pantalla' | 'impresion';
   aceptaDomiciliosInicial: boolean;
   aceptaPickupInicial: boolean;
   slugInicial: string;
 }) {
   const [state, formAction, pending] = useActionState(guardarConfig, initialState);
   const [color, setColor] = useState(colorInicial);
-  const [cocinaActiva, setCocinaActiva] = useState(cocinaActivaInicial);
+  const [modoCocina, setModoCocina] = useState(modoCocinaInicial);
   const [aceptaDomicilios, setAceptaDomicilios] = useState(aceptaDomiciliosInicial);
   const [aceptaPickup, setAceptaPickup] = useState(aceptaPickupInicial);
   const [slug, setSlug] = useState(slugInicial);
@@ -59,128 +59,145 @@ export function ConfiguracionForm({
           type="text"
           required
           defaultValue={nombreInicial}
-          maxLength={80}
+          placeholder="Cafe Cumbre"
         />
       </Field>
 
+      {/* === COLOR DE MARCA === */}
       <div>
-        <label
-          htmlFor="color_marca"
-          className="block text-sm font-medium tracking-[-0.005em] mb-2"
-          style={{ color: 'var(--color-ink)' }}
-        >
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-ink)' }}>
           Color de marca
         </label>
-        <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
-          Tine los botones, headers y acentos de la app que ven tus clientes.
-        </p>
-
-        <div className="flex items-center gap-3 mb-3">
-          <input
-            id="color_marca"
-            name="color_marca"
-            type="color"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            className="size-12 rounded-[var(--radius-md)] border cursor-pointer"
-            style={{ borderColor: 'var(--color-border-strong)' }}
-          />
-          <input
-            type="text"
-            value={color}
-            onChange={(e) => setColor(e.target.value)}
-            placeholder="#9a3f6b"
-            maxLength={7}
-            className="h-10 px-3 rounded-[var(--radius-md)] border font-[family-name:var(--font-mono)] text-sm w-32"
-            style={{
-              borderColor: 'var(--color-border-strong)',
-              color: 'var(--color-ink)',
-              background: 'var(--color-paper)',
-            }}
-            aria-label="Hex del color"
-          />
-          <div
-            className="flex-1 h-10 rounded-[var(--radius-md)] grid place-items-center text-sm font-medium"
-            style={{ background: color, color: 'white' }}
-          >
-            Vista previa
-          </div>
-        </div>
-
+        <input type="hidden" name="color_marca" value={color} />
         <div className="flex flex-wrap gap-2">
-          {PALETA_PRESET.map((c) => (
+          {PALETA_PRESET.map((preset) => (
             <button
-              key={c}
+              key={preset}
               type="button"
-              onClick={() => setColor(c)}
-              aria-label={`Usar ${c}`}
-              className="size-8 rounded-full border transition-transform hover:scale-110"
+              onClick={() => setColor(preset)}
+              className="size-9 rounded-full transition-transform"
               style={{
-                background: c,
-                borderColor: color === c ? 'var(--color-ink)' : 'var(--color-border)',
-                borderWidth: color === c ? 2 : 1,
+                background: preset,
+                outline: color === preset ? '2px solid var(--color-ink)' : 'none',
+                outlineOffset: '2px',
+                transform: color === preset ? 'scale(1.1)' : 'scale(1)',
               }}
+              aria-label={`Color ${preset}`}
             />
           ))}
         </div>
-
         {state.fieldErrors?.color_marca ? (
-          <p className="text-xs leading-relaxed mt-2" style={{ color: 'var(--color-danger)' }}>
+          <p role="alert" className="text-xs leading-relaxed mt-2" style={{ color: 'var(--color-danger)' }}>
             {state.fieldErrors.color_marca}
           </p>
         ) : null}
       </div>
 
-      {/* === TOGGLE COCINA === */}
-      <div
-        className="rounded-[var(--radius-md)] border p-4"
-        style={{
-          borderColor: cocinaActiva ? 'var(--color-border-strong)' : 'var(--color-border)',
-          background: cocinaActiva ? 'var(--color-paper)' : 'transparent',
-        }}
-      >
-        <label htmlFor="cocina_activa" className="flex items-start gap-3 cursor-pointer select-none">
-          <button
-            type="button"
-            role="switch"
-            aria-checked={cocinaActiva}
-            onClick={() => setCocinaActiva((v) => !v)}
-            className="relative h-6 w-11 rounded-full transition-colors mt-0.5 shrink-0"
-            style={{
-              background: cocinaActiva ? '#166534' : 'var(--color-paper-deep)',
-              border: `1px solid ${cocinaActiva ? '#166534' : 'var(--color-border-strong)'}`,
-            }}
-          >
-            <span
-              className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform"
-              style={{ transform: cocinaActiva ? 'translateX(20px)' : 'translateX(0)' }}
-            />
-          </button>
-          <input type="hidden" name="cocina_activa" value={cocinaActiva ? 'on' : 'off'} />
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-              Pantalla de cocina activa
-            </p>
-            <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
-              {cocinaActiva ? (
-                <>
-                  La cocina ve los pedidos en una pantalla y marca cuando estan listos. Necesitas
-                  una cuenta de cocina creada en Equipo.
-                </>
-              ) : (
-                <>
-                  El mesero imprime o anota la comanda y se la pasa al chef fisicamente. Despues
-                  marca cuando esta lista para entregar. Recomendado para la mayoria de
-                  restaurantes.
-                </>
-              )}
-            </p>
-          </div>
-        </label>
+      {/* === SELECTOR MODO DE COCINA === */}
+      <div className="space-y-2">
+        <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+          Como recibe los pedidos tu cocina
+        </p>
+        <input type="hidden" name="modo_cocina" value={modoCocina} />
 
-        {state.fieldErrors?.cocina_activa ? (
-          <p role="alert" className="text-xs leading-relaxed mt-2" style={{ color: 'var(--color-danger)' }}>
-            {state.fieldErrors.cocina_activa}
+        {/* Opcion 1: con pantalla */}
+        <button
+          type="button"
+          onClick={() => setModoCocina('con_pantalla')}
+          className="w-full text-left rounded-[var(--radius-md)] border p-4 transition-colors"
+          style={{
+            borderColor: modoCocina === 'con_pantalla' ? '#166534' : 'var(--color-border)',
+            background: modoCocina === 'con_pantalla' ? 'var(--color-paper)' : 'transparent',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <span
+              className="size-5 rounded-full border-2 mt-0.5 shrink-0 grid place-items-center"
+              style={{ borderColor: modoCocina === 'con_pantalla' ? '#166534' : 'var(--color-border-strong)' }}
+            >
+              {modoCocina === 'con_pantalla' ? (
+                <span className="size-2.5 rounded-full" style={{ background: '#166534' }} />
+              ) : null}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                Cocina con pantalla
+              </p>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+                La cocina ve los pedidos en una pantalla y marca cuando estan listos.
+                Necesitas una cuenta de cocina creada en Equipo.
+              </p>
+            </div>
+          </div>
+        </button>
+
+        {/* Opcion 2: sin pantalla */}
+        <button
+          type="button"
+          onClick={() => setModoCocina('sin_pantalla')}
+          className="w-full text-left rounded-[var(--radius-md)] border p-4 transition-colors"
+          style={{
+            borderColor: modoCocina === 'sin_pantalla' ? '#166534' : 'var(--color-border)',
+            background: modoCocina === 'sin_pantalla' ? 'var(--color-paper)' : 'transparent',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <span
+              className="size-5 rounded-full border-2 mt-0.5 shrink-0 grid place-items-center"
+              style={{ borderColor: modoCocina === 'sin_pantalla' ? '#166534' : 'var(--color-border-strong)' }}
+            >
+              {modoCocina === 'sin_pantalla' ? (
+                <span className="size-2.5 rounded-full" style={{ background: '#166534' }} />
+              ) : null}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                Cocina sin pantalla
+              </p>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+                El mesero anota la comanda y se la pasa al chef fisicamente. Despues
+                marca cuando esta lista para entregar. Recomendado para la mayoria de
+                restaurantes.
+              </p>
+            </div>
+          </div>
+        </button>
+
+        {/* Opcion 3: impresion automatica */}
+        <button
+          type="button"
+          onClick={() => setModoCocina('impresion')}
+          className="w-full text-left rounded-[var(--radius-md)] border p-4 transition-colors"
+          style={{
+            borderColor: modoCocina === 'impresion' ? '#166534' : 'var(--color-border)',
+            background: modoCocina === 'impresion' ? 'var(--color-paper)' : 'transparent',
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <span
+              className="size-5 rounded-full border-2 mt-0.5 shrink-0 grid place-items-center"
+              style={{ borderColor: modoCocina === 'impresion' ? '#166534' : 'var(--color-border-strong)' }}
+            >
+              {modoCocina === 'impresion' ? (
+                <span className="size-2.5 rounded-full" style={{ background: '#166534' }} />
+              ) : null}
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                Impresion automatica
+              </p>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+                Las comandas salen solas en una impresora termica, sin pantalla. Dejas
+                una tablet o PC con la impresora conectada en la estacion. Necesitas una
+                cuenta de cocina creada en Equipo.
+              </p>
+            </div>
+          </div>
+        </button>
+
+        {state.fieldErrors?.modo_cocina ? (
+          <p role="alert" className="text-xs leading-relaxed mt-1" style={{ color: 'var(--color-danger)' }}>
+            {state.fieldErrors.modo_cocina}
           </p>
         ) : null}
       </div>
@@ -196,7 +213,6 @@ export function ConfiguracionForm({
         <p className="text-xs mb-4 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
           Permite que tus clientes pidan a domicilio o para recoger, desde un enlace propio.
         </p>
-
         {/* TOGGLE DOMICILIOS */}
         <div
           className="rounded-[var(--radius-md)] border p-4 mb-3"
@@ -287,7 +303,7 @@ export function ConfiguracionForm({
             Tu enlace para pedidos
           </label>
           <p className="text-xs mb-3 leading-relaxed" style={{ color: 'var(--color-muted)' }}>
-            Es la direccion que compartis con tus clientes (redes, WhatsApp, Google). Usa solo
+            Es la direccion que compartes con tus clientes (redes, WhatsApp, Google). Usa solo
             letras sin acentos, numeros y guiones.
           </p>
           <div className="flex items-center gap-2">

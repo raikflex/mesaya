@@ -55,7 +55,7 @@ export default function SignupPage() {
             className="mt-6 text-[0.95rem] leading-relaxed max-w-sm"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            El cliente escanea, pide y paga desde su celular. Tú ves todo en tiempo real.
+            El cliente escanea, pide y solicita la cuenta a la mesa desde su celular. Tú ves todo en tiempo real.
           </p>
         </div>
 

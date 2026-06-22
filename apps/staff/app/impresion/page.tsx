@@ -12,14 +12,18 @@ export default async function ImpresionPage() {
 
   const { data: restaurante } = await supabase
     .from('restaurantes')
-    .select('nombre_publico')
+    .select('nombre_publico, modo_cocina')
     .eq('id', perfil.restauranteId)
     .maybeSingle();
+
+  const modoCocina =
+    (restaurante?.modo_cocina as 'con_pantalla' | 'sin_pantalla' | 'impresion') ?? 'sin_pantalla';
 
   return (
     <EstacionImpresion
       restauranteNombre={(restaurante?.nombre_publico as string) ?? perfil.restauranteNombre}
       restauranteId={perfil.restauranteId}
+      modoCocina={modoCocina}
     />
   );
 }

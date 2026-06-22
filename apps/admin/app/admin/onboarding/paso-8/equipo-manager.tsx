@@ -26,10 +26,7 @@ export function EquipoManager({
 }) {
   const totalCocina = miembros.filter((m) => m.rol === 'cocina').length;
   const totalMeseros = miembros.filter((m) => m.rol === 'mesero').length;
-
-  // Si la cocina usa pantalla, requiere al menos 1 cocinero (alguien tiene que recibir comandas).
-  // Si no, requiere al menos 1 mesero (alguien tiene que atender mesas).
-  const puedeCerrar = cocinaActiva ? totalCocina >= 1 : totalMeseros >= 1;
+  const totalEquipo = miembros.length;
 
   return (
     <div className="space-y-8">
@@ -40,27 +37,21 @@ export function EquipoManager({
       <div className="pt-2 flex items-center justify-between gap-4 flex-wrap border-t border-[var(--color-border)] mt-2">
         <div className="pt-4">
           <p className="text-xs" style={{ color: 'var(--color-muted)' }}>
-            {cocinaActiva
-              ? totalCocina === 0
-                ? 'Necesitas al menos una cuenta de cocina para continuar.'
-                : `${totalCocina} cocina · ${totalMeseros} mesero${totalMeseros === 1 ? '' : 's'}.`
-              : totalMeseros === 0
-                ? 'Necesitas al menos un mesero para continuar.'
-                : `${totalMeseros} mesero${totalMeseros === 1 ? '' : 's'}.`}
+            {totalEquipo === 0
+              ? 'Puedes crear las cuentas ahora o mas tarde desde el panel de Equipo.'
+              : `${totalCocina} cocina · ${totalMeseros} mesero${totalMeseros === 1 ? '' : 's'}.`}
           </p>
-          {puedeCerrar ? (
-            <p
-              className="text-xs mt-1 max-w-md leading-relaxed"
-              style={{ color: 'var(--color-muted)' }}
-            >
-              Tu restaurante quedará configurado pero sin abrirse al público todavía. Desde el panel
-              decides cuándo empezar a operar.
-            </p>
-          ) : null}
+          <p
+            className="text-xs mt-1 max-w-md leading-relaxed"
+            style={{ color: 'var(--color-muted)' }}
+          >
+            Tu restaurante quedara configurado pero sin abrirse al publico todavia. Desde el panel
+            decides cuando empezar a operar.
+          </p>
         </div>
         <form action={cerrarOnboarding} className="pt-4">
-          <Button type="submit" size="lg" disabled={!puedeCerrar}>
-            Ir a mi panel
+          <Button type="submit" size="lg">
+            {totalEquipo === 0 ? 'Saltar e ir a mi panel' : 'Ir a mi panel'}
             <ArrowRight />
           </Button>
         </form>
@@ -79,8 +70,8 @@ function FormularioAgregar({ cocinaActiva }: { cocinaActiva: boolean }) {
   useEffect(() => {
     if (state.ok && formRef.current) {
       formRef.current.reset();
-      // Después de crear, dejar el rol en mesero (lo más común a agregar después).
-      // Si cocina no está activa, siempre va a ser mesero — no hay otra opción.
+      // Despues de crear, dejar el rol en mesero (lo mas comun a agregar despues).
+      // Si cocina no esta activa, siempre va a ser mesero, no hay otra opcion.
       setRolSeleccionado('mesero');
     }
   }, [state.ok]);
@@ -191,7 +182,7 @@ function CredencialesCard({
 }) {
   const [copiado, setCopiado] = useState(false);
 
-  const textoParaCompartir = `Hola ${credenciales.nombre}, tu acceso a EnPura:\n\nCorreo: ${credenciales.email}\nContraseÃ±a: ${credenciales.password}\n\nGuÃ¡rdala bien, esta contraseÃ±a es temporal.`;
+  const textoParaCompartir = `Hola ${credenciales.nombre}, tu acceso a EnPura:\n\nCorreo: ${credenciales.email}\nContrasena: ${credenciales.password}\n\nGuardala bien, esta contrasena es temporal.`;
 
   function copiar() {
     void navigator.clipboard.writeText(textoParaCompartir);
@@ -228,7 +219,7 @@ function CredencialesCard({
               Cuenta creada para {credenciales.nombre}
             </p>
             <p className="text-xs" style={{ color: 'var(--color-ink-soft)' }}>
-              Guarda estas credenciales y compÃ¡rtelas. No se mostrarÃ¡n de nuevo.
+              Guarda estas credenciales y compartelas. No se mostraran de nuevo.
             </p>
           </div>
         </div>
@@ -262,7 +253,7 @@ function CredencialesCard({
       </dl>
 
       <Button type="button" onClick={copiar} variant="ghost" size="sm" className="w-full">
-        {copiado ? 'Â¡Copiado!' : 'Copiar mensaje para enviar'}
+        {copiado ? 'Copiado!' : 'Copiar mensaje para enviar'}
       </Button>
     </div>
   );
@@ -327,7 +318,7 @@ function Lista({ miembros }: { miembros: Miembro[] }) {
         style={{ borderColor: 'var(--color-border-strong)' }}
       >
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          Aún no has creado cuentas para tu equipo.
+          Aun no has creado cuentas para tu equipo. Puedes hacerlo ahora o despues.
         </p>
       </div>
     );
@@ -352,7 +343,7 @@ function SeccionRol({ titulo, miembros }: { titulo: string; miembros: Miembro[] 
         className="text-xs uppercase tracking-[0.14em] mb-2 px-1"
         style={{ color: 'var(--color-muted)' }}
       >
-        {titulo} Â· {miembros.length}
+        {titulo} · {miembros.length}
       </h3>
       <ul
         className="rounded-[var(--radius-lg)] border divide-y"

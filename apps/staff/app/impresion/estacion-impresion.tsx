@@ -132,11 +132,13 @@ async function traerComandaCompleta(comandaId: string): Promise<ComandaImpresion
 export function EstacionImpresion({
   restauranteNombre,
   restauranteId,
+  modoCocina,
 }: {
   restauranteNombre: string;
   restauranteId: string;
+  modoCocina: 'con_pantalla' | 'sin_pantalla' | 'impresion';
 }) {
-  const [activa, setActiva] = useState(false);
+  const [activa, setActiva] = useState(modoCocina === 'impresion');
   const [log, setLog] = useState<RegistroImpresion[]>([]);
   const idsImpresasRef = useRef<Set<string>>(new Set());
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
@@ -260,6 +262,13 @@ export function EstacionImpresion({
             Estacion de impresion
           </h1>
           <p style={{ fontSize: 14, opacity: 0.7 }}>{restauranteNombre}</p>
+          {modoCocina !== 'impresion' ? (
+            <p style={{ fontSize: 13, marginTop: 8, color: '#c9a574' }}>
+              Nota: tu restaurante no esta en modo impresion automatica. Puedes activar
+              la estacion igual, pero para que sea automatica cambia el modo de cocina
+              en el panel de administracion.
+            </p>
+          ) : null}
         </header>
 
         {/* Estado grande */}

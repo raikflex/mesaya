@@ -10,11 +10,11 @@ const configSchema = z.object({
     .string()
     .trim()
     .regex(/^#[0-9a-fA-F]{6}$/, 'Color invalido (debe ser hex como #9a3f6b)'),
-  // Coerce a boolean. FormData manda 'on' cuando el toggle esta activo,
-  // o 'off' cuando esta desactivado.
-  cocina_activa: z
-    .union([z.literal('on'), z.literal('off'), z.null(), z.undefined()])
-    .transform((v) => v === 'on'),
+  // Modo de cocina: 3 opciones mutuamente excluyentes.
+  //   con_pantalla -> la cocina ve el tablero
+  //   sin_pantalla -> el mesero le pasa la comanda al chef
+  //   impresion    -> las comandas salen solas en la impresora
+  modo_cocina: z.enum(['con_pantalla', 'sin_pantalla', 'impresion']),
   acepta_domicilios: z
     .union([z.literal('on'), z.literal('off'), z.null(), z.undefined()])
     .transform((v) => v === 'on'),
@@ -37,7 +37,7 @@ export type GuardarConfigState = {
   error?: string;
   fieldErrors?: Partial<
     Record<
-      'nombre_publico' | 'color_marca' | 'cocina_activa' | 'acepta_domicilios' | 'acepta_pickup' | 'slug',
+      'nombre_publico' | 'color_marca' | 'modo_cocina' | 'acepta_domicilios' | 'acepta_pickup' | 'slug',
       string
     >
   >;
@@ -50,7 +50,7 @@ export async function guardarConfig(
   const parsed = configSchema.safeParse({
     nombre_publico: formData.get('nombre_publico'),
     color_marca: formData.get('color_marca'),
-    cocina_activa: formData.get('cocina_activa') ?? 'off',
+    modo_cocina: formData.get('modo_cocina') ?? 'sin_pantalla',
     acepta_domicilios: formData.get('acepta_domicilios') ?? 'off',
     acepta_pickup: formData.get('acepta_pickup') ?? 'off',
     slug: formData.get('slug') ?? '',
@@ -83,8 +83,12 @@ export async function guardarConfig(
 
   const restauranteId = perfil.restaurante_id as string;
 
-  // Si activan cocina, validar que exista al menos una cuenta con rol cocina.
-  if (parsed.data.cocina_activa) {
+  // El modo con_pantalla necesita una cuenta de cocina creada.
+  // El modo impresion tambien (la estacion de impresion usa la cuenta de cocina).
+  const necesitaCuentaCocina =
+    parsed.data.modo_cocina === 'con_pantalla' || parsed.data.modo_cocina === 'impresion';
+
+  if (necesitaCuentaCocina) {
     const { count: cocineros } = await supabase
       .from('perfiles')
       .select('id', { count: 'exact', head: true })
@@ -95,8 +99,8 @@ export async function guardarConfig(
       return {
         ok: false,
         fieldErrors: {
-          cocina_activa:
-            'Necesitas crear una cuenta de cocina antes de activar la pantalla. Anda a Equipo y agrega una.',
+          modo_cocina:
+            'Este modo necesita una cuenta de cocina. Ve a Equipo y agrega una antes de activarlo.',
         },
       };
     }
@@ -126,18 +130,28 @@ export async function guardarConfig(
       return {
         ok: false,
         fieldErrors: {
-          slug: 'Ese enlace ya esta en uso por otro restaurante. Elegi otro.',
+          slug: 'Ese enlace ya esta en uso por otro restaurante. Elige otro.',
         },
       };
     }
   }
+
+  // Mantenemos cocina_activa sincronizado por compatibilidad: es true
+  // cuando el modo es con_pantalla (la cocina ve el tablero), false en
+  // los otros dos modos. Asi el codigo viejo que aun lee cocina_activa
+  // sigue funcionando mientras migramos todo a modo_cocina.
+  // El tablero de cocina se muestra en con_pantalla Y en impresion
+  // (en impresion las comandas se imprimen, pero igual se puede ver el tablero).
+  // Solo sin_pantalla deja cocina_activa en false.
+  const cocinaActivaDerivado = parsed.data.modo_cocina !== 'sin_pantalla';
 
   const { error } = await supabase
     .from('restaurantes')
     .update({
       nombre_publico: parsed.data.nombre_publico,
       color_marca: parsed.data.color_marca,
-      cocina_activa: parsed.data.cocina_activa,
+      modo_cocina: parsed.data.modo_cocina,
+      cocina_activa: cocinaActivaDerivado,
       acepta_domicilios: parsed.data.acepta_domicilios,
       acepta_pickup: parsed.data.acepta_pickup,
       slug: parsed.data.slug,
