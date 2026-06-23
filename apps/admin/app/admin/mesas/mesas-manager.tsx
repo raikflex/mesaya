@@ -6,6 +6,7 @@ import { Button, Field, Input, cn } from '@mesaya/ui';
 import {
   agregarMesas,
   actualizarCapacidad,
+  actualizarNumero,
   toggleActiva,
   eliminarMesa,
   type AgregarMesasState,
@@ -20,6 +21,22 @@ type Mesa = {
 };
 
 const initialAgregar: AgregarMesasState = { ok: false };
+
+// Devuelve un token corto para el cuadradito de la mesa. El nombre completo se
+// sigue viendo en la etiqueta "Mesa N" al lado del lapiz, asi que nombres
+// largos como "1 (TERRAZA)" no desbordan el cuadradito de 44x44.
+//   "12"          -> "12"
+//   "5"           -> "5"
+//   "1 (TERRAZA)" -> "1"
+//   "12-norte"    -> "12"
+//   "Terraza"     -> "TE"
+function tokenCorto(numero: string): string {
+  const t = String(numero).trim();
+  if (t.length <= 3) return t;
+  const soloDigitos = t.match(/^\d+/);
+  if (soloDigitos) return soloDigitos[0].slice(0, 3);
+  return t.slice(0, 2).toUpperCase();
+}
 
 export function MesasManager({ mesas }: { mesas: Mesa[] }) {
   const activas = mesas.filter((m) => m.activa);
@@ -83,7 +100,7 @@ function FormAgregar() {
           Agregar mesas
         </p>
         <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
-          Continuamos la numeracion desde la ultima.
+          Toman el siguiente numero disponible. Puedes cambiarlo despues.
         </p>
       </div>
       <Field id="cantidad" label="Cuantas?" error={state.fieldErrors?.cantidad}>
@@ -189,6 +206,8 @@ function SeccionMesas({
 function ItemMesa({ mesa }: { mesa: Mesa }) {
   const [editando, setEditando] = useState(false);
   const [valorCapacidad, setValorCapacidad] = useState(mesa.capacidad.toString());
+  const [editandoNumero, setEditandoNumero] = useState(false);
+  const [valorNumero, setValorNumero] = useState(mesa.numero);
   const [confirmandoEliminar, setConfirmandoEliminar] = useState(false);
 
   function guardarCapacidad() {
@@ -197,6 +216,20 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
     formData.append('capacidad', valorCapacidad);
     void actualizarCapacidad(formData);
     setEditando(false);
+  }
+
+  function guardarNumero() {
+    const limpio = valorNumero.trim();
+    if (limpio.length === 0) {
+      setValorNumero(mesa.numero);
+      setEditandoNumero(false);
+      return;
+    }
+    const formData = new FormData();
+    formData.append('id', mesa.id);
+    formData.append('numero', limpio);
+    void actualizarNumero(formData);
+    setEditandoNumero(false);
   }
 
   return (
@@ -208,13 +241,83 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
           color: mesa.activa ? 'var(--color-paper)' : 'var(--color-muted)',
         }}
       >
-        {mesa.numero}
+        {tokenCorto(mesa.numero)}
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-          Mesa {mesa.numero}
-        </p>
+        {editandoNumero ? (
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={valorNumero}
+              onChange={(e) => setValorNumero(e.target.value)}
+              maxLength={20}
+              className="w-28 h-7 px-2 rounded text-sm border focus:outline-none focus:ring-1 focus:ring-[var(--color-ink)]"
+              style={{
+                borderColor: 'var(--color-border-strong)',
+                color: 'var(--color-ink)',
+              }}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') guardarNumero();
+                if (e.key === 'Escape') {
+                  setValorNumero(mesa.numero);
+                  setEditandoNumero(false);
+                }
+              }}
+            />
+            <button
+              type="button"
+              onClick={guardarNumero}
+              className="text-xs px-2 h-7 rounded transition-colors"
+              style={{
+                background: 'var(--color-ink)',
+                color: 'var(--color-paper)',
+              }}
+            >
+              OK
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setValorNumero(mesa.numero);
+                setEditandoNumero(false);
+              }}
+              className="text-xs px-2 h-7 rounded border transition-colors"
+              style={{
+                borderColor: 'var(--color-border-strong)',
+                color: 'var(--color-muted)',
+              }}
+            >
+              Cancelar
+            </button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+              Mesa {mesa.numero}
+            </p>
+            <button
+              type="button"
+              onClick={() => setEditandoNumero(true)}
+              aria-label={`Editar numero de la mesa ${mesa.numero}`}
+              className={cn(
+                'size-6 grid place-items-center rounded transition-colors',
+                'text-[var(--color-muted)] hover:text-[var(--color-ink)] hover:bg-[var(--color-paper-deep)]',
+              )}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
         {editando ? (
           <div className="flex items-center gap-1 mt-1">
             <input

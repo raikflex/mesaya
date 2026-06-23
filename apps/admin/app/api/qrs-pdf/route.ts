@@ -4,11 +4,11 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { createClient } from '@mesaya/database/server';
 
 /**
- * Genera un PDF A4 con grid 4 QRs por página (2x2).
+ * Genera un PDF A4 con grid 4 QRs por pagina (2x2).
  * Cada QR apunta a {APP_URL_CLIENTE}/m/{qr_token}.
  *
- * Para dev: el dominio del cliente se toma de NEXT_PUBLIC_APP_URL_CLIENTE
- * (ej. http://192.168.1.11:3002). En prod: https://app.enpura.co.
+ * Para dev: el dominio del cliente se toma de NEXT_PUBLIC_CLIENTE_URL
+ * (ej. http://192.168.1.11:3002). En prod: https://menu.enpura.co.
  */
 export async function GET() {
   const supabase = await createClient();
@@ -40,6 +40,7 @@ export async function GET() {
     .from('mesas')
     .select('numero, qr_token, capacidad')
     .eq('restaurante_id', perfil.restaurante_id as string)
+    .is('borrada_en', null)
     .order('numero', { ascending: true });
 
   // Excluir mesas virtuales de domicilio/pickup (las que empiezan con "_").

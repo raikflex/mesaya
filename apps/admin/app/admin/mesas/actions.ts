@@ -25,9 +25,9 @@ async function getRestauranteId() {
 const agregarSchema = z.object({
   cantidad: z.coerce
     .number()
-    .int('Debe ser un número entero')
-    .min(1, 'Mínimo 1 mesa')
-    .max(50, 'Máximo 50 mesas a la vez'),
+    .int('Debe ser un numero entero')
+    .min(1, 'Minimo 1 mesa')
+    .max(50, 'Maximo 50 mesas a la vez'),
 });
 
 export type AgregarMesasState = {
@@ -49,14 +49,19 @@ export async function agregarMesas(
   }
 
   const { supabase, restauranteId } = await getRestauranteId();
-  if (!restauranteId) return { ok: false, error: 'Tu sesión expiró.' };
+  if (!restauranteId) return { ok: false, error: 'Tu sesion expiro.' };
 
-  // Buscar el número más alto actual (incluyendo borradas e inactivas) para
-  // no duplicar ni reusar numeración. La numeración debe ser monotónica.
+  // Calcular el siguiente numero mirando SOLO las mesas activas (no borradas).
+  // Asi, si el dueno borra todas las mesas y crea nuevas, la numeracion
+  // reinicia desde 1. Es seguro reusar numeros porque las comandas y sesiones
+  // se ligan por mesa_id (id unico de cada mesa), no por el numero visible:
+  // la "Mesa 1" vieja y la nueva son registros distintos con ids distintos,
+  // asi que el historico no se mezcla.
   const { data: existentes } = await supabase
     .from('mesas')
     .select('numero')
-    .eq('restaurante_id', restauranteId);
+    .eq('restaurante_id', restauranteId)
+    .is('borrada_en', null);
 
   const numerosExistentes = (existentes ?? [])
     .map((m) => parseInt(m.numero as string, 10))
@@ -100,6 +105,46 @@ export async function actualizarCapacidad(formData: FormData) {
   revalidatePath('/admin/mesas');
 }
 
+/* ============ ACTUALIZAR NUMERO ============ */
+
+/**
+ * Permite al dueno cambiar el numero (o etiqueta) de una mesa.
+ * Acepta numeros ("1", "2") o nombres ("Terraza", "Barra 3").
+ * No permite repetir el numero de otra mesa activa del mismo restaurante.
+ */
+export async function actualizarNumero(formData: FormData) {
+  const id = String(formData.get('id') ?? '');
+  const numero = String(formData.get('numero') ?? '').trim();
+  if (!id || numero.length === 0 || numero.length > 20) return;
+
+  const { supabase, restauranteId } = await getRestauranteId();
+  if (!restauranteId) return;
+
+  // Verificar que no exista otra mesa activa con el mismo numero.
+  const { data: repetida } = await supabase
+    .from('mesas')
+    .select('id')
+    .eq('restaurante_id', restauranteId)
+    .eq('numero', numero)
+    .is('borrada_en', null)
+    .neq('id', id)
+    .maybeSingle();
+
+  if (repetida) {
+    // Ya hay otra mesa con ese numero: no hacemos el cambio.
+    return;
+  }
+
+  await supabase
+    .from('mesas')
+    .update({ numero })
+    .eq('id', id)
+    .eq('restaurante_id', restauranteId)
+    .is('borrada_en', null);
+
+  revalidatePath('/admin/mesas');
+}
+
 /* ============ TOGGLE ACTIVA ============ */
 
 export async function toggleActiva(formData: FormData) {
@@ -124,17 +169,18 @@ export async function toggleActiva(formData: FormData) {
 /* ============ ELIMINAR (soft delete con borrada_en) ============ */
 
 /**
- * Hard-delete-equivalente desde el punto de vista del dueño: la mesa
+ * Hard-delete-equivalente desde el punto de vista del dueno: la mesa
  * desaparece del panel, de los QRs y de cualquier query que filtre
  * por `borrada_en IS NULL`. En la BD se conserva con timestamp
- * `borrada_en` para preservar el histórico de comandas, sesiones y
- * reseñas asociadas (necesario para reportes y métricas).
+ * `borrada_en` para preservar el historico de comandas, sesiones y
+ * resenas asociadas (necesario para reportes y metricas).
  *
- * También seteamos activa=false para defensa en profundidad: cualquier
- * query vieja que solo mire `activa` también filtra esta mesa.
+ * Tambien seteamos activa=false para defensa en profundidad: cualquier
+ * query vieja que solo mire `activa` tambien filtra esta mesa.
  *
- * Si el dueño quiere volver a usar el número, debe agregar una mesa
- * nueva — la numeración no se reusa.
+ * La numeracion de mesas NUEVAS se calcula mirando solo las activas
+ * (ver agregarMesas), asi que despues de borrar, los numeros se pueden
+ * reusar sin mezclar el historico (las comandas se ligan por mesa_id).
  */
 export async function eliminarMesa(formData: FormData) {
   const id = String(formData.get('id') ?? '');
