@@ -20,6 +20,7 @@ export type Producto = {
   descripcion: string | null;
   disponible: boolean;
   tiempo_preparacion_min: number | null;
+  imagenes_paths: string[];
 };
 
 export default async function MenuPage({
@@ -49,7 +50,9 @@ export default async function MenuPage({
       .order('orden', { ascending: true }),
     supabase
       .from('productos')
-      .select('id, nombre, precio, categoria_id, descripcion, disponible, tiempo_preparacion_min')
+      .select(
+        'id, nombre, precio, categoria_id, descripcion, disponible, tiempo_preparacion_min, imagenes_paths',
+      )
       .eq('restaurante_id', restauranteId)
       .order('nombre', { ascending: true }),
     supabase.from('restaurantes').select('nombre_publico').eq('id', restauranteId).single(),

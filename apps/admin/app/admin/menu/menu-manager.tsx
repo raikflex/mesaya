@@ -10,6 +10,9 @@ import {
   actualizarProducto,
   toggleDisponible,
   eliminarProducto,
+  subirFotoProducto,
+  eliminarFotoProducto,
+  hacerFotoPrincipal,
   type CategoriaState,
   type ProductoState,
 } from './actions';
@@ -17,6 +20,39 @@ import type { Categoria, Producto } from './page';
 
 const initialCategoria: CategoriaState = { ok: false };
 const initialProducto: ProductoState = { ok: false };
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+
+/** Construye la URL publica de una foto a partir de su path en el bucket. */
+function urlFoto(path: string): string {
+  return `${SUPABASE_URL}/storage/v1/object/public/productos-fotos/${path}`;
+}
+
+/**
+ * Comprime y redimensiona una imagen EN EL NAVEGADOR antes de subirla.
+ * Reduce el lado mayor a maxLado px y exporta a WebP. Una foto de celular
+ * de varios MB queda tipicamente en ~50-80KB, asi llega liviana al comensal.
+ */
+async function comprimirImagen(file: File, maxLado = 800, calidad = 0.75): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+  const escala = Math.min(1, maxLado / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * escala));
+  const h = Math.max(1, Math.round(bitmap.height * escala));
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('No se pudo procesar la imagen.');
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  if (typeof bitmap.close === 'function') bitmap.close();
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('No se pudo comprimir la imagen.'))),
+      'image/webp',
+      calidad,
+    );
+  });
+}
 
 /** Input de precio con formato colombiano. Visible: "$32.000". Hidden: "32000". */
 function PrecioInput({ resetSignal }: { resetSignal: number }) {
@@ -447,7 +483,21 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
           {state.error}
         </p>
       ) : null}
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-sm flex items-center gap-1.5" style={{ color: 'var(--color-muted)' }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.75" />
+            <circle cx="8.5" cy="10" r="1.5" fill="currentColor" />
+            <path
+              d="m4 17 4.5-4.5 3 3L16 11l4 4.5"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          Despues de crear el plato podras agregarle fotos.
+        </p>
         <Button type="submit" loading={pending}>
           Agregar producto
         </Button>
@@ -491,6 +541,169 @@ function SeccionCategoria({
         </ul>
       )}
     </section>
+  );
+}
+
+/* ============ FOTOS DE UN PRODUCTO ============ */
+
+function FotosProducto({ producto }: { producto: Producto }) {
+  const fotos = producto.imagenes_paths ?? [];
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSeleccion(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // permite re-seleccionar el mismo archivo
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Solo imagenes.');
+      return;
+    }
+    setError(null);
+    setSubiendo(true);
+    try {
+      const blob = await comprimirImagen(file);
+      const fd = new FormData();
+      fd.append('id', producto.id);
+      fd.append('foto', blob, 'foto.webp');
+      const res = await subirFotoProducto(fd);
+      if (!res.ok) setError(res.error ?? 'No se pudo subir.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'No se pudo subir.');
+    } finally {
+      setSubiendo(false);
+    }
+  }
+
+  function quitar(path: string) {
+    const fd = new FormData();
+    fd.append('id', producto.id);
+    fd.append('path', path);
+    void eliminarFotoProducto(fd);
+  }
+
+  function hacerPrincipal(path: string) {
+    const fd = new FormData();
+    fd.append('id', producto.id);
+    fd.append('path', path);
+    void hacerFotoPrincipal(fd);
+  }
+
+  const sinFotos = fotos.length === 0;
+
+  return (
+    <div className="pt-2">
+      <p
+        className="text-[11px] uppercase tracking-[0.12em] mb-2"
+        style={{ color: 'var(--color-muted)' }}
+      >
+        Fotos del plato — opcional, max. 2
+      </p>
+
+      <div className="flex items-center gap-3 flex-wrap">
+        {fotos.map((path, i) => (
+          <div key={path} className="relative">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={urlFoto(path)}
+              alt={`Foto de ${producto.nombre}`}
+              loading="lazy"
+              className="size-14 rounded-[var(--radius-md)] object-cover border"
+              style={{ borderColor: 'var(--color-border-strong)' }}
+            />
+            {i === 0 ? (
+              <span
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] leading-none px-1.5 py-0.5 rounded-full whitespace-nowrap"
+                style={{ background: 'var(--color-ink)', color: 'var(--color-paper)' }}
+              >
+                Principal
+              </span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => hacerPrincipal(path)}
+                title="Hacer principal"
+                aria-label="Hacer foto principal"
+                className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-[9px] leading-none px-1.5 py-0.5 rounded-full border whitespace-nowrap transition-colors hover:bg-[var(--color-paper-deep)]"
+                style={{
+                  background: 'var(--color-paper)',
+                  borderColor: 'var(--color-border-strong)',
+                  color: 'var(--color-ink-soft)',
+                }}
+              >
+                Hacer principal
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => quitar(path)}
+              aria-label="Quitar foto"
+              className="absolute -top-1.5 -right-1.5 size-5 grid place-items-center rounded-full"
+              style={{ background: 'var(--color-danger)', color: 'white' }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden>
+                <path
+                  d="M18 6 6 18M6 6l12 12"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        ))}
+
+        {fotos.length < 2 ? (
+          <>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={onSeleccion}
+            />
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              disabled={subiendo}
+              className={cn(
+                'inline-flex items-center gap-2 h-14 rounded-[var(--radius-md)] border border-dashed text-sm font-medium transition-colors',
+                'hover:bg-[var(--color-paper-deep)] disabled:opacity-50',
+                sinFotos ? 'px-4' : 'px-3',
+              )}
+              style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink-soft)' }}
+            >
+              {subiendo ? (
+                <span style={{ color: 'var(--color-muted)' }}>Subiendo...</span>
+              ) : (
+                <>
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+                    <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.75" />
+                    <circle cx="8.5" cy="10" r="1.5" fill="currentColor" />
+                    <path
+                      d="m4 17 4.5-4.5 3 3L16 11l4 4.5"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path d="M19 3v4M21 5h-4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+                  </svg>
+                  {sinFotos ? 'Agregar foto del plato' : 'Agregar otra'}
+                </>
+              )}
+            </button>
+          </>
+        ) : null}
+
+        {error ? (
+          <span className="text-[11px]" style={{ color: 'var(--color-danger)' }}>
+            {error}
+          </span>
+        ) : null}
+      </div>
+    </div>
   );
 }
 
@@ -672,6 +885,8 @@ function ItemProducto({ producto, categorias }: { producto: Producto; categorias
             ))}
           </select>
         </div>
+
+        <FotosProducto producto={producto} />
       </div>
 
       <div className="flex items-center gap-2 shrink-0">

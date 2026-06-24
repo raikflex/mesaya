@@ -226,7 +226,145 @@ export async function eliminarProducto(formData: FormData) {
   const { supabase, restauranteId } = await getRestauranteId();
   if (!restauranteId) return;
 
+  // Borra primero las fotos del Storage para no dejar archivos huerfanos.
+  const { data: prod } = await supabase
+    .from('productos')
+    .select('imagenes_paths')
+    .eq('id', id)
+    .eq('restaurante_id', restauranteId)
+    .maybeSingle();
+
+  const paths = (prod?.imagenes_paths ?? []) as string[];
+  if (paths.length > 0) {
+    await supabase.storage.from(BUCKET_FOTOS).remove(paths);
+  }
+
   await supabase.from('productos').delete().eq('id', id).eq('restaurante_id', restauranteId);
+
+  revalidatePath('/admin/menu');
+}
+
+/* ============ FOTOS DE PRODUCTOS ============ */
+
+const BUCKET_FOTOS = 'productos-fotos';
+const MAX_FOTOS = 2;
+
+export type SubirFotoState = { ok: boolean; error?: string };
+
+export async function subirFotoProducto(formData: FormData): Promise<SubirFotoState> {
+  const id = String(formData.get('id') ?? '');
+  const foto = formData.get('foto');
+  if (!id) return { ok: false, error: 'Producto invalido.' };
+  if (!(foto instanceof File) || foto.size === 0) {
+    return { ok: false, error: 'No se recibio la imagen.' };
+  }
+  // La imagen ya viene comprimida desde el navegador; tope de seguridad 1.5MB.
+  if (foto.size > 1_500_000) {
+    return { ok: false, error: 'La imagen es muy pesada.' };
+  }
+
+  const { supabase, restauranteId } = await getRestauranteId();
+  if (!restauranteId) return { ok: false, error: 'Tu sesion expiro.' };
+
+  const { data: prod } = await supabase
+    .from('productos')
+    .select('imagenes_paths')
+    .eq('id', id)
+    .eq('restaurante_id', restauranteId)
+    .maybeSingle();
+
+  if (!prod) return { ok: false, error: 'Producto no encontrado.' };
+
+  const actuales = (prod.imagenes_paths ?? []) as string[];
+  if (actuales.length >= MAX_FOTOS) {
+    return { ok: false, error: `Maximo ${MAX_FOTOS} fotos por producto.` };
+  }
+
+  const path = `${restauranteId}/${id}-${crypto.randomUUID()}.webp`;
+  const buffer = await foto.arrayBuffer();
+
+  const { error: upErr } = await supabase.storage
+    .from(BUCKET_FOTOS)
+    .upload(path, buffer, { contentType: 'image/webp', upsert: false });
+
+  if (upErr) return { ok: false, error: upErr.message };
+
+  const { error: updErr } = await supabase
+    .from('productos')
+    .update({ imagenes_paths: [...actuales, path] })
+    .eq('id', id)
+    .eq('restaurante_id', restauranteId);
+
+  if (updErr) {
+    // Si no se pudo guardar el path, limpiar el archivo recien subido.
+    await supabase.storage.from(BUCKET_FOTOS).remove([path]);
+    return { ok: false, error: updErr.message };
+  }
+
+  revalidatePath('/admin/menu');
+  return { ok: true };
+}
+
+export async function eliminarFotoProducto(formData: FormData) {
+  const id = String(formData.get('id') ?? '');
+  const path = String(formData.get('path') ?? '');
+  if (!id || !path) return;
+
+  const { supabase, restauranteId } = await getRestauranteId();
+  if (!restauranteId) return;
+
+  // Seguridad: el path debe estar dentro de la carpeta de este restaurante.
+  if (!path.startsWith(`${restauranteId}/`)) return;
+
+  const { data: prod } = await supabase
+    .from('productos')
+    .select('imagenes_paths')
+    .eq('id', id)
+    .eq('restaurante_id', restauranteId)
+    .maybeSingle();
+
+  if (!prod) return;
+
+  const actuales = (prod.imagenes_paths ?? []) as string[];
+  const nuevas = actuales.filter((p) => p !== path);
+
+  await supabase
+    .from('productos')
+    .update({ imagenes_paths: nuevas })
+    .eq('id', id)
+    .eq('restaurante_id', restauranteId);
+
+  await supabase.storage.from(BUCKET_FOTOS).remove([path]);
+
+  revalidatePath('/admin/menu');
+}
+
+export async function hacerFotoPrincipal(formData: FormData) {
+  const id = String(formData.get('id') ?? '');
+  const path = String(formData.get('path') ?? '');
+  if (!id || !path) return;
+
+  const { supabase, restauranteId } = await getRestauranteId();
+  if (!restauranteId) return;
+
+  const { data: prod } = await supabase
+    .from('productos')
+    .select('imagenes_paths')
+    .eq('id', id)
+    .eq('restaurante_id', restauranteId)
+    .maybeSingle();
+
+  if (!prod) return;
+
+  const actuales = (prod.imagenes_paths ?? []) as string[];
+  if (!actuales.includes(path)) return;
+  const nuevas = [path, ...actuales.filter((p) => p !== path)];
+
+  await supabase
+    .from('productos')
+    .update({ imagenes_paths: nuevas })
+    .eq('id', id)
+    .eq('restaurante_id', restauranteId);
 
   revalidatePath('/admin/menu');
 }
