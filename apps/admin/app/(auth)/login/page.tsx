@@ -98,6 +98,20 @@ export default function LoginPage() {
               Crear cuenta
             </Link>
           </p>
+
+          <div
+            className="mt-6 pt-6 border-t text-sm"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-muted)' }}
+          >
+            ¿Eres del equipo de cocina o meseros?{' '}
+            <a
+              href="https://staff.enpura.co/login"
+              className="underline underline-offset-4 hover:text-[var(--color-ink)] transition-colors"
+              style={{ color: 'var(--color-ink-soft)' }}
+            >
+              Entra a tu panel
+            </a>
+          </div>
         </div>
       </section>
     </main>
