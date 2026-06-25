@@ -20,6 +20,7 @@ type CategoriaConProductos = {
     descripcion: string | null;
     precio: number;
     disponible: boolean;
+    imagenes_paths: string[];
   }[];
 };
 
@@ -138,7 +139,7 @@ export default async function MenuPage({ params }: PageProps) {
       .order('orden', { ascending: true }),
     supabase
       .from('productos')
-      .select('id, nombre, descripcion, precio, disponible, categoria_id')
+      .select('id, nombre, descripcion, precio, disponible, categoria_id, imagenes_paths')
       .eq('restaurante_id', restauranteId)
       .order('nombre', { ascending: true }),
   ]);
@@ -155,15 +156,17 @@ export default async function MenuPage({ params }: PageProps) {
         precio: number;
         disponible: boolean;
         categoria_id: string;
+        imagenes_paths: string[] | null;
       }[]
     )
       .filter((p) => p.categoria_id === c.id)
-      .map(({ id, nombre, descripcion, precio, disponible }) => ({
+      .map(({ id, nombre, descripcion, precio, disponible, imagenes_paths }) => ({
         id,
         nombre,
         descripcion,
         precio,
         disponible,
+        imagenes_paths: imagenes_paths ?? [],
       })),
   }));
 

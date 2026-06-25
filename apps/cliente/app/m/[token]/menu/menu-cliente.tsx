@@ -24,6 +24,7 @@ type Producto = {
   descripcion: string | null;
   precio: number;
   disponible: boolean;
+  imagenes_paths: string[];
 };
 
 type Grupo = {
@@ -32,6 +33,53 @@ type Grupo = {
   orden: number;
   productos: Producto[];
 };
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
+
+// Ancho fijo de la columna derecha (foto + control). Asi todo queda alineado,
+// tenga el producto foto o no.
+const ANCHO_DER = 112;
+
+/** Construye la URL publica de una foto a partir de su path en el bucket. */
+function urlFoto(path: string): string {
+  return `${SUPABASE_URL}/storage/v1/object/public/productos-fotos/${path}`;
+}
+
+/** Convierte un hex (#rgb o #rrggbb) a [r,g,b]. Null si no es valido. */
+function hexARgb(hex: string): [number, number, number] | null {
+  let h = hex.trim().replace('#', '');
+  if (h.length === 3) {
+    h = h
+      .split('')
+      .map((c) => c + c)
+      .join('');
+  }
+  if (h.length !== 6) return null;
+  const n = parseInt(h, 16);
+  if (Number.isNaN(n)) return null;
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+/** Luminancia relativa (WCAG) de un color. */
+function luminanciaRel(r: number, g: number, b: number): number {
+  const a = [r, g, b].map((v) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * (a[0] as number) + 0.7152 * (a[1] as number) + 0.0722 * (a[2] as number);
+}
+
+/**
+ * Devuelve el color de marca si contrasta bien sobre fondo blanco (la tarjeta),
+ * o cae a tinta oscura si la marca es muy clara. Asi el precio siempre es legible.
+ */
+function colorPrecioLegible(colorMarca: string): string {
+  const rgb = hexARgb(colorMarca);
+  if (!rgb) return 'var(--color-ink)';
+  const L = luminanciaRel(rgb[0], rgb[1], rgb[2]);
+  const contraste = (1 + 0.05) / (L + 0.05); // blanco tiene luminancia 1
+  return contraste >= 3 ? colorMarca : 'var(--color-ink)';
+}
 
 export function MenuCliente({
   qrToken,
@@ -61,6 +109,7 @@ export function MenuCliente({
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null);
   const [carrito, setCarrito] = useState<ItemCarrito[]>([]);
   const [toast, setToast] = useState<string | null>(null);
+  const [fotosModal, setFotosModal] = useState<Producto | null>(null);
   const seccionesRef = useRef<Record<string, HTMLElement | null>>({});
   const tabsRef = useRef<HTMLDivElement | null>(null);
 
@@ -209,6 +258,7 @@ export function MenuCliente({
 
   const totalCarrito = calcularTotal(carrito);
   const unidadesCarrito = totalUnidades(carrito);
+  const precioColor = colorPrecioLegible(colorMarca);
 
   return (
     <main
@@ -382,8 +432,10 @@ export function MenuCliente({
                           key={p.id}
                           producto={p}
                           colorMarca={colorMarca}
+                          precioColor={precioColor}
                           cantidad={enCarrito?.cantidad ?? 0}
                           onCambiar={(nuevaCantidad) => cambiarCantidad(p, nuevaCantidad)}
+                          onVerFotos={() => setFotosModal(p)}
                         />
                       );
                     })}
@@ -431,6 +483,10 @@ export function MenuCliente({
         </footer>
       ) : null}
 
+      {fotosModal ? (
+        <LightboxFotos producto={fotosModal} onCerrar={() => setFotosModal(null)} />
+      ) : null}
+
       <style>{`
         @keyframes fadeIn {
           from { opacity: 0; transform: translate(-50%, -8px); }
@@ -441,7 +497,11 @@ export function MenuCliente({
   );
 }
 
-function ItemProducto({
+/**
+ * Control de cantidad. Colapsado (cantidad 0) es un boton "+" circular alineado
+ * a la derecha; expandido es una pildora del ancho de la columna con - / n / +.
+ */
+function ControlCantidad({
   producto,
   colorMarca,
   cantidad,
@@ -452,7 +512,78 @@ function ItemProducto({
   cantidad: number;
   onCambiar: (nuevaCantidad: number) => void;
 }) {
+  if (cantidad === 0) {
+    return (
+      <button
+        type="button"
+        onClick={() => onCambiar(1)}
+        aria-label={`Agregar ${producto.nombre}`}
+        className="size-9 rounded-full grid place-items-center"
+        style={{ background: colorMarca, color: 'white' }}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+    );
+  }
+
+  return (
+    <div
+      className="flex items-center justify-center rounded-full px-1"
+      style={{ width: '100%', border: `1px solid ${colorMarca}` }}
+    >
+      <button
+        type="button"
+        onClick={() => onCambiar(cantidad - 1)}
+        aria-label={`Quitar uno de ${producto.nombre}`}
+        className="size-9 rounded-full grid place-items-center"
+        style={{ color: colorMarca }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+      <span
+        className="flex-1 text-center text-sm font-medium tabular-nums"
+        style={{ color: 'var(--color-ink)' }}
+      >
+        {cantidad}
+      </span>
+      <button
+        type="button"
+        onClick={() => onCambiar(cantidad + 1)}
+        disabled={cantidad >= 20}
+        aria-label={`Agregar uno de ${producto.nombre}`}
+        className="size-9 rounded-full grid place-items-center disabled:opacity-40"
+        style={{ background: colorMarca, color: 'white', transformOrigin: 'right center' }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+    </div>
+  );
+}
+
+function ItemProducto({
+  producto,
+  colorMarca,
+  precioColor,
+  cantidad,
+  onCambiar,
+  onVerFotos,
+}: {
+  producto: Producto;
+  colorMarca: string;
+  precioColor: string;
+  cantidad: number;
+  onCambiar: (nuevaCantidad: number) => void;
+  onVerFotos: () => void;
+}) {
   const sinStock = !producto.disponible;
+  const fotos = producto.imagenes_paths ?? [];
+  const tieneFoto = fotos.length > 0;
 
   return (
     <li
@@ -466,7 +597,7 @@ function ItemProducto({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <p
-              className="text-sm font-medium"
+              className="text-lg font-medium leading-tight"
               style={{
                 color: 'var(--color-ink)',
                 textDecoration: sinStock ? 'line-through' : 'none',
@@ -476,7 +607,7 @@ function ItemProducto({
             </p>
             {sinStock ? (
               <span
-                className="text-xs uppercase tracking-[0.1em] px-1.5 py-0.5 rounded"
+                className="text-xs uppercase tracking-[0.1em] px-1.5 py-0.5 rounded shrink-0"
                 style={{ background: 'var(--color-paper-deep)', color: 'var(--color-muted)' }}
               >
                 Sin stock
@@ -489,63 +620,234 @@ function ItemProducto({
             </p>
           ) : null}
           <p
-            className="text-sm mt-2 font-[family-name:var(--font-mono)]"
-            style={{ color: 'var(--color-ink)' }}
+            className="text-xl mt-2 font-semibold font-[family-name:var(--font-mono)]"
+            style={{ color: precioColor }}
           >
             ${producto.precio.toLocaleString('es-CO')}
           </p>
         </div>
 
-        {sinStock ? null : cantidad === 0 ? (
-          <button
-            type="button"
-            onClick={() => onCambiar(1)}
-            aria-label={`Agregar ${producto.nombre}`}
-            className="size-9 rounded-full grid place-items-center shrink-0 mt-0.5 transition-transform active:scale-90"
-            style={{ background: colorMarca, color: 'white' }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
-              <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        ) : (
-          <div
-            className="flex items-center gap-1 shrink-0 mt-0.5 rounded-full"
-            style={{ border: `1px solid ${colorMarca}` }}
-          >
+        {/* Columna derecha de ancho fijo: foto (si hay) arriba, control debajo.
+            Alineada a la derecha para que todo quede parejo entre productos. */}
+        <div
+          className="shrink-0 flex flex-col items-end gap-2"
+          style={{ width: ANCHO_DER }}
+        >
+          {tieneFoto ? (
             <button
               type="button"
-              onClick={() => onCambiar(cantidad - 1)}
-              aria-label={`Quitar uno de ${producto.nombre}`}
-              className="size-9 rounded-full grid place-items-center transition-transform active:scale-90"
-              style={{ color: colorMarca }}
+              onClick={onVerFotos}
+              aria-label={`Ver foto de ${producto.nombre}`}
+              className="relative rounded-[var(--radius-md)] overflow-hidden"
+              style={{ width: ANCHO_DER, height: ANCHO_DER }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={urlFoto(fotos[0] as string)}
+                alt={producto.nombre}
+                loading="lazy"
+                className="w-full h-full object-cover"
+              />
+              <span
+                className="absolute bottom-1 right-1 size-5 grid place-items-center rounded-full"
+                style={{ background: 'rgba(0,0,0,0.55)', color: 'white' }}
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path
+                    d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
             </button>
-            <span
-              className="min-w-[1.5rem] text-center text-sm font-medium tabular-nums"
-              style={{ color: 'var(--color-ink)' }}
-            >
-              {cantidad}
-            </span>
-            <button
-              type="button"
-              onClick={() => onCambiar(cantidad + 1)}
-              disabled={cantidad >= 20}
-              aria-label={`Agregar uno de ${producto.nombre}`}
-              className="size-9 rounded-full grid place-items-center transition-transform active:scale-90 disabled:opacity-40"
-              style={{ background: colorMarca, color: 'white' }}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </button>
-          </div>
-        )}
+          ) : null}
+
+          {!sinStock ? (
+            <ControlCantidad
+              producto={producto}
+              colorMarca={colorMarca}
+              cantidad={cantidad}
+              onCambiar={onCambiar}
+            />
+          ) : null}
+        </div>
       </div>
     </li>
+  );
+}
+
+function LightboxFotos({ producto, onCerrar }: { producto: Producto; onCerrar: () => void }) {
+  const fotos = producto.imagenes_paths ?? [];
+  const total = fotos.length;
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onCerrar();
+    }
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onCerrar]);
+
+  if (total === 0) return null;
+  const seguro = Math.max(0, Math.min(idx, total - 1));
+
+  return (
+    <div
+      onClick={onCerrar}
+      role="dialog"
+      aria-modal="true"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 50,
+        background: 'rgba(0,0,0,0.88)',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '1.25rem',
+      }}
+    >
+      <button
+        type="button"
+        onClick={onCerrar}
+        aria-label="Cerrar"
+        style={{
+          position: 'absolute',
+          top: '1rem',
+          right: '1rem',
+          width: 40,
+          height: 40,
+          display: 'grid',
+          placeItems: 'center',
+          borderRadius: '999px',
+          background: 'rgba(255,255,255,0.15)',
+          color: 'white',
+        }}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      </button>
+
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: '100%', maxWidth: 480, display: 'flex', flexDirection: 'column', gap: '1rem' }}
+      >
+        <div style={{ position: 'relative' }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={urlFoto(fotos[seguro] as string)}
+            alt={producto.nombre}
+            style={{
+              width: '100%',
+              maxHeight: '60vh',
+              objectFit: 'contain',
+              borderRadius: 14,
+              background: 'rgba(255,255,255,0.04)',
+            }}
+          />
+          {total > 1 ? (
+            <>
+              <button
+                type="button"
+                onClick={() => setIdx((seguro - 1 + total) % total)}
+                aria-label="Anterior"
+                style={{
+                  position: 'absolute',
+                  left: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 36,
+                  height: 36,
+                  display: 'grid',
+                  placeItems: 'center',
+                  borderRadius: '999px',
+                  background: 'rgba(0,0,0,0.5)',
+                  color: 'white',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M15 18l-6-6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIdx((seguro + 1) % total)}
+                aria-label="Siguiente"
+                style={{
+                  position: 'absolute',
+                  right: 8,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 36,
+                  height: 36,
+                  display: 'grid',
+                  placeItems: 'center',
+                  borderRadius: '999px',
+                  background: 'rgba(0,0,0,0.5)',
+                  color: 'white',
+                }}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <path d="M9 18l6-6-6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+              <div
+                style={{
+                  position: 'absolute',
+                  bottom: 10,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  display: 'flex',
+                  gap: 6,
+                }}
+              >
+                {fotos.map((p, i) => (
+                  <span
+                    key={p}
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '999px',
+                      background: i === seguro ? 'white' : 'rgba(255,255,255,0.4)',
+                    }}
+                  />
+                ))}
+              </div>
+            </>
+          ) : null}
+        </div>
+
+        <div style={{ color: 'white' }}>
+          <p style={{ fontSize: '1.05rem', fontWeight: 600 }}>{producto.nombre}</p>
+          {producto.descripcion ? (
+            <p
+              style={{
+                fontSize: '0.85rem',
+                marginTop: 4,
+                color: 'rgba(255,255,255,0.75)',
+                lineHeight: 1.5,
+              }}
+            >
+              {producto.descripcion}
+            </p>
+          ) : null}
+          <p style={{ fontSize: '0.95rem', marginTop: 8, fontFamily: 'var(--font-mono)' }}>
+            ${producto.precio.toLocaleString('es-CO')}
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
