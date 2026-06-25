@@ -22,7 +22,7 @@ export default async function Paso5Page() {
   const [{ data: productos }, { data: categorias }] = await Promise.all([
     supabase
       .from('productos')
-      .select('id, nombre, precio, descripcion, categoria_id, disponible, orden')
+      .select('id, nombre, precio, descripcion, categoria_id, disponible, orden, imagenes_paths')
       .eq('restaurante_id', perfil.restaurante_id)
       .order('orden', { ascending: true }),
     supabase
@@ -74,6 +74,7 @@ export default async function Paso5Page() {
           categoria_id: p.categoria_id as string,
           disponible: p.disponible as boolean,
           orden: p.orden as number,
+          imagenes_paths: (p.imagenes_paths as string[]) ?? [],
         }))}
         categorias={(categorias ?? []).map((c) => ({
           id: c.id as string,

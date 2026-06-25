@@ -19,6 +19,22 @@ type Mesa = {
 
 const initialBulk: BulkState = { ok: false };
 
+// Devuelve un token corto para el cuadradito de la mesa. El nombre completo se
+// sigue viendo en la etiqueta "Mesa N", asi que nombres largos como
+// "1 (TERRAZA)" no desbordan el cuadradito.
+//   "12"          -> "12"
+//   "5"           -> "5"
+//   "1 (TERRAZA)" -> "1"
+//   "12-norte"    -> "12"
+//   "Terraza"     -> "TE"
+function tokenCorto(numero: string): string {
+  const t = String(numero).trim();
+  if (t.length <= 3) return t;
+  const soloDigitos = t.match(/^\d+/);
+  if (soloDigitos) return soloDigitos[0].slice(0, 3);
+  return t.slice(0, 2).toUpperCase();
+}
+
 export function MesasManager({ mesas }: { mesas: Mesa[] }) {
   const total = mesas.length;
   const puedeAvanzar = total >= 1;
@@ -158,7 +174,7 @@ function ItemMesa({ mesa }: { mesa: Mesa }) {
           color: 'var(--color-ink)',
         }}
       >
-        {mesa.numero}
+        {tokenCorto(mesa.numero)}
       </div>
 
       <div className="flex-1 min-w-0">
