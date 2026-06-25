@@ -266,6 +266,8 @@ export function MenuCliente({
       style={{
         background: 'var(--color-paper)',
         paddingBottom: carrito.length > 0 ? '5.5rem' : '1rem',
+        WebkitTapHighlightColor: 'transparent',
+        touchAction: 'manipulation',
       }}
     >
       <header
@@ -500,6 +502,7 @@ export function MenuCliente({
 /**
  * Control de cantidad. Colapsado (cantidad 0) es un boton "+" circular alineado
  * a la derecha; expandido es una pildora del ancho de la columna con - / n / +.
+ * Sin transiciones de transform para evitar cualquier movimiento al presionar.
  */
 function ControlCantidad({
   producto,
@@ -556,7 +559,7 @@ function ControlCantidad({
         disabled={cantidad >= 20}
         aria-label={`Agregar uno de ${producto.nombre}`}
         className="size-9 rounded-full grid place-items-center disabled:opacity-40"
-        style={{ background: colorMarca, color: 'white', transformOrigin: 'right center' }}
+        style={{ background: colorMarca, color: 'white' }}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
           <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
