@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { HorariosEditor } from './horarios-editor';
+import { HorariosDomiciliosEditor } from './horarios-domicilios-editor';
 import type { HorarioDia, ExcepcionDia } from '../../../lib/horarios';
 
 export const metadata = { title: 'Horarios' };
@@ -26,14 +27,16 @@ export default async function HorariosPage() {
 
   const { data: restaurante } = await supabase
     .from('restaurantes')
-    .select('nombre_publico, estado')
+    .select('nombre_publico, estado, acepta_domicilios_programados')
     .eq('id', restauranteId)
     .maybeSingle();
 
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
   const estado = (restaurante?.estado as string) ?? 'activo';
+  const aceptaDomiciliosProgramados =
+    (restaurante?.acepta_domicilios_programados as boolean) ?? false;
 
-  // Horario base por dia de semana
+  // Horario base del LOCAL por dia de semana
   const { data: horariosRaw } = await supabase
     .from('horarios_atencion')
     .select('dia_semana, abierto, hora_apertura, hora_cierre')
@@ -67,6 +70,21 @@ export default async function HorariosPage() {
     nota: (e.nota as string | null) ?? null,
   }));
 
+  // Horario de DOMICILIOS (tabla aparte). Solo lo usamos si el toggle esta
+  // prendido, pero lo cargamos igual para pasarlo al editor.
+  const { data: horariosDomiciliosRaw } = await supabase
+    .from('horarios_domicilios')
+    .select('dia_semana, abierto, hora_apertura, hora_cierre')
+    .eq('restaurante_id', restauranteId)
+    .order('dia_semana', { ascending: true });
+
+  const horariosDomicilios: HorarioDia[] = (horariosDomiciliosRaw ?? []).map((h) => ({
+    dia_semana: h.dia_semana as number,
+    abierto: h.abierto as boolean,
+    hora_apertura: (h.hora_apertura as string | null) ?? null,
+    hora_cierre: (h.hora_cierre as string | null) ?? null,
+  }));
+
   return (
     <PanelShell currentPage="horarios" nombreNegocio={nombreNegocio}>
       <main className="px-6 sm:px-10 py-10 sm:py-14 max-w-3xl mx-auto">
@@ -91,7 +109,7 @@ export default async function HorariosPage() {
             className="mt-4 text-[0.95rem] leading-relaxed max-w-xl"
             style={{ color: 'var(--color-ink-soft)' }}
           >
-            Define cuando recibis pedidos. Fuera del horario los clientes ven que estas cerrado y no
+            Define cuando recibes pedidos. Fuera del horario los clientes ven que estas cerrado y no
             pueden ordenar.
           </p>
         </header>
@@ -101,6 +119,10 @@ export default async function HorariosPage() {
           excepcionesIniciales={excepciones}
           estadoRestaurante={estado}
         />
+
+        {aceptaDomiciliosProgramados ? (
+          <HorariosDomiciliosEditor horariosIniciales={horariosDomicilios} />
+        ) : null}
       </main>
     </PanelShell>
   );
