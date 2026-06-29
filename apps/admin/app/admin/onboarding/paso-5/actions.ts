@@ -6,18 +6,18 @@ import { z } from 'zod';
 import { createClient } from '@mesaya/database/server';
 
 const productoSchema = z.object({
-  nombre: z.string().trim().min(2, 'Mínimo 2 caracteres').max(80, 'Máximo 80 caracteres'),
+  nombre: z.string().trim().min(2, 'Minimo 2 caracteres').max(80, 'Maximo 80 caracteres'),
   precio: z
     .string()
     .trim()
-    .regex(/^\d+$/, 'Solo números, sin puntos ni comas')
+    .regex(/^\d+$/, 'Solo numeros, sin puntos ni comas')
     .transform((v) => parseInt(v, 10))
     .refine((n) => n > 0 && n <= 9_999_999, 'Precio fuera de rango'),
-  categoria_id: z.string().uuid('Categoría inválida'),
+  categoria_id: z.string().uuid('Categoria invalida'),
   descripcion: z
     .string()
     .trim()
-    .max(200, 'Máximo 200 caracteres')
+    .max(200, 'Maximo 200 caracteres')
     .transform((v) => (v === '' ? null : v))
     .nullable(),
 });
@@ -63,7 +63,7 @@ export async function agregarProducto(
   }
 
   const { supabase, restauranteId } = await getRestauranteId();
-  if (!restauranteId) return { ok: false, error: 'Tu sesión expiró.' };
+  if (!restauranteId) return { ok: false, error: 'Tu sesion expiro.' };
 
   const { data: maxOrden } = await supabase
     .from('productos')
@@ -100,23 +100,18 @@ export async function borrarProducto(formData: FormData) {
   const { supabase, restauranteId } = await getRestauranteId();
   if (!restauranteId) return;
 
-  // Hard delete acá porque productos no tiene FKs históricas en MVP.
-  // Si después rastreamos pedidos que apuntan a productos, cambiar a soft delete.
+  // Hard delete aca porque productos no tiene FKs historicas en MVP.
+  // Si despues rastreamos pedidos que apuntan a productos, cambiar a soft delete.
   await supabase.from('productos').delete().eq('id', id).eq('restaurante_id', restauranteId);
 
   revalidatePath('/admin/onboarding/paso-5');
 }
 
 export async function avanzarAPaso6() {
-  const { supabase, restauranteId } = await getRestauranteId();
+  const { restauranteId } = await getRestauranteId();
   if (!restauranteId) redirect('/login');
 
-  const { count } = await supabase
-    .from('productos')
-    .select('*', { count: 'exact', head: true })
-    .eq('restaurante_id', restauranteId);
-
-  if (!count || count < 1) return;
-
+  // Productos es un paso saltable: el dueno puede armar su menu ahora o despues
+  // desde el panel. No exigimos un minimo para avanzar.
   redirect('/admin/onboarding/paso-6');
 }

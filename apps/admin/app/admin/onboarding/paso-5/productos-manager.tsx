@@ -28,8 +28,6 @@ type Categoria = {
 
 const initialAdd: AddProductoState = { ok: false };
 
-const MIN_PARA_AVANZAR = 1; // S2.2 deja en 1; S2.3 sube a 5 cuando esté reorder + edicion.
-
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 
 /** Construye la URL publica de una foto a partir de su path en el bucket. */
@@ -70,7 +68,6 @@ export function ProductosManager({
   categorias: Categoria[];
 }) {
   const total = productos.length;
-  const puedeAvanzar = total >= MIN_PARA_AVANZAR;
   const categoriasMap = new Map(categorias.map((c) => [c.id, c.nombre]));
 
   return (
@@ -80,14 +77,14 @@ export function ProductosManager({
       <Lista productos={productos} categoriasMap={categoriasMap} />
 
       <div className="pt-2 flex items-center justify-between gap-4 flex-wrap border-t border-[var(--color-border)] mt-2">
-        <p className="text-xs pt-4" style={{ color: 'var(--color-muted)' }}>
+        <p className="text-xs pt-4 max-w-sm leading-relaxed" style={{ color: 'var(--color-muted)' }}>
           {total === 0
-            ? 'Agrega al menos un producto para continuar.'
+            ? 'Puedes agregar tus productos ahora o mas tarde desde tu panel.'
             : `${total} producto${total === 1 ? '' : 's'}. Te quedan 3 pasos.`}
         </p>
         <form action={avanzarAPaso6} className="pt-4">
-          <Button type="submit" size="lg" disabled={!puedeAvanzar}>
-            Siguiente · Mesas
+          <Button type="submit" size="lg">
+            {total === 0 ? 'Saltar este paso' : 'Siguiente: Mesas'}
             <ArrowRight />
           </Button>
         </form>
@@ -141,7 +138,7 @@ function FormularioAgregar({ categorias }: { categorias: Categoria[] }) {
         </Field>
       </div>
 
-      <Field id="categoria_id" label="Categoría" error={state.fieldErrors?.categoria_id}>
+      <Field id="categoria_id" label="Categoria" error={state.fieldErrors?.categoria_id}>
         <select
           id="categoria_id"
           name="categoria_id"
@@ -156,7 +153,7 @@ function FormularioAgregar({ categorias }: { categorias: Categoria[] }) {
           )}
         >
           <option value="" disabled>
-            Selecciona una categoría
+            Selecciona una categoria
           </option>
           {categorias.map((c) => (
             <option key={c.id} value={c.id}>
@@ -168,15 +165,15 @@ function FormularioAgregar({ categorias }: { categorias: Categoria[] }) {
 
       <Field
         id="descripcion"
-        label="Descripción"
-        hint="Opcional. Una línea, máximo 200 caracteres."
+        label="Descripcion"
+        hint="Opcional. Una linea, maximo 200 caracteres."
         error={state.fieldErrors?.descripcion}
       >
         <Input
           id="descripcion"
           name="descripcion"
           type="text"
-          placeholder="Ej: Frijoles, arroz, carne, chicharrón, huevo, plátano y aguacate"
+          placeholder="Ej: Frijoles, arroz, carne, chicharron, huevo, platano y aguacate"
           maxLength={200}
         />
       </Field>
@@ -232,13 +229,13 @@ function Lista({
         style={{ borderColor: 'var(--color-border-strong)' }}
       >
         <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-          Aún no has agregado productos. Llena el formulario de arriba.
+          Aun no has agregado productos. Llena el formulario de arriba.
         </p>
       </div>
     );
   }
 
-  // Agrupar por categoría
+  // Agrupar por categoria
   const porCategoria = new Map<string, Producto[]>();
   for (const p of productos) {
     const arr = porCategoria.get(p.categoria_id) ?? [];
@@ -254,7 +251,7 @@ function Lista({
             className="text-xs uppercase tracking-[0.14em] mb-2 px-1"
             style={{ color: 'var(--color-muted)' }}
           >
-            {categoriasMap.get(catId) ?? 'Sin categoría'}
+            {categoriasMap.get(catId) ?? 'Sin categoria'}
           </h3>
           <ul
             className="rounded-[var(--radius-lg)] border divide-y"
@@ -331,7 +328,7 @@ function FotosProducto({ producto }: { producto: Producto }) {
         className="text-[11px] uppercase tracking-[0.12em] mb-2"
         style={{ color: 'var(--color-muted)' }}
       >
-        Fotos del plato — opcional, max. 2
+        Fotos del plato - opcional, max. 2
       </p>
 
       <div className="flex items-center gap-3 flex-wrap">
