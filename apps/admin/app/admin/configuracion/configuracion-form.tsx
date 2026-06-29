@@ -23,6 +23,7 @@ export function ConfiguracionForm({
   modoCocinaInicial,
   aceptaDomiciliosInicial,
   aceptaPickupInicial,
+  aceptaDomiciliosProgramadosInicial,
   slugInicial,
 }: {
   nombreInicial: string;
@@ -30,6 +31,7 @@ export function ConfiguracionForm({
   modoCocinaInicial: 'con_pantalla' | 'sin_pantalla' | 'impresion';
   aceptaDomiciliosInicial: boolean;
   aceptaPickupInicial: boolean;
+  aceptaDomiciliosProgramadosInicial: boolean;
   slugInicial: string;
 }) {
   const [state, formAction, pending] = useActionState(guardarConfig, initialState);
@@ -37,9 +39,12 @@ export function ConfiguracionForm({
   const [modoCocina, setModoCocina] = useState(modoCocinaInicial);
   const [aceptaDomicilios, setAceptaDomicilios] = useState(aceptaDomiciliosInicial);
   const [aceptaPickup, setAceptaPickup] = useState(aceptaPickupInicial);
+  const [aceptaDomiciliosProgramados, setAceptaDomiciliosProgramados] = useState(
+    aceptaDomiciliosProgramadosInicial,
+  );
   const [slug, setSlug] = useState(slugInicial);
 
-  const ofrecePedidosOnline = aceptaDomicilios || aceptaPickup;
+  const ofrecePedidosOnline = aceptaDomicilios || aceptaPickup || aceptaDomiciliosProgramados;
 
   return (
     <form
@@ -282,6 +287,55 @@ export function ConfiguracionForm({
               </p>
               <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
                 El cliente pide y pasa a recoger en tu local a la hora que elija.
+              </p>
+            </div>
+          </label>
+        </div>
+
+        {/* TOGGLE DOMICILIOS PROGRAMADOS */}
+        <div
+          className="rounded-[var(--radius-md)] border p-4 mb-3"
+          style={{
+            borderColor: aceptaDomiciliosProgramados
+              ? 'var(--color-border-strong)'
+              : 'var(--color-border)',
+            background: aceptaDomiciliosProgramados ? 'var(--color-paper)' : 'transparent',
+          }}
+        >
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={aceptaDomiciliosProgramados}
+              onClick={() => setAceptaDomiciliosProgramados((v) => !v)}
+              className="relative h-6 w-11 rounded-full transition-colors mt-0.5 shrink-0"
+              style={{
+                background: aceptaDomiciliosProgramados ? '#166534' : 'var(--color-paper-deep)',
+                border: `1px solid ${
+                  aceptaDomiciliosProgramados ? '#166534' : 'var(--color-border-strong)'
+                }`,
+              }}
+            >
+              <span
+                className="absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform"
+                style={{
+                  transform: aceptaDomiciliosProgramados ? 'translateX(20px)' : 'translateX(0)',
+                }}
+              />
+            </button>
+            <input
+              type="hidden"
+              name="acepta_domicilios_programados"
+              value={aceptaDomiciliosProgramados ? 'on' : 'off'}
+            />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
+                Aceptar domicilios programados
+              </p>
+              <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+                Tus clientes programan pedidos para dias de la semana (lunes a domingo), con fecha y
+                hora de entrega. Recuerda configurar el horario de domicilios para definir hasta que
+                hora recibes pedidos de cada dia.
               </p>
             </div>
           </label>

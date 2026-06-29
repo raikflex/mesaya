@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { ConfiguracionForm } from './configuracion-form';
-export const metadata = { title: 'Configuracion · EnPura' };
+export const metadata = { title: 'Configuracion - EnPura' };
 export const dynamic = 'force-dynamic';
 export default async function ConfiguracionPage() {
   const supabase = await createClient();
@@ -19,7 +19,9 @@ export default async function ConfiguracionPage() {
   if (perfil.rol !== 'dueno') redirect('/login?error=acceso-denegado');
   const { data: restaurante } = await supabase
     .from('restaurantes')
-    .select('nombre_publico, color_marca, modo_cocina, acepta_domicilios, acepta_pickup, slug')
+    .select(
+      'nombre_publico, color_marca, modo_cocina, acepta_domicilios, acepta_pickup, acepta_domicilios_programados, slug',
+    )
     .eq('id', perfil.restaurante_id as string)
     .single();
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu negocio';
@@ -28,6 +30,8 @@ export default async function ConfiguracionPage() {
     (restaurante?.modo_cocina as 'con_pantalla' | 'sin_pantalla' | 'impresion') ?? 'sin_pantalla';
   const aceptaDomicilios = (restaurante?.acepta_domicilios as boolean) ?? false;
   const aceptaPickup = (restaurante?.acepta_pickup as boolean) ?? false;
+  const aceptaDomiciliosProgramados =
+    (restaurante?.acepta_domicilios_programados as boolean) ?? false;
   const slug = (restaurante?.slug as string | null) ?? '';
   return (
     <PanelShell currentPage="configuracion" nombreNegocio={nombreNegocio}>
@@ -52,6 +56,7 @@ export default async function ConfiguracionPage() {
           modoCocinaInicial={modoCocina}
           aceptaDomiciliosInicial={aceptaDomicilios}
           aceptaPickupInicial={aceptaPickup}
+          aceptaDomiciliosProgramadosInicial={aceptaDomiciliosProgramados}
           slugInicial={slug}
         />
       </main>

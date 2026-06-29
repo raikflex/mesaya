@@ -21,6 +21,9 @@ const configSchema = z.object({
   acepta_pickup: z
     .union([z.literal('on'), z.literal('off'), z.null(), z.undefined()])
     .transform((v) => v === 'on'),
+  acepta_domicilios_programados: z
+    .union([z.literal('on'), z.literal('off'), z.null(), z.undefined()])
+    .transform((v) => v === 'on'),
   // Slug: minusculas, numeros y guiones. Vacio permitido (si no ofrece pedidos online).
   slug: z
     .string()
@@ -37,7 +40,13 @@ export type GuardarConfigState = {
   error?: string;
   fieldErrors?: Partial<
     Record<
-      'nombre_publico' | 'color_marca' | 'modo_cocina' | 'acepta_domicilios' | 'acepta_pickup' | 'slug',
+      | 'nombre_publico'
+      | 'color_marca'
+      | 'modo_cocina'
+      | 'acepta_domicilios'
+      | 'acepta_pickup'
+      | 'acepta_domicilios_programados'
+      | 'slug',
       string
     >
   >;
@@ -53,6 +62,7 @@ export async function guardarConfig(
     modo_cocina: formData.get('modo_cocina') ?? 'sin_pantalla',
     acepta_domicilios: formData.get('acepta_domicilios') ?? 'off',
     acepta_pickup: formData.get('acepta_pickup') ?? 'off',
+    acepta_domicilios_programados: formData.get('acepta_domicilios_programados') ?? 'off',
     slug: formData.get('slug') ?? '',
   });
 
@@ -106,13 +116,18 @@ export async function guardarConfig(
     }
   }
 
-  // Si ofrece pedidos online (domicilio o pickup), el slug es obligatorio.
-  const ofrecePedidosOnline = parsed.data.acepta_domicilios || parsed.data.acepta_pickup;
+  // Si ofrece pedidos online (domicilio, pickup o domicilios programados),
+  // el slug es obligatorio: es el enlace /d/... que comparte con sus clientes.
+  const ofrecePedidosOnline =
+    parsed.data.acepta_domicilios ||
+    parsed.data.acepta_pickup ||
+    parsed.data.acepta_domicilios_programados;
+
   if (ofrecePedidosOnline && !parsed.data.slug) {
     return {
       ok: false,
       fieldErrors: {
-        slug: 'Para recibir domicilios o pedidos para recoger, necesitas un enlace (ej: cafe-cumbre).',
+        slug: 'Para recibir pedidos online (domicilios, recoger o programados), necesitas un enlace (ej: cafe-cumbre).',
       },
     };
   }
@@ -154,6 +169,7 @@ export async function guardarConfig(
       cocina_activa: cocinaActivaDerivado,
       acepta_domicilios: parsed.data.acepta_domicilios,
       acepta_pickup: parsed.data.acepta_pickup,
+      acepta_domicilios_programados: parsed.data.acepta_domicilios_programados,
       slug: parsed.data.slug,
     })
     .eq('id', restauranteId);
