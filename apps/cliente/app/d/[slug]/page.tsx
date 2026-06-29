@@ -1,6 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { MenuExterno } from './menu-externo';
+import { SelectorModo } from './selector-modo';
 import { EstadoRestauranteScreen } from '../../m/[token]/estado-restaurante';
 import { estaAbiertoAhora, type HorarioDia, type ExcepcionDia } from '../../../lib/horarios';
 
@@ -8,15 +9,19 @@ export const dynamic = 'force-dynamic';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ modo?: string }>;
 }
 
-export default async function RestaurantePage({ params }: PageProps) {
+export default async function RestaurantePage({ params, searchParams }: PageProps) {
   const { slug } = await params;
+  const { modo } = await searchParams;
   const supabase = await createClient();
 
   const { data: restaurante } = await supabase
     .from('restaurantes')
-    .select('id, nombre_publico, color_marca, logo_url, estado, acepta_domicilios, acepta_pickup')
+    .select(
+      'id, nombre_publico, color_marca, logo_url, estado, acepta_domicilios, acepta_pickup, acepta_domicilios_programados',
+    )
     .eq('slug', slug)
     .maybeSingle();
 
@@ -25,6 +30,53 @@ export default async function RestaurantePage({ params }: PageProps) {
   }
 
   const restauranteId = restaurante.id as string;
+  const nombreNegocio = restaurante.nombre_publico as string;
+  const colorMarca = restaurante.color_marca as string;
+  const logoUrl = (restaurante.logo_url as string | null) ?? null;
+
+  // Hay dos caminos posibles:
+  //   inmediato  = domicilio normal o para recoger (el menu de hoy)
+  //   programado = el planificador de domicilios programados
+  const inmediato =
+    ((restaurante.acepta_domicilios as boolean) ?? false) ||
+    ((restaurante.acepta_pickup as boolean) ?? false);
+  const programado = (restaurante.acepta_domicilios_programados as boolean) ?? false;
+
+  // Ningun modo: no recibe pedidos en linea.
+  if (!inmediato && !programado) {
+    return (
+      <EstadoRestauranteScreen
+        tipo="cerrado"
+        nombreNegocio={nombreNegocio}
+        colorMarca={colorMarca}
+        proximaApertura="Este negocio no esta recibiendo pedidos en linea por ahora."
+      />
+    );
+  }
+
+  // Solo programado: directo al planificador (no pasa por el menu de hoy).
+  if (programado && !inmediato) {
+    redirect(`/d/${slug}/programar`);
+  }
+
+  // Ambos modos: mostrar el selector, salvo que el cliente ya eligio "pedir
+  // ahora" (?modo=ahora), en cuyo caso cae al menu inmediato de abajo.
+  if (inmediato && programado && modo !== 'ahora') {
+    return (
+      <SelectorModo
+        slug={slug}
+        nombreNegocio={nombreNegocio}
+        colorMarca={colorMarca}
+        logoUrl={logoUrl}
+      />
+    );
+  }
+
+  // ------------------------------------------------------------------
+  // A partir de aqui: MENU INMEDIATO (igual que antes del selector).
+  // Aplica solo cuando hay modo inmediato (solo-inmediato, o ambos con
+  // ?modo=ahora). El horario que valida es el del LOCAL.
+  // ------------------------------------------------------------------
 
   // Validar horario: si esta cerrado, no permitir pedir (igual que en mesa).
   const hoy = new Date().toISOString().slice(0, 10);
@@ -61,8 +113,8 @@ export default async function RestaurantePage({ params }: PageProps) {
     return (
       <EstadoRestauranteScreen
         tipo="cerrado"
-        nombreNegocio={restaurante.nombre_publico as string}
-        colorMarca={restaurante.color_marca as string}
+        nombreNegocio={nombreNegocio}
+        colorMarca={colorMarca}
         proximaApertura={estadoApertura.proximoTexto}
       />
     );
@@ -112,9 +164,9 @@ export default async function RestaurantePage({ params }: PageProps) {
   return (
     <MenuExterno
       slug={slug}
-      nombreNegocio={restaurante.nombre_publico as string}
-      colorMarca={restaurante.color_marca as string}
-      logoUrl={(restaurante.logo_url as string | null) ?? null}
+      nombreNegocio={nombreNegocio}
+      colorMarca={colorMarca}
+      logoUrl={logoUrl}
       grupos={grupos}
       aceptaDomicilios={(restaurante.acepta_domicilios as boolean) ?? false}
       aceptaPickup={(restaurante.acepta_pickup as boolean) ?? false}
