@@ -155,6 +155,48 @@ export async function eliminarCuentaEquipo(formData: FormData) {
   revalidatePath('/admin/equipo');
 }
 
+/* ============ SLUG AUTOMATICO ============ */
+
+/**
+ * Convierte un texto en un slug: minusculas, sin acentos, solo letras/numeros
+ * y guiones. Ej: "Cafe Cumbre X" -> "cafe-cumbre-x".
+ */
+function slugify(texto: string): string {
+  return texto
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quita acentos (tildes, dieresis)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-') // todo lo que no es alfanumerico -> guion
+    .replace(/^-+|-+$/g, ''); // sin guiones al inicio o final
+}
+
+/**
+ * Genera un slug unico a partir del nombre. Si "cafe-cumbre" ya existe,
+ * prueba "cafe-cumbre-2", "cafe-cumbre-3", etc. La base se recorta para que
+ * el slug final no pase de ~40 caracteres.
+ */
+async function generarSlugUnico(
+  admin: ReturnType<typeof createServiceClient>,
+  nombre: string,
+  restauranteId: string,
+): Promise<string | null> {
+  const base = slugify(nombre).slice(0, 32) || 'restaurante';
+
+  for (let i = 0; i < 50; i++) {
+    const candidato = i === 0 ? base : `${base}-${i + 1}`;
+    const { data: existente } = await admin
+      .from('restaurantes')
+      .select('id')
+      .eq('slug', candidato)
+      .neq('id', restauranteId)
+      .maybeSingle();
+    if (!existente) return candidato;
+  }
+
+  // Fallback improbable: base + sufijo aleatorio.
+  return `${base}-${Math.random().toString(36).slice(2, 6)}`;
+}
+
 /* ============ CERRAR ONBOARDING ============ */
 
 export async function cerrarOnboarding() {
@@ -163,28 +205,44 @@ export async function cerrarOnboarding() {
 
   const admin = createServiceClient();
 
-  // Al terminar el onboarding, el restaurante queda ACTIVO y arranca el
-  // trial de 15 dias automaticamente. Solo lo hacemos si todavia no estaba
-  // activado (para no reiniciar el trial si el dueno vuelve a pasar por aca).
   const { data: restaurante } = await admin
     .from('restaurantes')
-    .select('estado, primer_activacion_en')
+    .select('estado, primer_activacion_en, slug, nombre_publico')
     .eq('id', restauranteId)
     .maybeSingle();
 
-  if (restaurante && !restaurante.primer_activacion_en) {
-    const ahora = new Date();
-    const finTrial = new Date(ahora);
-    finTrial.setDate(finTrial.getDate() + 15);
+  if (restaurante) {
+    // 1) Activacion + trial de 15 dias (critico). Solo la primera vez, para no
+    //    reiniciar el trial si el dueno vuelve a pasar por el onboarding.
+    if (!restaurante.primer_activacion_en) {
+      const ahora = new Date();
+      const finTrial = new Date(ahora);
+      finTrial.setDate(finTrial.getDate() + 15);
 
-    await admin
-      .from('restaurantes')
-      .update({
-        estado: 'activo',
-        primer_activacion_en: ahora.toISOString(),
-        trial_termina_en: finTrial.toISOString(),
-      })
-      .eq('id', restauranteId);
+      await admin
+        .from('restaurantes')
+        .update({
+          estado: 'activo',
+          primer_activacion_en: ahora.toISOString(),
+          trial_termina_en: finTrial.toISOString(),
+        })
+        .eq('id', restauranteId);
+    }
+
+    // 2) Slug automatico (best-effort, aparte de la activacion). Solo si no
+    //    tiene uno, para no pisar el que el dueno ya haya elegido. Si fallara
+    //    por una carrera, no rompemos el onboarding: el dueno puede ponerlo
+    //    a mano en Configuracion.
+    if (!restaurante.slug) {
+      const slug = await generarSlugUnico(
+        admin,
+        (restaurante.nombre_publico as string) ?? '',
+        restauranteId,
+      );
+      if (slug) {
+        await admin.from('restaurantes').update({ slug }).eq('id', restauranteId);
+      }
+    }
   }
 
   revalidatePath('/admin');
