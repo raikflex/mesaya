@@ -30,7 +30,8 @@ const ITEMS: {
     | '/admin/metricas'
     | '/admin/horarios'
     | '/admin/branding'
-    | '/admin/configuracion';
+    | '/admin/configuracion'
+    | '/admin/domicilios-programados';
   icon: string;
 }[] = [
   { id: 'inicio', label: 'Inicio', href: '/admin', icon: 'home' },
@@ -44,11 +45,21 @@ const ITEMS: {
   { id: 'configuracion', label: 'Configuración', href: '/admin/configuracion', icon: 'gear' },
 ];
 
+// Item del nav para domicilios programados. Se inserta despues de "Mesas"
+// solo si el restaurante tiene la modalidad activa.
+const ITEM_DOMICILIOS: (typeof ITEMS)[number] = {
+  id: 'domicilios-programados',
+  label: 'Domicilios',
+  href: '/admin/domicilios-programados',
+  icon: 'truck',
+};
+
 type Indicadores = {
   mesasActivas: number;
   comandasActivas: number;
   reseñasUltimas24h: number;
   estadoRestaurante: string;
+  aceptaDomiciliosProgramados: boolean;
 };
 
 /**
@@ -65,7 +76,7 @@ function useIndicadoresAdmin(): Indicadores | null {
     let cancelado = false;
 
     async function fetchIndicadores() {
-      // Restaurante del usuario actual (vía RLS — perfiles solo deja ver el propio)
+      // Restaurante del usuario actual (vía RLS - perfiles solo deja ver el propio)
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -84,7 +95,11 @@ function useIndicadoresAdmin(): Indicadores | null {
       const hace24h = new Date(ahora.getTime() - 24 * 60 * 60 * 1000);
 
       const [restResp, sesResp, comandasResp, reviewsResp] = await Promise.all([
-        supabase.from('restaurantes').select('estado').eq('id', restauranteId).maybeSingle(),
+        supabase
+          .from('restaurantes')
+          .select('estado, acepta_domicilios_programados')
+          .eq('id', restauranteId)
+          .maybeSingle(),
         supabase
           .from('sesiones')
           .select('id', { count: 'exact', head: true })
@@ -108,6 +123,8 @@ function useIndicadoresAdmin(): Indicadores | null {
         comandasActivas: comandasResp.count ?? 0,
         reseñasUltimas24h: reviewsResp.count ?? 0,
         estadoRestaurante: (restResp.data?.estado as string) ?? 'archivado',
+        aceptaDomiciliosProgramados:
+          (restResp.data?.acepta_domicilios_programados as boolean) ?? false,
       });
     }
 
@@ -146,6 +163,12 @@ export function PanelShell({
 
   const estaPausado = indicadores?.estadoRestaurante === 'pausado';
   const estaActivo = indicadores?.estadoRestaurante === 'activo';
+  const aceptaDomiciliosProgramados = indicadores?.aceptaDomiciliosProgramados ?? false;
+
+  // Insertar "Domicilios" despues de "Mesas" cuando la modalidad esta activa.
+  const navItems = aceptaDomiciliosProgramados
+    ? [...ITEMS.slice(0, 3), ITEM_DOMICILIOS, ...ITEMS.slice(3)]
+    : ITEMS;
 
   return (
     <div className="min-h-screen flex" style={{ background: 'var(--color-paper)' }}>
@@ -194,7 +217,7 @@ export function PanelShell({
         </div>
 
         <nav className="flex-1 p-3 space-y-0.5 overflow-y-auto">
-          {ITEMS.map((item) => {
+          {navItems.map((item) => {
             const activo = item.id === currentPage;
             const badge = badges[item.id] ?? 0;
             return (
@@ -421,6 +444,14 @@ function ItemIcon({ name }: { name: string }) {
           <rect x="3" y="3" width="18" height="18" rx="2" {...stroke} />
           <circle cx="9" cy="9" r="2" {...stroke} />
           <path d="M21 15l-5-5L5 21" {...stroke} />
+        </svg>
+      );
+    case 'truck':
+      return (
+        <svg {...props}>
+          <path d="M2 6h11v10H2zM13 9h4l4 4v3h-8z" {...stroke} />
+          <circle cx="6.5" cy="18" r="1.6" {...stroke} />
+          <circle cx="17" cy="18" r="1.6" {...stroke} />
         </svg>
       );
     case 'user':
