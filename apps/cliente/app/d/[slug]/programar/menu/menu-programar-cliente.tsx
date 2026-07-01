@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   agregarItem,
   actualizarCantidad,
@@ -100,11 +101,11 @@ export function MenuProgramarCliente({
   dias: DiaMenu[];
   grupos: GrupoMenu[];
 }) {
+  const router = useRouter();
   const [diaActivo, setDiaActivo] = useState<string>(dias[0]?.fecha ?? '');
   const [carritos, setCarritos] = useState<Record<string, ItemCarrito[]>>({});
   const [cargando, setCargando] = useState(true);
   const [fotosModal, setFotosModal] = useState<ProductoMenu | null>(null);
-  const [aviso, setAviso] = useState(false);
 
   // Cargar el carrito de cada dia al montar.
   useEffect(() => {
@@ -120,7 +121,6 @@ export function MenuProgramarCliente({
   const diaActivoInfo = dias.find((d) => d.fecha === diaActivo);
 
   function cambiarCantidad(producto: ProductoMenu, nuevaCantidad: number) {
-    setAviso(false);
     const key = claveDia(slug, diaActivo);
     const yaEsta = carritoDia.some((i) => i.productoId === producto.id);
     let nuevo: ItemCarrito[];
@@ -141,6 +141,14 @@ export function MenuProgramarCliente({
   // Totales sumando todos los dias.
   const totalGlobal = dias.reduce((acc, d) => acc + calcularTotal(carritos[d.fecha] ?? []), 0);
   const unidadesGlobal = dias.reduce((acc, d) => acc + totalUnidades(carritos[d.fecha] ?? []), 0);
+
+  function continuar() {
+    if (unidadesGlobal === 0) return;
+    // Pasamos todos los dias elegidos; el checkout re-valida el corte y muestra
+    // solo los que tienen productos.
+    const fechas = dias.map((d) => d.fecha).join(',');
+    router.push(`/d/${slug}/programar/checkout?dias=${fechas}`);
+  }
 
   if (cargando) {
     return (
@@ -208,10 +216,7 @@ export function MenuProgramarCliente({
               <button
                 key={d.fecha}
                 type="button"
-                onClick={() => {
-                  setAviso(false);
-                  setDiaActivo(d.fecha);
-                }}
+                onClick={() => setDiaActivo(d.fecha)}
                 className="px-3.5 h-11 rounded-full text-xs whitespace-nowrap transition-all shrink-0 flex items-center gap-2"
                 style={{
                   background: activo ? 'var(--color-ink)' : 'transparent',
@@ -294,23 +299,12 @@ export function MenuProgramarCliente({
             ))}
           </div>
         )}
-
-        {aviso ? (
-          <div
-            className="mt-6 rounded-[var(--radius-md)] border px-3.5 py-3 text-sm leading-relaxed"
-            style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink-soft)', background: 'white' }}
-          >
-            Vas {unidadesGlobal} producto{unidadesGlobal === 1 ? '' : 's'} en total. El paso final
-            (tus datos y la hora de entrega de cada dia) lo estamos terminando y queda activo muy
-            pronto.
-          </div>
-        ) : null}
       </div>
 
       {unidadesGlobal > 0 ? (
         <button
           type="button"
-          onClick={() => setAviso(true)}
+          onClick={continuar}
           className="fixed bottom-4 left-4 right-4 z-30 h-14 rounded-full flex items-center justify-between px-5 max-w-md mx-auto"
           style={{ background: colorMarca, color: 'white' }}
         >
