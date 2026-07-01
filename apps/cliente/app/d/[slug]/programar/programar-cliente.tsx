@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { DiaDomicilioDisponible } from '../../../../lib/domicilios-disponibilidad';
 
 /** "2026-06-30" -> "30 jun" */
@@ -25,17 +26,23 @@ export function ProgramarCliente({
   logoUrl: string | null;
   dias: DiaDomicilioDisponible[];
 }) {
+  const router = useRouter();
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
-  const [aviso, setAviso] = useState(false);
 
   function toggle(fecha: string) {
-    setAviso(false);
     setSeleccion((prev) => {
       const next = new Set(prev);
       if (next.has(fecha)) next.delete(fecha);
       else next.add(fecha);
       return next;
     });
+  }
+
+  function continuar() {
+    if (seleccion.size === 0) return;
+    // Orden cronologico de las fechas elegidas.
+    const fechas = [...seleccion].sort();
+    router.push(`/d/${slug}/programar/menu?dias=${fechas.join(',')}`);
   }
 
   const totalSeleccion = seleccion.size;
@@ -166,22 +173,12 @@ export function ProgramarCliente({
             })}
           </ul>
         )}
-
-        {aviso ? (
-          <div
-            className="mt-5 rounded-[var(--radius-md)] border px-3.5 py-3 text-sm leading-relaxed"
-            style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink-soft)', background: 'white' }}
-          >
-            Listo, elegiste {totalSeleccion} dia{totalSeleccion === 1 ? '' : 's'}. El siguiente paso
-            (elegir tus platos para cada dia) lo estamos terminando y queda activo muy pronto.
-          </div>
-        ) : null}
       </div>
 
       {totalSeleccion > 0 ? (
         <button
           type="button"
-          onClick={() => setAviso(true)}
+          onClick={continuar}
           className="fixed bottom-4 left-4 right-4 z-30 h-14 rounded-full flex items-center justify-between px-5 max-w-md mx-auto"
           style={{ background: colorMarca, color: 'white' }}
         >
