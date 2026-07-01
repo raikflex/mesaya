@@ -15,7 +15,8 @@ type CurrentPage =
   | 'horarios'
   | 'branding'
   | 'configuracion'
-  | 'perfil';
+  | 'perfil'
+  | 'domicilios-programados';
 
 const ITEMS: {
   id: CurrentPage;
