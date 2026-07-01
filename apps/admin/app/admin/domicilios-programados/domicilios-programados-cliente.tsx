@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { createClient } from '@mesaya/database/client';
 import { cambiarEstadoPedidoProgramado } from './actions';
 
 export type PedidoProg = {
@@ -16,6 +17,46 @@ export type PedidoProg = {
   nota: string | null;
   items: { nombre: string; precio: number; cantidad: number }[];
 };
+
+type RawItem = { nombre_snapshot: string; precio_snapshot: number; cantidad: number };
+type RawPedido = {
+  id: string;
+  grupo_id: string | null;
+  nombre_cliente: string;
+  telefono: string;
+  direccion: string;
+  fecha_entrega: string;
+  hora_entrega: string;
+  total: number;
+  estado: string;
+  nota: string | null;
+  pedidos_programados_items: RawItem[] | null;
+};
+
+type Filtro = { modo: 'proximos' | 'historial' | 'dia'; fecha: string | null };
+
+const SELECT_PEDIDOS =
+  'id, grupo_id, nombre_cliente, telefono, direccion, fecha_entrega, hora_entrega, total, estado, nota, pedidos_programados_items(nombre_snapshot, precio_snapshot, cantidad)';
+
+function mapearPedidos(rows: RawPedido[]): PedidoProg[] {
+  return rows.map((p) => ({
+    id: p.id,
+    grupoId: p.grupo_id ?? null,
+    nombreCliente: p.nombre_cliente,
+    telefono: p.telefono,
+    direccion: p.direccion,
+    fechaEntrega: p.fecha_entrega,
+    horaEntrega: p.hora_entrega,
+    total: p.total,
+    estado: p.estado,
+    nota: p.nota ?? null,
+    items: (p.pedidos_programados_items ?? []).map((i) => ({
+      nombre: i.nombre_snapshot,
+      precio: i.precio_snapshot,
+      cantidad: i.cantidad,
+    })),
+  }));
+}
 
 const DIAS = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -60,13 +101,80 @@ function formatearHora(hora: string): string {
 export function DomiciliosProgramadosCliente({
   pedidos: pedidosIniciales,
   hoy,
+  restauranteId,
 }: {
   pedidos: PedidoProg[];
   hoy: string;
+  restauranteId: string;
 }) {
   const [pedidos, setPedidos] = useState<PedidoProg[]>(pedidosIniciales);
   const [actualizando, setActualizando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [filtro, setFiltro] = useState<Filtro>({ modo: 'proximos', fecha: null });
+  const [cargandoLista, setCargandoLista] = useState(false);
+
+  const filtroRef = useRef(filtro);
+  filtroRef.current = filtro;
+
+  async function consultar(f: Filtro): Promise<PedidoProg[]> {
+    const supabase = createClient();
+    let query = supabase
+      .from('pedidos_programados')
+      .select(SELECT_PEDIDOS)
+      .eq('restaurante_id', restauranteId);
+    if (f.modo === 'proximos') query = query.gte('fecha_entrega', hoy);
+    else if (f.modo === 'historial') query = query.lt('fecha_entrega', hoy);
+    else if (f.modo === 'dia' && f.fecha) query = query.eq('fecha_entrega', f.fecha);
+    const asc = f.modo !== 'historial';
+    const { data } = await query
+      .order('fecha_entrega', { ascending: asc })
+      .order('hora_entrega', { ascending: true });
+    return mapearPedidos((data ?? []) as unknown as RawPedido[]);
+  }
+
+  function recargar() {
+    setCargandoLista(true);
+    consultar(filtroRef.current)
+      .then((res) => {
+        setPedidos(res);
+        setCargandoLista(false);
+      })
+      .catch(() => setCargandoLista(false));
+  }
+
+  // Cambio de filtro. La vista inicial "Proximos" ya viene del servidor.
+  const primeraVez = useRef(true);
+  useEffect(() => {
+    if (primeraVez.current) {
+      primeraVez.current = false;
+      if (filtro.modo === 'proximos') return;
+    }
+    recargar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtro]);
+
+  // Realtime: cuando cambian los pedidos del restaurante, recargamos la vista
+  // actual con una consulta protegida por RLS (no usamos el payload del evento).
+  useEffect(() => {
+    const supabase = createClient();
+    const canal = supabase
+      .channel(`pp-${restauranteId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'pedidos_programados',
+          filter: `restaurante_id=eq.${restauranteId}`,
+        },
+        () => recargar(),
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(canal);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restauranteId]);
 
   const grupos = useMemo(() => {
     const map = new Map<string, PedidoProg[]>();
@@ -103,6 +211,15 @@ export function DomiciliosProgramadosCliente({
 
   const totalActivos = pedidos.filter((p) => p.estado !== 'cancelado').length;
 
+  const subtitulo =
+    filtro.modo === 'historial'
+      ? 'Pedidos de dias pasados.'
+      : filtro.modo === 'dia' && filtro.fecha
+        ? `Pedidos del ${etiquetaFecha(filtro.fecha, hoy)}.`
+        : totalActivos > 0
+          ? `${totalActivos} ${totalActivos === 1 ? 'pedido activo' : 'pedidos activos'} de hoy en adelante.`
+          : 'Los pedidos que programen tus clientes apareceran aqui, agrupados por dia.';
+
   return (
     <main className="px-6 sm:px-10 py-10 max-w-4xl mx-auto">
       <header className="mb-8">
@@ -113,11 +230,67 @@ export function DomiciliosProgramadosCliente({
           Domicilios programados
         </h1>
         <p className="mt-3 text-[0.95rem]" style={{ color: 'var(--color-ink-soft)' }}>
-          {totalActivos > 0
-            ? `${totalActivos} ${totalActivos === 1 ? 'pedido activo' : 'pedidos activos'} de hoy en adelante.`
-            : 'Los pedidos que programen tus clientes apareceran aqui, agrupados por dia.'}
+          {subtitulo}
         </p>
       </header>
+
+      {/* Filtro de vista */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div
+          className="inline-flex rounded-[var(--radius-md)] border overflow-hidden"
+          style={{ borderColor: 'var(--color-border-strong)' }}
+        >
+          {(
+            [
+              ['proximos', 'Proximos'],
+              ['historial', 'Historial'],
+            ] as const
+          ).map(([modo, label]) => {
+            const activo = filtro.modo === modo;
+            return (
+              <button
+                key={modo}
+                type="button"
+                onClick={() => setFiltro({ modo, fecha: null })}
+                className="h-9 px-4 text-sm transition-colors"
+                style={{
+                  background: activo ? 'var(--color-ink)' : 'transparent',
+                  color: activo ? 'var(--color-paper)' : 'var(--color-ink-soft)',
+                }}
+              >
+                {label}
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
+            o un dia:
+          </span>
+          <input
+            type="date"
+            value={filtro.modo === 'dia' ? filtro.fecha ?? '' : ''}
+            onChange={(e) =>
+              e.target.value
+                ? setFiltro({ modo: 'dia', fecha: e.target.value })
+                : setFiltro({ modo: 'proximos', fecha: null })
+            }
+            className="h-9 px-3 rounded-[var(--radius-md)] border text-sm"
+            style={{
+              borderColor: 'var(--color-border-strong)',
+              color: 'var(--color-ink)',
+              background: 'white',
+            }}
+          />
+        </div>
+
+        {cargandoLista ? (
+          <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
+            Cargando...
+          </span>
+        ) : null}
+      </div>
 
       {error ? (
         <div
@@ -135,7 +308,11 @@ export function DomiciliosProgramadosCliente({
           style={{ borderColor: 'var(--color-border-strong)' }}
         >
           <p className="text-sm" style={{ color: 'var(--color-muted)' }}>
-            Todavia no hay domicilios programados proximos.
+            {filtro.modo === 'historial'
+              ? 'No hay pedidos en el historial.'
+              : filtro.modo === 'dia'
+                ? 'No hay pedidos para ese dia.'
+                : 'Todavia no hay domicilios programados proximos.'}
           </p>
         </div>
       ) : (

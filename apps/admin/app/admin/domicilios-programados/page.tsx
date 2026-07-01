@@ -62,7 +62,8 @@ export default async function DomiciliosProgramadosPage() {
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
   const hoy = hoyBogota();
 
-  // Pedidos de hoy en adelante (los pasados van al historial en la 3B).
+  // Pedidos de hoy en adelante (vista "Proximos"). El historial se carga
+  // bajo demanda desde el cliente.
   const { data: pedidosRaw } = await supabase
     .from('pedidos_programados')
     .select(
@@ -93,7 +94,7 @@ export default async function DomiciliosProgramadosPage() {
 
   return (
     <PanelShell currentPage="domicilios-programados" nombreNegocio={nombreNegocio}>
-      <DomiciliosProgramadosCliente pedidos={pedidos} hoy={hoy} />
+      <DomiciliosProgramadosCliente pedidos={pedidos} hoy={hoy} restauranteId={restauranteId} />
     </PanelShell>
   );
 }
