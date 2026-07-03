@@ -93,10 +93,22 @@ export async function guardarConfig(
 
   const restauranteId = perfil.restaurante_id as string;
 
-  // El modo con_pantalla necesita una cuenta de cocina creada.
-  // El modo impresion tambien (la estacion de impresion usa la cuenta de cocina).
+  // Solo exigimos cuenta de cocina cuando el dueno CAMBIA a un modo que la
+  // necesita (con_pantalla o impresion). Si no toca el modo de cocina, no
+  // bloqueamos el guardado por esto (ej: cuando solo esta activando domicilios).
+  // Asi el requisito de cocina no interfiere con otros ajustes.
+  const { data: restauranteActual } = await supabase
+    .from('restaurantes')
+    .select('modo_cocina')
+    .eq('id', restauranteId)
+    .maybeSingle();
+
+  const modoActual = (restauranteActual?.modo_cocina as string | null) ?? null;
+  const cambiaModo = parsed.data.modo_cocina !== modoActual;
+
   const necesitaCuentaCocina =
-    parsed.data.modo_cocina === 'con_pantalla' || parsed.data.modo_cocina === 'impresion';
+    cambiaModo &&
+    (parsed.data.modo_cocina === 'con_pantalla' || parsed.data.modo_cocina === 'impresion');
 
   if (necesitaCuentaCocina) {
     const { count: cocineros } = await supabase
