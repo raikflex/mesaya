@@ -43,8 +43,26 @@ export function ConfiguracionForm({
     aceptaDomiciliosProgramadosInicial,
   );
   const [slug, setSlug] = useState(slugInicial);
+  const [copiado, setCopiado] = useState(false);
 
   const ofrecePedidosOnline = aceptaDomicilios || aceptaPickup || aceptaDomiciliosProgramados;
+
+  // URL completa del cliente para compartir. Respeta NEXT_PUBLIC_CLIENTE_URL si
+  // esta configurada; si no, cae al dominio de produccion.
+  const baseRaw = process.env.NEXT_PUBLIC_CLIENTE_URL ?? 'https://menu.enpura.co';
+  const baseCliente = baseRaw.endsWith('/') ? baseRaw.slice(0, -1) : baseRaw;
+  const enlaceCompleto = slug ? `${baseCliente}/d/${slug}` : '';
+
+  async function copiarEnlace() {
+    if (!enlaceCompleto) return;
+    try {
+      await navigator.clipboard.writeText(enlaceCompleto);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    } catch {
+      // Algunos navegadores bloquean el portapapeles; se puede copiar a mano.
+    }
+  }
 
   return (
     <form
@@ -383,9 +401,32 @@ export function ConfiguracionForm({
             />
           </div>
           {slug ? (
-            <p className="text-xs mt-2 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
-              Tu enlace sera: <strong style={{ color: 'var(--color-ink)' }}>.../d/{slug}</strong>
-            </p>
+            <div className="mt-3">
+              <p className="text-xs mb-1.5" style={{ color: 'var(--color-muted)' }}>
+                Comparte este enlace con tus clientes (redes, WhatsApp, bio):
+              </p>
+              <div className="flex items-center gap-2">
+                <code
+                  className="flex-1 min-w-0 truncate text-sm font-[family-name:var(--font-mono)] px-3 py-2 rounded-[var(--radius-md)] border"
+                  style={{
+                    borderColor: 'var(--color-border)',
+                    background: 'var(--color-paper)',
+                    color: 'var(--color-ink)',
+                  }}
+                  title={enlaceCompleto}
+                >
+                  {enlaceCompleto}
+                </code>
+                <button
+                  type="button"
+                  onClick={copiarEnlace}
+                  className="h-9 px-4 rounded-[var(--radius-md)] text-sm font-medium shrink-0"
+                  style={{ background: 'var(--color-ink)', color: 'var(--color-paper)' }}
+                >
+                  {copiado ? 'Copiado' : 'Copiar'}
+                </button>
+              </div>
+            </div>
           ) : null}
           {state.fieldErrors?.slug ? (
             <p role="alert" className="text-xs leading-relaxed mt-2" style={{ color: 'var(--color-danger)' }}>
