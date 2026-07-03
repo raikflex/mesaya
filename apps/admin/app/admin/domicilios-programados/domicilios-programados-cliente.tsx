@@ -82,7 +82,7 @@ function sumarDia(fecha: string): string {
 /** Etiqueta amable para una fecha, relativa a hoy. */
 function etiquetaFecha(fecha: string, hoy: string): string {
   if (fecha === hoy) return 'Hoy';
-  if (fecha === sumarDia(hoy)) return 'Manana';
+  if (fecha === sumarDia(hoy)) return 'Ma\u00f1ana';
   const [y, m, d] = fecha.split('-').map(Number);
   const dt = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
   return `${DIAS[dt.getDay()]} ${d} ${MESES[(m ?? 1) - 1]}`;
@@ -122,8 +122,10 @@ export function DomiciliosProgramadosCliente({
       .from('pedidos_programados')
       .select(SELECT_PEDIDOS)
       .eq('restaurante_id', restauranteId);
-    if (f.modo === 'proximos') query = query.gte('fecha_entrega', hoy);
-    else if (f.modo === 'historial') query = query.lt('fecha_entrega', hoy);
+    if (f.modo === 'proximos')
+      query = query.gte('fecha_entrega', hoy).in('estado', ['pendiente', 'confirmado']);
+    else if (f.modo === 'historial')
+      query = query.or(`estado.in.(entregado,cancelado),fecha_entrega.lt.${hoy}`);
     else if (f.modo === 'dia' && f.fecha) query = query.eq('fecha_entrega', f.fecha);
     const asc = f.modo !== 'historial';
     const { data } = await query
@@ -189,9 +191,19 @@ export function DomiciliosProgramadosCliente({
     setError(null);
     setActualizando(pedidoId);
     const antes = pedidos;
-    setPedidos((prev) =>
-      prev.map((p) => (p.id === pedidoId ? { ...p, estado: nuevoEstado } : p)),
-    );
+    setPedidos((prev) => {
+      const actualizados = prev.map((p) =>
+        p.id === pedidoId ? { ...p, estado: nuevoEstado } : p,
+      );
+      // En "Proximos" solo viven pendiente/confirmado: al marcar entregado o
+      // cancelado, el pedido sale de esta vista y pasa al historial.
+      if (filtroRef.current.modo === 'proximos') {
+        return actualizados.filter(
+          (p) => p.estado === 'pendiente' || p.estado === 'confirmado',
+        );
+      }
+      return actualizados;
+    });
     const r = await cambiarEstadoPedidoProgramado(
       pedidoId,
       nuevoEstado as 'pendiente' | 'confirmado' | 'entregado' | 'cancelado',
@@ -213,7 +225,7 @@ export function DomiciliosProgramadosCliente({
 
   const subtitulo =
     filtro.modo === 'historial'
-      ? 'Pedidos de dias pasados.'
+      ? 'Entregados, cancelados y de dias anteriores.'
       : filtro.modo === 'dia' && filtro.fecha
         ? `Pedidos del ${etiquetaFecha(filtro.fecha, hoy)}.`
         : totalActivos > 0
