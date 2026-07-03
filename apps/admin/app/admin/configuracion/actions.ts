@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { createClient } from '@mesaya/database/server';
+import { createServiceClient } from '@mesaya/database/service';
 
 const configSchema = z.object({
   nombre_publico: z.string().trim().min(2, 'Minimo 2 caracteres').max(80, 'Maximo 80 caracteres'),
@@ -188,6 +189,72 @@ export async function guardarConfig(
 
   if (error) {
     return { ok: false, error: 'No se pudo guardar. ' + error.message };
+  }
+
+  // Si el dueno activo los domicilios programados y aun no tiene horario de
+  // domicilios configurado, lo preestablecemos automaticamente para que el
+  // cliente vea dias de inmediato: copiamos el horario de atencion del local
+  // (o, si no hay uno util, abrimos todos los dias por defecto de 8:00 a 18:00).
+  if (parsed.data.acepta_domicilios_programados) {
+    const { count: filasDom } = await supabase
+      .from('horarios_domicilios')
+      .select('dia_semana', { count: 'exact', head: true })
+      .eq('restaurante_id', restauranteId);
+
+    if (!filasDom || filasDom === 0) {
+      const { data: atencion } = await supabase
+        .from('horarios_atencion')
+        .select('dia_semana, abierto, hora_apertura, hora_cierre')
+        .eq('restaurante_id', restauranteId);
+
+      const porDia = new Map<
+        number,
+        { abierto: boolean; ap: string | null; ci: string | null }
+      >();
+      for (const h of atencion ?? []) {
+        porDia.set(h.dia_semana as number, {
+          abierto: h.abierto as boolean,
+          ap: (h.hora_apertura as string | null) ?? null,
+          ci: (h.hora_cierre as string | null) ?? null,
+        });
+      }
+      const hayBaseUtil = [...porDia.values()].some((d) => d.abierto && d.ap && d.ci);
+
+      const filas: Array<{
+        restaurante_id: string;
+        dia_semana: number;
+        abierto: boolean;
+        hora_apertura: string | null;
+        hora_cierre: string | null;
+      }> = [];
+
+      for (let dia = 0; dia < 7; dia++) {
+        const base = porDia.get(dia);
+        if (hayBaseUtil) {
+          const abierto = !!(base && base.abierto && base.ap && base.ci);
+          filas.push({
+            restaurante_id: restauranteId,
+            dia_semana: dia,
+            abierto,
+            hora_apertura: abierto ? base!.ap : null,
+            hora_cierre: abierto ? base!.ci : null,
+          });
+        } else {
+          filas.push({
+            restaurante_id: restauranteId,
+            dia_semana: dia,
+            abierto: true,
+            hora_apertura: '08:00',
+            hora_cierre: '18:00',
+          });
+        }
+      }
+
+      const admin = createServiceClient();
+      await admin
+        .from('horarios_domicilios')
+        .upsert(filas, { onConflict: 'restaurante_id,dia_semana' });
+    }
   }
 
   revalidatePath('/admin');
