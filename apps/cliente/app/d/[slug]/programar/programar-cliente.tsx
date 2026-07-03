@@ -47,6 +47,71 @@ export function ProgramarCliente({
 
   const totalSeleccion = seleccion.size;
 
+  const renderDia = (dia: DiaDomicilioDisponible) => {
+    const activo = seleccion.has(dia.fecha);
+    return (
+      <li key={dia.fecha}>
+        <button
+          type="button"
+          onClick={() => toggle(dia.fecha)}
+          aria-pressed={activo}
+          className="w-full text-left rounded-[var(--radius-lg)] border bg-white p-4 transition-colors"
+          style={{
+            borderColor: activo ? colorMarca : 'var(--color-border)',
+            borderWidth: activo ? 1.5 : 1,
+          }}
+        >
+          <div className="flex items-center gap-3">
+            <span
+              className="size-6 rounded-full border-2 grid place-items-center shrink-0"
+              style={{
+                borderColor: activo ? colorMarca : 'var(--color-border-strong)',
+                background: activo ? colorMarca : 'transparent',
+              }}
+            >
+              {activo ? (
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
+                  <polyline
+                    points="5 12 10 17 19 8"
+                    stroke="white"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              ) : null}
+            </span>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2">
+                <p className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>
+                  {dia.nombre}
+                </p>
+                <span
+                  className="text-sm font-[family-name:var(--font-mono)]"
+                  style={{ color: 'var(--color-muted)' }}
+                >
+                  {fechaCorta(dia.fecha)}
+                </span>
+                {dia.esHoy ? (
+                  <span
+                    className="text-[0.6rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full"
+                    style={{ background: colorMarca, color: 'white' }}
+                  >
+                    Hoy
+                  </span>
+                ) : null}
+              </div>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
+                Pide hasta las {dia.corte}
+              </p>
+            </div>
+          </div>
+        </button>
+      </li>
+    );
+  };
+
   return (
     <main
       className="min-h-screen flex flex-col"
@@ -91,8 +156,8 @@ export function ProgramarCliente({
           Programa tu pedido
         </h2>
         <p className="text-sm leading-relaxed mb-6" style={{ color: 'var(--color-ink-soft)' }}>
-          Elige para que dias de esta semana quieres tu domicilio. Cada dia se cierra a su hora de
-          corte.
+          Elige para que dias quieres tu domicilio. Puedes pedir para esta semana y la proxima. Cada
+          dia se cierra a su hora de corte.
         </p>
 
         {dias.length === 0 ? (
@@ -101,77 +166,27 @@ export function ProgramarCliente({
             style={{ borderColor: 'var(--color-border-strong)' }}
           >
             <p className="text-sm leading-relaxed" style={{ color: 'var(--color-muted)' }}>
-              No hay dias disponibles para programar esta semana. Vuelve el lunes para la nueva
-              semana.
+              No hay dias disponibles para programar en este momento.
             </p>
           </div>
         ) : (
-          <ul className="space-y-2.5">
-            {dias.map((dia) => {
-              const activo = seleccion.has(dia.fecha);
+          <div className="space-y-6">
+            {(['esta', 'proxima'] as const).map((sem) => {
+              const grupo = dias.filter((d) => d.semana === sem);
+              if (grupo.length === 0) return null;
               return (
-                <li key={dia.fecha}>
-                  <button
-                    type="button"
-                    onClick={() => toggle(dia.fecha)}
-                    aria-pressed={activo}
-                    className="w-full text-left rounded-[var(--radius-lg)] border bg-white p-4 transition-colors"
-                    style={{
-                      borderColor: activo ? colorMarca : 'var(--color-border)',
-                      borderWidth: activo ? 1.5 : 1,
-                    }}
+                <div key={sem}>
+                  <h3
+                    className="text-xs font-medium uppercase tracking-[0.12em] mb-2.5"
+                    style={{ color: 'var(--color-muted)' }}
                   >
-                    <div className="flex items-center gap-3">
-                      <span
-                        className="size-6 rounded-full border-2 grid place-items-center shrink-0"
-                        style={{
-                          borderColor: activo ? colorMarca : 'var(--color-border-strong)',
-                          background: activo ? colorMarca : 'transparent',
-                        }}
-                      >
-                        {activo ? (
-                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden>
-                            <polyline
-                              points="5 12 10 17 19 8"
-                              stroke="white"
-                              strokeWidth="2.5"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            />
-                          </svg>
-                        ) : null}
-                      </span>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>
-                            {dia.nombre}
-                          </p>
-                          <span
-                            className="text-sm font-[family-name:var(--font-mono)]"
-                            style={{ color: 'var(--color-muted)' }}
-                          >
-                            {fechaCorta(dia.fecha)}
-                          </span>
-                          {dia.esHoy ? (
-                            <span
-                              className="text-[0.6rem] uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-full"
-                              style={{ background: colorMarca, color: 'white' }}
-                            >
-                              Hoy
-                            </span>
-                          ) : null}
-                        </div>
-                        <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
-                          Pide hasta las {dia.corte}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                </li>
+                    {sem === 'esta' ? 'Esta semana' : 'Proxima semana'}
+                  </h3>
+                  <ul className="space-y-2.5">{grupo.map(renderDia)}</ul>
+                </div>
               );
             })}
-          </ul>
+          </div>
         )}
       </div>
 

@@ -4,8 +4,8 @@
  * Calcula en que dias puede el cliente programar un domicilio, respetando:
  *  - El horario de domicilios (tabla horarios_domicilios) de cada dia.
  *  - La hora de corte de cada dia (= hora_cierre).
- *  - La ventana: desde hoy hasta el domingo de ESTA semana (no la proxima),
- *    porque el menu se renueva cada 8 dias.
+ *  - La ventana: desde hoy hasta el domingo de la PROXIMA semana. Asi el cliente
+ *    puede pedir por anticipado los dias de esta semana y los de la que viene.
  *
  * Trae sus propios helpers de hora Colombia para NO tocar la lib horarios.ts
  * (que es critica y la usan los menus en vivo). Solo reusa de ahi lo exportado.
@@ -19,6 +19,7 @@ export type DiaDomicilioDisponible = {
   nombre: string; // "Lunes"
   esHoy: boolean;
   corte: string; // hora de corte formateada, ej "9:00 am"
+  semana: 'esta' | 'proxima'; // para agrupar en la UI
 };
 
 /** Parsea "HH:MM:SS" o "HH:MM" a minutos desde medianoche. */
@@ -49,21 +50,23 @@ function fechaBogota(offset: number): string {
 
 /**
  * Devuelve los dias en los que el cliente puede programar un domicilio.
- * Ventana: desde hoy hasta el domingo de esta semana (incluido).
+ * Ventana: desde hoy hasta el domingo de la PROXIMA semana (incluido).
  * Reglas por dia:
  *  - Debe estar 'abierto' en el horario de domicilios y tener hora de corte.
  *  - Si es HOY: disponible solo si todavia no paso la hora de corte.
- *  - Si es un dia futuro de esta semana: disponible.
+ *  - Si es un dia futuro (de esta semana o de la proxima): disponible.
  */
 export function diasDomicilioDisponibles(
   horariosDomicilios: HorarioDia[],
 ): DiaDomicilioDisponible[] {
   const { dow: dowHoy, minutos } = ahoraBogota();
-  // Dias desde hoy hasta el domingo (domingo = 0). Si hoy es domingo, solo hoy.
-  const offsetHastaDomingo = dowHoy === 0 ? 0 : 7 - dowHoy;
+  // Offset hasta el domingo de ESTA semana (domingo = 0). Si hoy es domingo, 0.
+  const offsetDomingoEsta = dowHoy === 0 ? 0 : 7 - dowHoy;
+  // Hasta el domingo de la PROXIMA semana: una semana mas.
+  const offsetFinal = offsetDomingoEsta + 7;
 
   const dias: DiaDomicilioDisponible[] = [];
-  for (let i = 0; i <= offsetHastaDomingo; i++) {
+  for (let i = 0; i <= offsetFinal; i++) {
     const dow = (dowHoy + i) % 7;
     const h = horariosDomicilios.find((x) => x.dia_semana === dow);
     if (!h || !h.abierto || !h.hora_cierre) continue;
@@ -77,6 +80,7 @@ export function diasDomicilioDisponibles(
       nombre: nombreDiaCapital(dow),
       esHoy: i === 0,
       corte: formatearHora(h.hora_cierre),
+      semana: i <= offsetDomingoEsta ? 'esta' : 'proxima',
     });
   }
 
