@@ -19,12 +19,14 @@ export function ProgramarCliente({
   colorMarca,
   logoUrl,
   dias,
+  platosPorFecha,
 }: {
   slug: string;
   nombreNegocio: string;
   colorMarca: string;
   logoUrl: string | null;
   dias: DiaDomicilioDisponible[];
+  platosPorFecha?: Record<string, { nombre: string; precio: number }>;
 }) {
   const router = useRouter();
   const [seleccion, setSeleccion] = useState<Set<string>>(new Set());
@@ -49,6 +51,7 @@ export function ProgramarCliente({
 
   const renderDia = (dia: DiaDomicilioDisponible) => {
     const activo = seleccion.has(dia.fecha);
+    const platoDia = platosPorFecha?.[dia.fecha];
     return (
       <li key={dia.fecha}>
         <button
@@ -57,8 +60,8 @@ export function ProgramarCliente({
           aria-pressed={activo}
           className="w-full text-left rounded-[var(--radius-lg)] border bg-white p-4 transition-colors"
           style={{
-            borderColor: activo ? colorMarca : 'var(--color-border)',
-            borderWidth: activo ? 1.5 : 1,
+            borderColor: activo || platoDia ? colorMarca : 'var(--color-border)',
+            borderWidth: activo ? 2 : platoDia ? 1.5 : 1,
           }}
         >
           <div className="flex items-center gap-3">
@@ -84,7 +87,10 @@ export function ProgramarCliente({
 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
-                <p className="text-base font-medium" style={{ color: 'var(--color-ink)' }}>
+                <p
+                  className={platoDia ? 'text-lg font-bold' : 'text-base font-medium'}
+                  style={{ color: platoDia ? colorMarca : 'var(--color-ink)' }}
+                >
                   {dia.nombre}
                 </p>
                 <span
@@ -105,6 +111,28 @@ export function ProgramarCliente({
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                 Pide hasta las {dia.corte}
               </p>
+              {platoDia ? (
+                <div className="mt-2 pl-3 border-l-[3px]" style={{ borderColor: colorMarca }}>
+                  <p
+                    className="text-[0.6rem] uppercase tracking-[0.14em] font-bold"
+                    style={{ color: colorMarca }}
+                  >
+                    Plato del dia
+                  </p>
+                  <p
+                    className="text-base font-bold leading-snug"
+                    style={{ color: 'var(--color-ink)' }}
+                  >
+                    {platoDia.nombre}{' '}
+                    <span
+                      className="font-[family-name:var(--font-mono)]"
+                      style={{ color: colorMarca }}
+                    >
+                      ${platoDia.precio.toLocaleString('es-CO')}
+                    </span>
+                  </p>
+                </div>
+              ) : null}
             </div>
           </div>
         </button>
