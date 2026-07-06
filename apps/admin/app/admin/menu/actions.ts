@@ -122,6 +122,15 @@ export type ProductoState = {
   >;
 };
 
+/** Lee los 3 checkboxes de canal del formulario (presente = true). */
+function leerCanales(formData: FormData) {
+  return {
+    canal_restaurante: formData.get('canal_restaurante') !== null,
+    canal_domicilios_diarios: formData.get('canal_domicilios_diarios') !== null,
+    canal_domicilios_programados: formData.get('canal_domicilios_programados') !== null,
+  };
+}
+
 export async function agregarProducto(
   _prev: ProductoState,
   formData: FormData,
@@ -143,6 +152,15 @@ export async function agregarProducto(
     return { ok: false, fieldErrors };
   }
 
+  const canales = leerCanales(formData);
+  if (
+    !canales.canal_restaurante &&
+    !canales.canal_domicilios_diarios &&
+    !canales.canal_domicilios_programados
+  ) {
+    return { ok: false, error: 'Elige al menos un menu donde aparezca el producto.' };
+  }
+
   const { supabase, restauranteId } = await getRestauranteId();
   if (!restauranteId) return { ok: false, error: 'Tu sesion expiro.' };
 
@@ -154,12 +172,15 @@ export async function agregarProducto(
     descripcion: parsed.data.descripcion || null,
     tiempo_preparacion_min: parsed.data.tiempo_preparacion_min,
     disponible: true,
+    ...canales,
   });
 
   if (error) return { ok: false, error: error.message };
   revalidatePath('/admin/menu');
   return { ok: true };
 }
+
+const CANALES = ['canal_restaurante', 'canal_domicilios_diarios', 'canal_domicilios_programados'];
 
 export async function actualizarProducto(formData: FormData) {
   const id = String(formData.get('id') ?? '');
@@ -192,6 +213,28 @@ export async function actualizarProducto(formData: FormData) {
       if (Number.isNaN(t) || t < 1 || t > 240) return;
       update.tiempo_preparacion_min = t;
     }
+  } else if (CANALES.includes(campo)) {
+    const nuevoValor = String(valor ?? '') === 'true';
+    // No permitir dejar el producto sin ningun canal.
+    const { data: prod } = await supabase
+      .from('productos')
+      .select('canal_restaurante, canal_domicilios_diarios, canal_domicilios_programados')
+      .eq('id', id)
+      .eq('restaurante_id', restauranteId)
+      .maybeSingle();
+    if (!prod) return;
+    const actual: Record<string, boolean> = {
+      canal_restaurante: prod.canal_restaurante as boolean,
+      canal_domicilios_diarios: prod.canal_domicilios_diarios as boolean,
+      canal_domicilios_programados: prod.canal_domicilios_programados as boolean,
+    };
+    actual[campo] = nuevoValor;
+    const alguno =
+      actual.canal_restaurante ||
+      actual.canal_domicilios_diarios ||
+      actual.canal_domicilios_programados;
+    if (!alguno) return; // ignorar: dejaria el producto sin ningun menu
+    update[campo] = nuevoValor;
   } else {
     return;
   }

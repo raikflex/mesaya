@@ -478,6 +478,16 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
           maxLength={200}
         />
       </Field>
+      <div>
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--color-ink)' }}>
+          En que menus aparece?
+        </label>
+        <div className="flex flex-wrap gap-2">
+          <CanalCheckbox name="canal_restaurante" label="Restaurante (mesa)" />
+          <CanalCheckbox name="canal_domicilios_diarios" label="Domicilios diarios" />
+          <CanalCheckbox name="canal_domicilios_programados" label="Domicilios programados" />
+        </div>
+      </div>
       {state.error ? (
         <p className="text-xs" style={{ color: 'var(--color-danger)' }}>
           {state.error}
@@ -503,6 +513,23 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
         </Button>
       </div>
     </form>
+  );
+}
+
+function CanalCheckbox({ name, label }: { name: string; label: string }) {
+  return (
+    <label
+      className="inline-flex items-center gap-2 px-3 h-9 rounded-[var(--radius-md)] border cursor-pointer text-sm select-none [&:has(input:checked)]:border-[var(--color-ink)]"
+      style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink-soft)' }}
+    >
+      <input
+        type="checkbox"
+        name={name}
+        defaultChecked
+        className="size-4 accent-[var(--color-ink)]"
+      />
+      {label}
+    </label>
   );
 }
 
@@ -598,7 +625,7 @@ function FotosProducto({ producto }: { producto: Producto }) {
         className="text-[11px] uppercase tracking-[0.12em] mb-2"
         style={{ color: 'var(--color-muted)' }}
       >
-        Fotos del plato — opcional, max. 2
+        Fotos del plato - opcional, max. 2
       </p>
 
       <div className="flex items-center gap-3 flex-wrap">
@@ -703,6 +730,64 @@ function FotosProducto({ producto }: { producto: Producto }) {
           </span>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+function CanalesProducto({ producto }: { producto: Producto }) {
+  function toggle(campo: string, actual: boolean) {
+    const fd = new FormData();
+    fd.append('id', producto.id);
+    fd.append('campo', campo);
+    fd.append('valor', (!actual).toString());
+    void actualizarProducto(fd);
+  }
+
+  const chips = [
+    { campo: 'canal_restaurante', label: 'Mesa', on: producto.canal_restaurante },
+    {
+      campo: 'canal_domicilios_diarios',
+      label: 'Domi. diario',
+      on: producto.canal_domicilios_diarios,
+    },
+    {
+      campo: 'canal_domicilios_programados',
+      label: 'Domi. programado',
+      on: producto.canal_domicilios_programados,
+    },
+  ];
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 pt-1.5">
+      <span
+        className="text-[11px] uppercase tracking-[0.1em]"
+        style={{ color: 'var(--color-muted)' }}
+      >
+        Menus:
+      </span>
+      {chips.map((c) => (
+        <button
+          key={c.campo}
+          type="button"
+          onClick={() => toggle(c.campo, c.on)}
+          className="text-[11px] px-2 py-0.5 rounded-full border transition-colors"
+          style={
+            c.on
+              ? {
+                  background: 'var(--color-ink)',
+                  color: 'var(--color-paper)',
+                  borderColor: 'var(--color-ink)',
+                }
+              : {
+                  background: 'transparent',
+                  color: 'var(--color-muted)',
+                  borderColor: 'var(--color-border-strong)',
+                }
+          }
+        >
+          {c.label}
+        </button>
+      ))}
     </div>
   );
 }
@@ -865,7 +950,7 @@ function ItemProducto({ producto, categorias }: { producto: Producto; categorias
             >
               {producto.tiempo_preparacion_min !== null
                 ? `${producto.tiempo_preparacion_min} min`
-                : '— min'}
+                : '- min'}
             </button>
           )}
 
@@ -885,6 +970,8 @@ function ItemProducto({ producto, categorias }: { producto: Producto; categorias
             ))}
           </select>
         </div>
+
+        <CanalesProducto producto={producto} />
 
         <FotosProducto producto={producto} />
       </div>

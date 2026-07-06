@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { MenuManager } from './menu-manager';
+import { PlatoDelDiaManager, type PlatoDia } from './plato-del-dia-manager';
 
 export const metadata = { title: 'Menu - EnPura' };
 
@@ -21,6 +22,18 @@ export type Producto = {
   disponible: boolean;
   tiempo_preparacion_min: number | null;
   imagenes_paths: string[];
+  canal_restaurante: boolean;
+  canal_domicilios_diarios: boolean;
+  canal_domicilios_programados: boolean;
+};
+
+type PlatoRaw = {
+  dia_semana: number;
+  producto_id: string | null;
+  nombre: string;
+  descripcion: string | null;
+  precio: number;
+  activo: boolean;
 };
 
 export default async function MenuPage({
@@ -41,26 +54,42 @@ export default async function MenuPage({
   if (!perfil?.restaurante_id) redirect('/admin/onboarding/paso-1');
   if (perfil.rol !== 'dueno') redirect('/login?error=acceso-denegado');
   const restauranteId = perfil.restaurante_id as string;
-  const [{ data: categorias }, { data: productos }, { data: restaurante }] = await Promise.all([
-    supabase
-      .from('categorias')
-      .select('id, nombre, orden, activa')
-      .eq('restaurante_id', restauranteId)
-      .eq('activa', true)
-      .order('orden', { ascending: true }),
-    supabase
-      .from('productos')
-      .select(
-        'id, nombre, precio, categoria_id, descripcion, disponible, tiempo_preparacion_min, imagenes_paths',
-      )
-      .eq('restaurante_id', restauranteId)
-      .order('nombre', { ascending: true }),
-    supabase.from('restaurantes').select('nombre_publico').eq('id', restauranteId).single(),
-  ]);
+  const [{ data: categorias }, { data: productos }, { data: restaurante }, { data: platosRaw }] =
+    await Promise.all([
+      supabase
+        .from('categorias')
+        .select('id, nombre, orden, activa')
+        .eq('restaurante_id', restauranteId)
+        .eq('activa', true)
+        .order('orden', { ascending: true }),
+      supabase
+        .from('productos')
+        .select(
+          'id, nombre, precio, categoria_id, descripcion, disponible, tiempo_preparacion_min, imagenes_paths, canal_restaurante, canal_domicilios_diarios, canal_domicilios_programados',
+        )
+        .eq('restaurante_id', restauranteId)
+        .order('nombre', { ascending: true }),
+      supabase.from('restaurantes').select('nombre_publico').eq('id', restauranteId).single(),
+      supabase
+        .from('platos_del_dia')
+        .select('dia_semana, producto_id, nombre, descripcion, precio, activo')
+        .eq('restaurante_id', restauranteId),
+    ]);
   const params = await searchParams;
   const tabActiva: 'categorias' | 'productos' =
     params.tab === 'categorias' ? 'categorias' : 'productos';
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu negocio';
+
+  const listaProductos = (productos ?? []) as Producto[];
+  const platosDelDia: PlatoDia[] = ((platosRaw ?? []) as PlatoRaw[]).map((p) => ({
+    dia_semana: p.dia_semana,
+    producto_id: p.producto_id,
+    nombre: p.nombre,
+    descripcion: p.descripcion,
+    precio: p.precio,
+    activo: p.activo,
+  }));
+
   return (
     <PanelShell currentPage="menu" nombreNegocio={nombreNegocio}>
       <main className="px-6 sm:px-10 py-10 max-w-5xl mx-auto space-y-8">
@@ -82,9 +111,15 @@ export default async function MenuPage({
             Edita precios, marca productos como sin stock cuando se acaben, o agrega novedades.
           </p>
         </header>
+
+        <PlatoDelDiaManager
+          productos={listaProductos.map((p) => ({ id: p.id, nombre: p.nombre, precio: p.precio }))}
+          platosIniciales={platosDelDia}
+        />
+
         <MenuManager
           categorias={(categorias ?? []) as Categoria[]}
-          productos={(productos ?? []) as Producto[]}
+          productos={listaProductos}
           tabInicial={tabActiva}
         />
       </main>
