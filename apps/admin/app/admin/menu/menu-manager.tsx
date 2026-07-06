@@ -374,15 +374,34 @@ function TabProductos({
   );
 }
 
+const CANALES_TODOS = {
+  canal_restaurante: true,
+  canal_domicilios_diarios: true,
+  canal_domicilios_programados: true,
+};
+
 function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) {
   const [state, formAction, pending] = useActionState(agregarProducto, initialProducto);
   const formRef = useRef<HTMLFormElement>(null);
   const [resetSignal, setResetSignal] = useState(0);
+  const [canales, setCanales] = useState(CANALES_TODOS);
+
+  function cambiarCanal(campo: keyof typeof CANALES_TODOS, v: boolean) {
+    setCanales((c) => {
+      const next = { ...c, [campo]: v };
+      const alguno =
+        next.canal_restaurante ||
+        next.canal_domicilios_diarios ||
+        next.canal_domicilios_programados;
+      return alguno ? next : c; // no permitir dejar cero canales
+    });
+  }
 
   useEffect(() => {
     if (state.ok && formRef.current) {
       formRef.current.reset();
       setResetSignal((n) => n + 1);
+      setCanales(CANALES_TODOS);
     }
   }, [state.ok]);
 
@@ -483,10 +502,28 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
           En que menus aparece?
         </label>
         <div className="flex flex-wrap gap-2">
-          <CanalCheckbox name="canal_restaurante" label="Restaurante (mesa)" />
-          <CanalCheckbox name="canal_domicilios_diarios" label="Domicilios diarios" />
-          <CanalCheckbox name="canal_domicilios_programados" label="Domicilios programados" />
+          <CanalCheckbox
+            name="canal_restaurante"
+            label="Restaurante (mesa)"
+            checked={canales.canal_restaurante}
+            onChange={(v) => cambiarCanal('canal_restaurante', v)}
+          />
+          <CanalCheckbox
+            name="canal_domicilios_diarios"
+            label="Domicilios diarios"
+            checked={canales.canal_domicilios_diarios}
+            onChange={(v) => cambiarCanal('canal_domicilios_diarios', v)}
+          />
+          <CanalCheckbox
+            name="canal_domicilios_programados"
+            label="Domicilios programados"
+            checked={canales.canal_domicilios_programados}
+            onChange={(v) => cambiarCanal('canal_domicilios_programados', v)}
+          />
         </div>
+        <p className="text-[11px] mt-1.5" style={{ color: 'var(--color-muted)' }}>
+          Debe quedar al menos un menu marcado.
+        </p>
       </div>
       {state.error ? (
         <p className="text-xs" style={{ color: 'var(--color-danger)' }}>
@@ -516,16 +553,30 @@ function FormularioAgregarProducto({ categorias }: { categorias: Categoria[] }) 
   );
 }
 
-function CanalCheckbox({ name, label }: { name: string; label: string }) {
+function CanalCheckbox({
+  name,
+  label,
+  checked,
+  onChange,
+}: {
+  name: string;
+  label: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
   return (
     <label
-      className="inline-flex items-center gap-2 px-3 h-9 rounded-[var(--radius-md)] border cursor-pointer text-sm select-none [&:has(input:checked)]:border-[var(--color-ink)]"
-      style={{ borderColor: 'var(--color-border-strong)', color: 'var(--color-ink-soft)' }}
+      className="inline-flex items-center gap-2 px-3 h-9 rounded-[var(--radius-md)] border cursor-pointer text-sm select-none"
+      style={{
+        borderColor: checked ? 'var(--color-ink)' : 'var(--color-border-strong)',
+        color: checked ? 'var(--color-ink)' : 'var(--color-ink-soft)',
+      }}
     >
       <input
         type="checkbox"
         name={name}
-        defaultChecked
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
         className="size-4 accent-[var(--color-ink)]"
       />
       {label}
