@@ -1,6 +1,11 @@
 import { notFound, redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
-import { MenuProgramarCliente, type DiaMenu, type GrupoMenu } from './menu-programar-cliente';
+import {
+  MenuProgramarCliente,
+  type DiaMenu,
+  type GrupoMenu,
+  type PlatoDelDiaCliente,
+} from './menu-programar-cliente';
 import { diasDomicilioDisponibles } from '../../../../../lib/domicilios-disponibilidad';
 import type { HorarioDia } from '../../../../../lib/horarios';
 
@@ -51,17 +56,21 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
   const fechasPedidas = new Set((diasParam ?? '').split(',').filter(Boolean));
 
   // Interseccion: los dias pedidos que TODAVIA estan disponibles, en orden.
-  const diasSeleccionados: DiaMenu[] = disponibles
-    .filter((d) => fechasPedidas.has(d.fecha))
-    .map((d) => ({ fecha: d.fecha, nombre: d.nombre, corte: d.corte, esHoy: d.esHoy }));
+  const seleccionadosDisp = disponibles.filter((d) => fechasPedidas.has(d.fecha));
+  const diasSeleccionados: DiaMenu[] = seleccionadosDisp.map((d) => ({
+    fecha: d.fecha,
+    nombre: d.nombre,
+    corte: d.corte,
+    esHoy: d.esHoy,
+  }));
 
   // Si no quedo ningun dia valido, de vuelta a elegir dias.
   if (diasSeleccionados.length === 0) {
     redirect(`/d/${slug}/programar`);
   }
 
-  // Categorias activas + productos (igual que el menu inmediato).
-  const [{ data: categorias }, { data: productos }] = await Promise.all([
+  // Categorias activas + productos + platos del dia (activos).
+  const [{ data: categorias }, { data: productos }, { data: platosRaw }] = await Promise.all([
     supabase
       .from('categorias')
       .select('id, nombre, orden')
@@ -72,7 +81,13 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
       .from('productos')
       .select('id, nombre, descripcion, precio, disponible, categoria_id, imagenes_paths')
       .eq('restaurante_id', restauranteId)
+      .eq('canal_domicilios_programados', true)
       .order('nombre', { ascending: true }),
+    supabase
+      .from('platos_del_dia')
+      .select('dia_semana, producto_id, nombre, descripcion, precio, imagen_path, activo')
+      .eq('restaurante_id', restauranteId)
+      .eq('activo', true),
   ]);
 
   const grupos: GrupoMenu[] = (categorias ?? []).map((c) => ({
@@ -101,6 +116,23 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
       })),
   }));
 
+  // Plato del dia por dia de la semana (activos), mapeado a cada fecha elegida.
+  const platoPorDiaSemana = new Map<number, PlatoDelDiaCliente>();
+  for (const p of platosRaw ?? []) {
+    platoPorDiaSemana.set(p.dia_semana as number, {
+      producto_id: (p.producto_id as string | null) ?? null,
+      nombre: p.nombre as string,
+      descripcion: (p.descripcion as string | null) ?? null,
+      precio: p.precio as number,
+      imagen_path: (p.imagen_path as string | null) ?? null,
+    });
+  }
+  const platosPorFecha: Record<string, PlatoDelDiaCliente> = {};
+  for (const d of seleccionadosDisp) {
+    const plato = platoPorDiaSemana.get(d.diaSemana);
+    if (plato) platosPorFecha[d.fecha] = plato;
+  }
+
   return (
     <MenuProgramarCliente
       slug={slug}
@@ -109,6 +141,7 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
       logoUrl={(restaurante.logo_url as string | null) ?? null}
       dias={diasSeleccionados}
       grupos={grupos}
+      platosPorFecha={platosPorFecha}
     />
   );
 }

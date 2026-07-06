@@ -132,6 +132,7 @@ export default async function RestaurantePage({ params, searchParams }: PageProp
       .from('productos')
       .select('id, nombre, descripcion, precio, disponible, categoria_id, imagenes_paths')
       .eq('restaurante_id', restauranteId)
+      .eq('canal_domicilios_diarios', true)
       .order('nombre', { ascending: true }),
   ]);
 

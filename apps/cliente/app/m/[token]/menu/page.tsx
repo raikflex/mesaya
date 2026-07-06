@@ -129,7 +129,7 @@ export default async function MenuPage({ params }: PageProps) {
     );
   }
 
-  // Categorias activas en orden + productos en cada una.
+  // Categorias activas en orden + productos en cada una (solo del canal restaurante/mesa).
   const [{ data: categorias }, { data: productos }] = await Promise.all([
     supabase
       .from('categorias')
@@ -141,6 +141,7 @@ export default async function MenuPage({ params }: PageProps) {
       .from('productos')
       .select('id, nombre, descripcion, precio, disponible, categoria_id, imagenes_paths')
       .eq('restaurante_id', restauranteId)
+      .eq('canal_restaurante', true)
       .order('nombre', { ascending: true }),
   ]);
 
