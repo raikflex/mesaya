@@ -35,6 +35,14 @@ export type GrupoMenu = {
   productos: ProductoMenu[];
 };
 
+export type PlatoDelDiaCliente = {
+  producto_id: string | null;
+  nombre: string;
+  descripcion: string | null;
+  precio: number;
+  imagen_path: string | null;
+};
+
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? '';
 const ANCHO_DER = 112;
 
@@ -92,14 +100,16 @@ export function MenuProgramarCliente({
   colorMarca,
   logoUrl,
   dias,
-  grupos,
+  gruposPorFecha,
+  platosPorFecha,
 }: {
   slug: string;
   nombreNegocio: string;
   colorMarca: string;
   logoUrl: string | null;
   dias: DiaMenu[];
-  grupos: GrupoMenu[];
+  gruposPorFecha: Record<string, GrupoMenu[]>;
+  platosPorFecha?: Record<string, PlatoDelDiaCliente>;
 }) {
   const router = useRouter();
   const [diaActivo, setDiaActivo] = useState<string>(dias[0]?.fecha ?? '');
@@ -119,6 +129,8 @@ export function MenuProgramarCliente({
   const carritoDia = carritos[diaActivo] ?? [];
   const precioColor = colorPrecioLegible(colorMarca);
   const diaActivoInfo = dias.find((d) => d.fecha === diaActivo);
+  const platoActivo = platosPorFecha?.[diaActivo];
+  const grupos = gruposPorFecha[diaActivo] ?? [];
 
   function cambiarCantidad(producto: ProductoMenu, nuevaCantidad: number) {
     const key = claveDia(slug, diaActivo);
@@ -262,6 +274,17 @@ export function MenuProgramarCliente({
             </span>
           ) : null}
         </div>
+
+        {platoActivo ? (
+          <PlatoDelDiaDestacado
+            plato={platoActivo}
+            grupos={grupos}
+            colorMarca={colorMarca}
+            precioColor={precioColor}
+            carritoDia={carritoDia}
+            onCambiar={cambiarCantidad}
+          />
+        ) : null}
 
         {grupos.length === 0 ? (
           <div className="py-16 text-center">
@@ -502,6 +525,92 @@ function ItemProducto({
         </div>
       </div>
     </li>
+  );
+}
+
+function PlatoDelDiaDestacado({
+  plato,
+  grupos,
+  colorMarca,
+  precioColor,
+  carritoDia,
+  onCambiar,
+}: {
+  plato: PlatoDelDiaCliente;
+  grupos: GrupoMenu[];
+  colorMarca: string;
+  precioColor: string;
+  carritoDia: ItemCarrito[];
+  onCambiar: (producto: ProductoMenu, nuevaCantidad: number) => void;
+}) {
+  // Si el plato del dia es un producto del menu, lo resolvemos para poder
+  // agregarlo al carrito y usar su foto.
+  const prod = plato.producto_id
+    ? (grupos.flatMap((g) => g.productos).find((p) => p.id === plato.producto_id) ?? null)
+    : null;
+
+  const fotoPath = (prod?.imagenes_paths && prod.imagenes_paths[0]) || plato.imagen_path || null;
+  const cantidad = prod ? (carritoDia.find((i) => i.productoId === prod.id)?.cantidad ?? 0) : 0;
+
+  return (
+    <div
+      className="mb-6 rounded-[var(--radius-lg)] overflow-hidden border-2"
+      style={{ borderColor: colorMarca, background: 'white' }}
+    >
+      {fotoPath ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={urlFoto(fotoPath)}
+          alt={plato.nombre}
+          className="w-full object-cover"
+          style={{ height: 180 }}
+        />
+      ) : null}
+      <div className="p-4">
+        <span
+          className="inline-flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] px-2.5 py-1 rounded-full mb-2"
+          style={{ background: colorMarca, color: 'white' }}
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+          </svg>
+          Plato del dia
+        </span>
+        <h3
+          className="font-[family-name:var(--font-display)] text-2xl tracking-[-0.015em] leading-tight"
+          style={{ color: 'var(--color-ink)' }}
+        >
+          {plato.nombre}
+        </h3>
+        {plato.descripcion ? (
+          <p className="text-sm mt-1 leading-relaxed" style={{ color: 'var(--color-ink-soft)' }}>
+            {plato.descripcion}
+          </p>
+        ) : null}
+        <div className="flex items-center justify-between gap-3 mt-3">
+          <p
+            className="text-2xl font-semibold font-[family-name:var(--font-mono)]"
+            style={{ color: precioColor }}
+          >
+            ${plato.precio.toLocaleString('es-CO')}
+          </p>
+          {prod && prod.disponible ? (
+            <div style={{ width: 128 }}>
+              <ControlCantidad
+                producto={prod}
+                colorMarca={colorMarca}
+                cantidad={cantidad}
+                onCambiar={(c) => onCambiar(prod, c)}
+              />
+            </div>
+          ) : prod && !prod.disponible ? (
+            <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
+              Sin stock hoy
+            </span>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -69,52 +69,93 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
     redirect(`/d/${slug}/programar`);
   }
 
-  // Categorias activas + productos + platos del dia (activos).
-  const [{ data: categorias }, { data: productos }, { data: platosRaw }] = await Promise.all([
-    supabase
-      .from('categorias')
-      .select('id, nombre, orden')
-      .eq('restaurante_id', restauranteId)
-      .eq('activa', true)
-      .order('orden', { ascending: true }),
-    supabase
-      .from('productos')
-      .select('id, nombre, descripcion, precio, disponible, categoria_id, imagenes_paths')
-      .eq('restaurante_id', restauranteId)
-      .eq('canal_domicilios_programados', true)
-      .order('nombre', { ascending: true }),
-    supabase
-      .from('platos_del_dia')
-      .select('dia_semana, producto_id, nombre, descripcion, precio, imagen_path, activo')
-      .eq('restaurante_id', restauranteId)
-      .eq('activo', true),
-  ]);
+  // Categorias + TODOS los productos (para resolver menu por dia) + platos +
+  // asignaciones de menu por dia (canal domicilios programados).
+  const [{ data: categorias }, { data: productos }, { data: platosRaw }, { data: asignRaw }] =
+    await Promise.all([
+      supabase
+        .from('categorias')
+        .select('id, nombre, orden')
+        .eq('restaurante_id', restauranteId)
+        .eq('activa', true)
+        .order('orden', { ascending: true }),
+      supabase
+        .from('productos')
+        .select(
+          'id, nombre, descripcion, precio, disponible, categoria_id, imagenes_paths, canal_domicilios_programados',
+        )
+        .eq('restaurante_id', restauranteId)
+        .order('nombre', { ascending: true }),
+      supabase
+        .from('platos_del_dia')
+        .select('dia_semana, producto_id, nombre, descripcion, precio, imagen_path, activo')
+        .eq('restaurante_id', restauranteId)
+        .eq('activo', true),
+      supabase
+        .from('menu_dia_asignacion')
+        .select('dia_semana, menu_id')
+        .eq('restaurante_id', restauranteId)
+        .eq('canal', 'domicilios_programados'),
+    ]);
 
-  const grupos: GrupoMenu[] = (categorias ?? []).map((c) => ({
-    id: c.id as string,
-    nombre: c.nombre as string,
-    orden: c.orden as number,
-    productos: (
-      (productos ?? []) as {
-        id: string;
-        nombre: string;
-        descripcion: string | null;
-        precio: number;
-        disponible: boolean;
-        categoria_id: string;
-        imagenes_paths: string[] | null;
-      }[]
-    )
-      .filter((p) => p.categoria_id === c.id)
-      .map(({ id, nombre, descripcion, precio, disponible, imagenes_paths }) => ({
-        id,
-        nombre,
-        descripcion,
-        precio,
-        disponible,
-        imagenes_paths: imagenes_paths ?? [],
-      })),
-  }));
+  // Asignaciones dia -> menu_id (incluye -1 = Por defecto).
+  const asignaciones = (asignRaw ?? []) as { dia_semana: number; menu_id: string }[];
+  const asignMap = new Map<number, string>();
+  for (const a of asignaciones) asignMap.set(a.dia_semana, a.menu_id);
+
+  // Productos de los menus usados por las asignaciones.
+  const menuIdsUsados = [...new Set(asignaciones.map((a) => a.menu_id))];
+  const menuProductos = new Map<string, Set<string>>();
+  if (menuIdsUsados.length > 0) {
+    const { data: mpRaw } = await supabase
+      .from('menu_pregrabado_productos')
+      .select('menu_id, producto_id')
+      .in('menu_id', menuIdsUsados);
+    for (const r of (mpRaw ?? []) as { menu_id: string; producto_id: string }[]) {
+      if (!menuProductos.has(r.menu_id)) menuProductos.set(r.menu_id, new Set());
+      menuProductos.get(r.menu_id)!.add(r.producto_id);
+    }
+  }
+
+  type ProdRow = {
+    id: string;
+    nombre: string;
+    descripcion: string | null;
+    precio: number;
+    disponible: boolean;
+    categoria_id: string;
+    imagenes_paths: string[] | null;
+    canal_domicilios_programados: boolean;
+  };
+  const todosProductos = (productos ?? []) as ProdRow[];
+
+  // Resuelve el menu de un dia: menu del dia -> Por defecto -> menu normal.
+  function gruposParaDia(diaSemana: number): GrupoMenu[] {
+    const menuId = asignMap.get(diaSemana) ?? asignMap.get(-1) ?? null;
+    const lista = menuId
+      ? todosProductos.filter((p) => menuProductos.get(menuId)?.has(p.id))
+      : todosProductos.filter((p) => p.canal_domicilios_programados);
+    return (categorias ?? []).map((c) => ({
+      id: c.id as string,
+      nombre: c.nombre as string,
+      orden: c.orden as number,
+      productos: lista
+        .filter((p) => p.categoria_id === (c.id as string))
+        .map(({ id, nombre, descripcion, precio, disponible, imagenes_paths }) => ({
+          id,
+          nombre,
+          descripcion,
+          precio,
+          disponible,
+          imagenes_paths: imagenes_paths ?? [],
+        })),
+    }));
+  }
+
+  const gruposPorFecha: Record<string, GrupoMenu[]> = {};
+  for (const d of seleccionadosDisp) {
+    gruposPorFecha[d.fecha] = gruposParaDia(d.diaSemana);
+  }
 
   // Plato del dia por dia de la semana (activos), mapeado a cada fecha elegida.
   const platoPorDiaSemana = new Map<number, PlatoDelDiaCliente>();
@@ -140,7 +181,7 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
       colorMarca={restaurante.color_marca as string}
       logoUrl={(restaurante.logo_url as string | null) ?? null}
       dias={diasSeleccionados}
-      grupos={grupos}
+      gruposPorFecha={gruposPorFecha}
       platosPorFecha={platosPorFecha}
     />
   );
