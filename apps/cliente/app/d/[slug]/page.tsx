@@ -120,7 +120,38 @@ export default async function RestaurantePage({ params, searchParams }: PageProp
     );
   }
 
-  // Categorias activas + productos.
+  // Menu pregrabado activo para este canal (si hay, reemplaza el menu normal).
+  const { data: menuActivo } = await supabase
+    .from('menus_pregrabados')
+    .select('id')
+    .eq('restaurante_id', restauranteId)
+    .eq('canal', 'domicilios_diarios')
+    .eq('activo', true)
+    .maybeSingle();
+
+  let idsMenu: string[] | null = null;
+  if (menuActivo) {
+    const { data: mp } = await supabase
+      .from('menu_pregrabado_productos')
+      .select('producto_id')
+      .eq('menu_id', menuActivo.id as string);
+    idsMenu = (mp ?? []).map((x) => x.producto_id as string);
+  }
+
+  let productosQuery = supabase
+    .from('productos')
+    .select('id, nombre, descripcion, precio, disponible, categoria_id, imagenes_paths')
+    .eq('restaurante_id', restauranteId);
+  if (idsMenu !== null) {
+    // Menu activo: solo sus productos (sin filtrar por canal, el menu los reemplaza).
+    productosQuery = productosQuery.in(
+      'id',
+      idsMenu.length > 0 ? idsMenu : ['00000000-0000-0000-0000-000000000000'],
+    );
+  } else {
+    productosQuery = productosQuery.eq('canal_domicilios_diarios', true);
+  }
+
   const [{ data: categorias }, { data: productos }] = await Promise.all([
     supabase
       .from('categorias')
@@ -128,12 +159,7 @@ export default async function RestaurantePage({ params, searchParams }: PageProp
       .eq('restaurante_id', restauranteId)
       .eq('activa', true)
       .order('orden', { ascending: true }),
-    supabase
-      .from('productos')
-      .select('id, nombre, descripcion, precio, disponible, categoria_id, imagenes_paths')
-      .eq('restaurante_id', restauranteId)
-      .eq('canal_domicilios_diarios', true)
-      .order('nombre', { ascending: true }),
+    productosQuery.order('nombre', { ascending: true }),
   ]);
 
   const grupos = (categorias ?? []).map((c) => ({
