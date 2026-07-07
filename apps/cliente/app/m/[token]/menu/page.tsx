@@ -129,21 +129,29 @@ export default async function MenuPage({ params }: PageProps) {
     );
   }
 
-  // Menu pregrabado activo para este canal (si hay, reemplaza el menu normal).
-  const { data: menuActivo } = await supabase
-    .from('menus_pregrabados')
-    .select('id')
+  // Menu del dia para este canal: menu del dia de hoy -> Por defecto -> normal.
+  const bogotaHoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+  const diaHoy = bogotaHoy.getDay();
+  const { data: asignHoy } = await supabase
+    .from('menu_dia_asignacion')
+    .select('dia_semana, menu_id')
     .eq('restaurante_id', restauranteId)
     .eq('canal', 'restaurante')
-    .eq('activo', true)
-    .maybeSingle();
+    .in('dia_semana', [diaHoy, -1]);
+
+  let menuIdActivo: string | null = null;
+  if (asignHoy && asignHoy.length > 0) {
+    const delDia = asignHoy.find((a) => a.dia_semana === diaHoy);
+    const defecto = asignHoy.find((a) => a.dia_semana === -1);
+    menuIdActivo = ((delDia?.menu_id ?? defecto?.menu_id) as string | undefined) ?? null;
+  }
 
   let idsMenu: string[] | null = null;
-  if (menuActivo) {
+  if (menuIdActivo) {
     const { data: mp } = await supabase
       .from('menu_pregrabado_productos')
       .select('producto_id')
-      .eq('menu_id', menuActivo.id as string);
+      .eq('menu_id', menuIdActivo);
     idsMenu = (mp ?? []).map((x) => x.producto_id as string);
   }
 
