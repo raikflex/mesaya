@@ -36,6 +36,7 @@ export type GrupoMenu = {
 };
 
 export type PlatoDelDiaCliente = {
+  id: string;
   producto_id: string | null;
   nombre: string;
   descripcion: string | null;
@@ -549,8 +550,28 @@ function PlatoDelDiaDestacado({
     ? (grupos.flatMap((g) => g.productos).find((p) => p.id === plato.producto_id) ?? null)
     : null;
 
+  // El plato del dia SIEMPRE es pedible: si es del menu, con el id del producto
+  // (el checkout lo cobra desde productos); si es nuevo, con un item sintetico.
+  const itemPedible: ProductoMenu = plato.producto_id
+    ? {
+        id: plato.producto_id,
+        nombre: plato.nombre,
+        descripcion: plato.descripcion,
+        precio: plato.precio,
+        disponible: prod ? prod.disponible : true,
+        imagenes_paths: prod?.imagenes_paths ?? [],
+      }
+    : {
+        id: `platodia:${plato.id}`,
+        nombre: plato.nombre,
+        descripcion: plato.descripcion,
+        precio: plato.precio,
+        disponible: true,
+        imagenes_paths: [],
+      };
+
   const fotoPath = (prod?.imagenes_paths && prod.imagenes_paths[0]) || plato.imagen_path || null;
-  const cantidad = prod ? (carritoDia.find((i) => i.productoId === prod.id)?.cantidad ?? 0) : 0;
+  const cantidad = carritoDia.find((i) => i.productoId === itemPedible.id)?.cantidad ?? 0;
 
   return (
     <div
@@ -594,20 +615,20 @@ function PlatoDelDiaDestacado({
           >
             ${plato.precio.toLocaleString('es-CO')}
           </p>
-          {prod && prod.disponible ? (
-            <div style={{ width: 128 }}>
+          {itemPedible.disponible ? (
+            <div className="flex justify-end" style={{ width: ANCHO_DER }}>
               <ControlCantidad
-                producto={prod}
+                producto={itemPedible}
                 colorMarca={colorMarca}
                 cantidad={cantidad}
-                onCambiar={(c) => onCambiar(prod, c)}
+                onCambiar={(c) => onCambiar(itemPedible, c)}
               />
             </div>
-          ) : prod && !prod.disponible ? (
+          ) : (
             <span className="text-xs" style={{ color: 'var(--color-muted)' }}>
               Sin stock hoy
             </span>
-          ) : null}
+          )}
         </div>
       </div>
     </div>
