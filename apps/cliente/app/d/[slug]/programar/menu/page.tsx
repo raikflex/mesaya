@@ -88,7 +88,7 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
         .order('nombre', { ascending: true }),
       supabase
         .from('platos_del_dia')
-        .select('dia_semana, producto_id, nombre, descripcion, precio, imagen_path, activo')
+        .select('id, dia_semana, producto_id, nombre, descripcion, precio, imagen_path, activo')
         .eq('restaurante_id', restauranteId)
         .eq('activo', true),
       supabase
@@ -161,6 +161,7 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
   const platoPorDiaSemana = new Map<number, PlatoDelDiaCliente>();
   for (const p of platosRaw ?? []) {
     platoPorDiaSemana.set(p.dia_semana as number, {
+      id: p.id as string,
       producto_id: (p.producto_id as string | null) ?? null,
       nombre: p.nombre as string,
       descripcion: (p.descripcion as string | null) ?? null,
