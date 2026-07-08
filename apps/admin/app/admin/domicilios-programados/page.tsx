@@ -62,8 +62,9 @@ export default async function DomiciliosProgramadosPage() {
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu restaurante';
   const hoy = hoyBogota();
 
-  // Pedidos de hoy en adelante (vista "Proximos"). El historial se carga
-  // bajo demanda desde el cliente.
+  // Vista inicial "Proximos": pedidos pendientes o confirmados de hoy en
+  // adelante (lo que falta por atender). Lo ya cerrado (entregado/cancelado) y
+  // los dias pasados se cargan bajo demanda desde el cliente (Historial).
   const { data: pedidosRaw } = await supabase
     .from('pedidos_programados')
     .select(
@@ -71,6 +72,7 @@ export default async function DomiciliosProgramadosPage() {
     )
     .eq('restaurante_id', restauranteId)
     .gte('fecha_entrega', hoy)
+    .in('estado', ['pendiente', 'confirmado'])
     .order('fecha_entrega', { ascending: true })
     .order('hora_entrega', { ascending: true });
 

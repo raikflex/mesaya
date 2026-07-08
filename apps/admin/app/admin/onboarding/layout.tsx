@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Stepper } from './stepper';
+import { SaltarOperar } from './saltar-operar';
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -14,10 +15,10 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
 function Header() {
   return (
     <header
-      className="border-b px-6 sm:px-10 py-4 flex items-center justify-between"
+      className="border-b px-6 sm:px-10 py-4 flex items-center justify-between gap-4"
       style={{ borderColor: 'var(--color-border)' }}
     >
-      <Link href="/admin" className="inline-flex items-center gap-2">
+      <Link href="/admin" className="inline-flex items-center gap-2 shrink-0">
         <svg width="28" height="28" viewBox="0 0 32 32" fill="none" aria-hidden>
           <rect
             x="4"
@@ -37,9 +38,7 @@ function Header() {
           EnPura
         </span>
       </Link>
-      <span className="text-xs uppercase tracking-[0.12em]" style={{ color: 'var(--color-muted)' }}>
-        Configuración inicial
-      </span>
+      <SaltarOperar />
     </header>
   );
 }

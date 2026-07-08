@@ -3,6 +3,8 @@ import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { MenuManager } from './menu-manager';
 import { PlatoDelDiaManager, type PlatoDia } from './plato-del-dia-manager';
+import { MenusPregrabadosManager, type MenuPregrabado } from './menus-pregrabados-manager';
+import { MenuPorDia } from './menu-por-dia';
 
 export const metadata = { title: 'Menu - EnPura' };
 
@@ -36,6 +38,14 @@ type PlatoRaw = {
   activo: boolean;
 };
 
+type MenuRaw = {
+  id: string;
+  nombre: string;
+  canal: string;
+  activo: boolean;
+  menu_pregrabado_productos: { producto_id: string }[] | null;
+};
+
 export default async function MenuPage({
   searchParams,
 }: {
@@ -54,8 +64,14 @@ export default async function MenuPage({
   if (!perfil?.restaurante_id) redirect('/admin/onboarding/paso-1');
   if (perfil.rol !== 'dueno') redirect('/login?error=acceso-denegado');
   const restauranteId = perfil.restaurante_id as string;
-  const [{ data: categorias }, { data: productos }, { data: restaurante }, { data: platosRaw }] =
-    await Promise.all([
+  const [
+    { data: categorias },
+    { data: productos },
+    { data: restaurante },
+    { data: platosRaw },
+    { data: menusRaw },
+    { data: asignRaw },
+  ] = await Promise.all([
       supabase
         .from('categorias')
         .select('id, nombre, orden, activa')
@@ -74,6 +90,15 @@ export default async function MenuPage({
         .from('platos_del_dia')
         .select('dia_semana, producto_id, nombre, descripcion, precio, activo')
         .eq('restaurante_id', restauranteId),
+      supabase
+        .from('menus_pregrabados')
+        .select('id, nombre, canal, activo, menu_pregrabado_productos(producto_id)')
+        .eq('restaurante_id', restauranteId)
+        .order('creado_en', { ascending: true }),
+      supabase
+        .from('menu_dia_asignacion')
+        .select('canal, dia_semana, menu_id')
+        .eq('restaurante_id', restauranteId),
     ]);
   const params = await searchParams;
   const tabActiva: 'categorias' | 'productos' =
@@ -89,6 +114,24 @@ export default async function MenuPage({
     precio: p.precio,
     activo: p.activo,
   }));
+
+  const menusPregrabados: MenuPregrabado[] = ((menusRaw ?? []) as MenuRaw[]).map((m) => ({
+    id: m.id,
+    nombre: m.nombre,
+    canal: m.canal,
+    activo: m.activo,
+    productoIds: (m.menu_pregrabado_productos ?? []).map((x) => x.producto_id),
+  }));
+
+  const menusConCanal = menusPregrabados.map((m) => ({
+    id: m.id,
+    nombre: m.nombre,
+    canal: m.canal,
+  }));
+
+  const asignacionesDia = (
+    (asignRaw ?? []) as { canal: string; dia_semana: number; menu_id: string }[]
+  ).map((a) => ({ canal: a.canal, dia_semana: a.dia_semana, menu_id: a.menu_id }));
 
   return (
     <PanelShell currentPage="menu" nombreNegocio={nombreNegocio}>
@@ -116,6 +159,13 @@ export default async function MenuPage({
           productos={listaProductos.map((p) => ({ id: p.id, nombre: p.nombre, precio: p.precio }))}
           platosIniciales={platosDelDia}
         />
+
+        <MenusPregrabadosManager
+          productos={listaProductos.map((p) => ({ id: p.id, nombre: p.nombre, precio: p.precio }))}
+          menus={menusPregrabados}
+        />
+
+        <MenuPorDia menus={menusConCanal} asignaciones={asignacionesDia} />
 
         <MenuManager
           categorias={(categorias ?? []) as Categoria[]}

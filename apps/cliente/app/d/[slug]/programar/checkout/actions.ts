@@ -97,12 +97,18 @@ export async function crearPedidoProgramado(input: {
       };
   }
 
-  // 4) Validar productos (de todos los dias).
+  // 4) Validar items: productos del menu + platos del dia "nuevos" (platodia:<id>).
+  const PREFIJO_PLATO = 'platodia:';
   const todosLosIds = Array.from(new Set(dias.flatMap((d) => d.items.map((i) => i.productoId))));
+  const idsProducto = todosLosIds.filter((id) => !id.startsWith(PREFIJO_PLATO));
+  const idsPlato = todosLosIds
+    .filter((id) => id.startsWith(PREFIJO_PLATO))
+    .map((id) => id.slice(PREFIJO_PLATO.length));
+
   const { data: productos, error: prodError } = await admin
     .from('productos')
     .select('id, nombre, precio, disponible')
-    .in('id', todosLosIds)
+    .in('id', idsProducto.length > 0 ? idsProducto : ['00000000-0000-0000-0000-000000000000'])
     .eq('restaurante_id', restauranteId);
   if (prodError) return { ok: false, error: 'No pudimos validar el pedido. Intenta de nuevo.' };
 
@@ -117,11 +123,38 @@ export async function crearPedidoProgramado(input: {
     ]),
   );
 
+  const platoMap = new Map<string, { nombre: string; precio: number }>();
+  if (idsPlato.length > 0) {
+    const { data: platos } = await admin
+      .from('platos_del_dia')
+      .select('id, nombre, precio, activo')
+      .in('id', idsPlato)
+      .eq('restaurante_id', restauranteId);
+    for (const p of platos ?? []) {
+      if (p.activo)
+        platoMap.set(p.id as string, { nombre: p.nombre as string, precio: p.precio as number });
+    }
+  }
+
+  // Resuelve un item del carrito -> nombre/precio/producto_id, o null si no esta disponible.
+  const resolverItem = (
+    cartId: string,
+  ): { nombre: string; precio: number; producto_id: string | null } | null => {
+    if (cartId.startsWith(PREFIJO_PLATO)) {
+      const pl = platoMap.get(cartId.slice(PREFIJO_PLATO.length));
+      return pl ? { nombre: pl.nombre, precio: pl.precio, producto_id: null } : null;
+    }
+    const p = prodMap.get(cartId);
+    return p && p.disponible ? { nombre: p.nombre, precio: p.precio, producto_id: cartId } : null;
+  };
+
   const noDisponibles = new Set<string>();
   for (const d of dias)
     for (const i of d.items) {
-      const p = prodMap.get(i.productoId);
-      if (!p || !p.disponible) noDisponibles.add(p?.nombre ?? 'Producto');
+      if (!resolverItem(i.productoId)) {
+        const p = prodMap.get(i.productoId);
+        noDisponibles.add(p?.nombre ?? 'Un producto');
+      }
     }
   if (noDisponibles.size > 0)
     return {
@@ -140,8 +173,8 @@ export async function crearPedidoProgramado(input: {
 
   for (const d of dias) {
     const totalDia = d.items.reduce((acc, i) => {
-      const p = prodMap.get(i.productoId)!;
-      return acc + p.precio * i.cantidad;
+      const r = resolverItem(i.productoId)!;
+      return acc + r.precio * i.cantidad;
     }, 0);
     totalGlobal += totalDia;
 
@@ -170,12 +203,12 @@ export async function crearPedidoProgramado(input: {
 
     const pedidoId = pedido.id as string;
     const itemsInsert = d.items.map((i) => {
-      const p = prodMap.get(i.productoId)!;
+      const r = resolverItem(i.productoId)!;
       return {
         pedido_id: pedidoId,
-        producto_id: i.productoId,
-        nombre_snapshot: p.nombre,
-        precio_snapshot: p.precio,
+        producto_id: r.producto_id,
+        nombre_snapshot: r.nombre,
+        precio_snapshot: r.precio,
         cantidad: i.cantidad,
       };
     });

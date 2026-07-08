@@ -5,7 +5,6 @@ import {
   crearMenuPregrabado,
   renombrarMenuPregrabado,
   eliminarMenuPregrabado,
-  toggleMenuActivo,
   agregarProductoAMenu,
   quitarProductoDeMenu,
   type MenuPregrabadoState,
@@ -214,10 +213,7 @@ function MenuCard({ menu, productos }: { menu: MenuPregrabado; productos: Produc
   return (
     <div
       className="rounded-[var(--radius-md)] border"
-      style={{
-        borderColor: menu.activo ? 'var(--color-ink)' : 'var(--color-border)',
-        background: 'var(--color-paper)',
-      }}
+      style={{ borderColor: 'var(--color-border)', background: 'var(--color-paper)' }}
     >
       <div className="flex items-center justify-between gap-3 p-3.5">
         <div className="min-w-0 flex-1">
@@ -258,40 +254,10 @@ function MenuCard({ menu, productos }: { menu: MenuPregrabado; productos: Produc
             <span className="text-[11px]" style={{ color: 'var(--color-muted)' }}>
               {enMenu.length} {enMenu.length === 1 ? 'producto' : 'productos'}
             </span>
-            {menu.activo && menu.canal !== 'domicilios_programados' ? (
-              <span className="text-[11px] font-semibold" style={{ color: 'var(--color-ink)' }}>
-                Activo
-              </span>
-            ) : null}
           </div>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {menu.canal === 'domicilios_programados' ? (
-            <span
-              className="text-[11px] px-2 py-1 rounded-full"
-              style={{ background: 'var(--color-paper-deep)', color: 'var(--color-muted)' }}
-              title="Los menus de domicilios programados se asignan por dia en la tabla de la semana"
-            >
-              Por dia
-            </span>
-          ) : (
-            <form action={toggleMenuActivo}>
-              <input type="hidden" name="id" value={menu.id} />
-              <input type="hidden" name="activar" value={(!menu.activo).toString()} />
-              <button
-                type="submit"
-                aria-label={menu.activo ? 'Desactivar' : 'Activar'}
-                className="relative w-9 h-5 rounded-full block"
-                style={{ background: menu.activo ? 'var(--color-ink)' : 'var(--color-border-strong)' }}
-              >
-                <span
-                  className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform"
-                  style={{ transform: menu.activo ? 'translateX(1rem)' : 'translateX(0)' }}
-                />
-              </button>
-            </form>
-          )}
           <button
             type="button"
             onClick={() => setExpandido((v) => !v)}
