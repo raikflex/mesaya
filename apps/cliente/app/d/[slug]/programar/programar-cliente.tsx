@@ -111,7 +111,22 @@ export function ProgramarCliente({
               <p className="text-xs mt-0.5" style={{ color: 'var(--color-ink-soft)' }}>
                 Pide hasta las {dia.corte}
               </p>
-              {platoDia ? (
+              {!dia.platoVigente ? (
+                <div
+                  className="mt-2 pl-3 border-l-[3px]"
+                  style={{ borderColor: 'var(--color-border-strong)' }}
+                >
+                  <p
+                    className="text-[0.6rem] uppercase tracking-[0.14em] font-bold"
+                    style={{ color: 'var(--color-muted)' }}
+                  >
+                    Plato del dia
+                  </p>
+                  <p className="text-sm font-medium" style={{ color: 'var(--color-ink-soft)' }}>
+                    Por definirse
+                  </p>
+                </div>
+              ) : platoDia ? (
                 <div className="mt-2 pl-3 border-l-[3px]" style={{ borderColor: colorMarca }}>
                   <p
                     className="text-[0.6rem] uppercase tracking-[0.14em] font-bold"

@@ -62,6 +62,7 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
     nombre: d.nombre,
     corte: d.corte,
     esHoy: d.esHoy,
+    platoVigente: d.platoVigente,
   }));
 
   // Si no quedo ningun dia valido, de vuelta a elegir dias.
@@ -171,6 +172,7 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
   }
   const platosPorFecha: Record<string, PlatoDelDiaCliente> = {};
   for (const d of seleccionadosDisp) {
+    if (!d.platoVigente) continue; // dias posteriores al viernes: "Por definirse"
     const plato = platoPorDiaSemana.get(d.diaSemana);
     if (plato) platosPorFecha[d.fecha] = plato;
   }

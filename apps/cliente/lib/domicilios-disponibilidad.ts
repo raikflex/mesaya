@@ -20,6 +20,7 @@ export type DiaDomicilioDisponible = {
   esHoy: boolean;
   corte: string; // hora de corte formateada, ej "9:00 am"
   semana: 'esta' | 'proxima'; // para agrupar en la UI
+  platoVigente: boolean; // true si el plato del dia aplica (hasta el proximo viernes)
 };
 
 /** Parsea "HH:MM:SS" o "HH:MM" a minutos desde medianoche. */
@@ -64,6 +65,9 @@ export function diasDomicilioDisponibles(
   const offsetDomingoEsta = dowHoy === 0 ? 0 : 7 - dowHoy;
   // Hasta el domingo de la PROXIMA semana: una semana mas.
   const offsetFinal = offsetDomingoEsta + 7;
+  // Corte del plato del dia: vigente desde hoy hasta el PROXIMO viernes (incluido).
+  // El sabado arranca semana nueva de platos -> lo posterior dice "Por definirse".
+  const offsetViernes = (5 - dowHoy + 7) % 7;
 
   const dias: DiaDomicilioDisponible[] = [];
   for (let i = 0; i <= offsetFinal; i++) {
@@ -81,6 +85,7 @@ export function diasDomicilioDisponibles(
       esHoy: i === 0,
       corte: formatearHora(h.hora_cierre),
       semana: i <= offsetDomingoEsta ? 'esta' : 'proxima',
+      platoVigente: i <= offsetViernes,
     });
   }
 

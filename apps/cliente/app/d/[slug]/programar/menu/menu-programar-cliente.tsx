@@ -17,6 +17,7 @@ export type DiaMenu = {
   nombre: string; // "Lunes"
   corte: string; // "9:00 am"
   esHoy: boolean;
+  platoVigente: boolean; // false -> "Por definirse"
 };
 
 type ProductoMenu = {
@@ -276,7 +277,9 @@ export function MenuProgramarCliente({
           ) : null}
         </div>
 
-        {platoActivo ? (
+        {diaActivoInfo && !diaActivoInfo.platoVigente ? (
+          <PlatoPorDefinir />
+        ) : platoActivo ? (
           <PlatoDelDiaDestacado
             plato={platoActivo}
             grupos={grupos}
@@ -526,6 +529,28 @@ function ItemProducto({
         </div>
       </div>
     </li>
+  );
+}
+
+function PlatoPorDefinir() {
+  return (
+    <div
+      className="mb-6 rounded-[var(--radius-lg)] border-2 border-dashed p-4"
+      style={{ borderColor: 'var(--color-border-strong)' }}
+    >
+      <span
+        className="inline-flex items-center gap-1.5 text-[0.65rem] font-semibold uppercase tracking-[0.14em] px-2.5 py-1 rounded-full mb-2"
+        style={{ background: 'var(--color-paper-deep)', color: 'var(--color-muted)' }}
+      >
+        Plato del dia
+      </span>
+      <p className="text-lg font-medium" style={{ color: 'var(--color-ink-soft)' }}>
+        Por definirse
+      </p>
+      <p className="text-sm mt-1" style={{ color: 'var(--color-muted)' }}>
+        Aun no se ha publicado el plato de este dia.
+      </p>
+    </div>
   );
 }
 
