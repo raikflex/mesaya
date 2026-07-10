@@ -17,7 +17,6 @@ export type DiaMenu = {
   nombre: string; // "Lunes"
   corte: string; // "9:00 am"
   esHoy: boolean;
-  platoVigente: boolean; // false -> "Por definirse"
 };
 
 type ProductoMenu = {
@@ -104,6 +103,7 @@ export function MenuProgramarCliente({
   dias,
   gruposPorFecha,
   platosPorFecha,
+  usaPlatoDelDia,
 }: {
   slug: string;
   nombreNegocio: string;
@@ -112,6 +112,7 @@ export function MenuProgramarCliente({
   dias: DiaMenu[];
   gruposPorFecha: Record<string, GrupoMenu[]>;
   platosPorFecha?: Record<string, PlatoDelDiaCliente>;
+  usaPlatoDelDia?: boolean;
 }) {
   const router = useRouter();
   const [diaActivo, setDiaActivo] = useState<string>(dias[0]?.fecha ?? '');
@@ -277,9 +278,7 @@ export function MenuProgramarCliente({
           ) : null}
         </div>
 
-        {diaActivoInfo && !diaActivoInfo.platoVigente ? (
-          <PlatoPorDefinir />
-        ) : platoActivo ? (
+        {platoActivo ? (
           <PlatoDelDiaDestacado
             plato={platoActivo}
             grupos={grupos}
@@ -288,6 +287,8 @@ export function MenuProgramarCliente({
             carritoDia={carritoDia}
             onCambiar={cambiarCantidad}
           />
+        ) : usaPlatoDelDia ? (
+          <PlatoPorDefinir />
         ) : null}
 
         {grupos.length === 0 ? (

@@ -9,33 +9,37 @@ import {
 
 export type ProductoOpcion = { id: string; nombre: string; precio: number };
 export type PlatoDia = {
-  dia_semana: number;
   producto_id: string | null;
   nombre: string;
   descripcion: string | null;
   precio: number;
   activo: boolean;
 };
+export type DiaConPlato = { fecha: string; plato: PlatoDia | null };
 
-// Orden de lunes a domingo. Indices: 0=domingo ... 6=sabado.
-const ORDEN_DIAS = [1, 2, 3, 4, 5, 6, 0];
-const NOMBRES = ['Domingo', 'Lunes', 'Martes', 'Miercoles', 'Jueves', 'Viernes', 'Sabado'];
+const DIAS_CORTOS = ['Dom', 'Lun', 'Mar', 'Mie', 'Jue', 'Vie', 'Sab'];
+const MESES = [
+  'ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic',
+];
+
+/** "2026-07-06" -> "Lun 6 jul" */
+function etiquetaFecha(fecha: string): string {
+  const [y, m, d] = fecha.split('-').map(Number);
+  const dt = new Date(y ?? 1970, (m ?? 1) - 1, d ?? 1);
+  return `${DIAS_CORTOS[dt.getDay()]} ${d} ${MESES[(m ?? 1) - 1]}`;
+}
 
 export function PlatoDelDiaManager({
   productos,
-  platosIniciales,
+  dias,
 }: {
   productos: ProductoOpcion[];
-  platosIniciales: PlatoDia[];
+  dias: DiaConPlato[];
 }) {
   const [abierto, setAbierto] = useState(false);
-  const [editando, setEditando] = useState<number | null>(null);
+  const [editando, setEditando] = useState<string | null>(null);
 
-  const porDia = new Map<number, PlatoDia>();
-  for (const p of platosIniciales) porDia.set(p.dia_semana, p);
-
-  const configurados = platosIniciales.length;
-  const activos = platosIniciales.filter((p) => p.activo).length;
+  const configurados = dias.filter((d) => d.plato).length;
 
   return (
     <section
@@ -56,8 +60,8 @@ export function PlatoDelDiaManager({
           </h2>
           <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
             {configurados === 0
-              ? 'Resalta un plato distinto cada dia. Toca para configurar.'
-              : `${activos} ${activos === 1 ? 'dia activo' : 'dias activos'} de ${configurados} configurado${configurados === 1 ? '' : 's'}.`}
+              ? 'Resalta un plato por fecha. Las fechas viejas se caen solas.'
+              : `${configurados} ${configurados === 1 ? 'fecha' : 'fechas'} con plato.`}
           </p>
         </div>
         <svg
@@ -85,34 +89,40 @@ export function PlatoDelDiaManager({
 
       {abierto ? (
         <div className="px-5 pb-2 border-t" style={{ borderColor: 'var(--color-border)' }}>
-          <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
-            {ORDEN_DIAS.map((dia) => (
-              <FilaDia
-                key={dia}
-                dia={dia}
-                plato={porDia.get(dia) ?? null}
-                productos={productos}
-                editando={editando === dia}
-                onAbrirEditor={() => setEditando(dia)}
-                onCerrarEditor={() => setEditando(null)}
-              />
-            ))}
-          </ul>
+          {dias.length === 0 ? (
+            <p className="text-sm py-4" style={{ color: 'var(--color-muted)' }}>
+              No hay fechas disponibles.
+            </p>
+          ) : (
+            <ul className="divide-y" style={{ borderColor: 'var(--color-border)' }}>
+              {dias.map((d) => (
+                <FilaFecha
+                  key={d.fecha}
+                  fecha={d.fecha}
+                  plato={d.plato}
+                  productos={productos}
+                  editando={editando === d.fecha}
+                  onAbrirEditor={() => setEditando(d.fecha)}
+                  onCerrarEditor={() => setEditando(null)}
+                />
+              ))}
+            </ul>
+          )}
         </div>
       ) : null}
     </section>
   );
 }
 
-function FilaDia({
-  dia,
+function FilaFecha({
+  fecha,
   plato,
   productos,
   editando,
   onAbrirEditor,
   onCerrarEditor,
 }: {
-  dia: number;
+  fecha: string;
   plato: PlatoDia | null;
   productos: ProductoOpcion[];
   editando: boolean;
@@ -124,7 +134,7 @@ function FilaDia({
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-medium" style={{ color: 'var(--color-ink)' }}>
-            {NOMBRES[dia]}
+            {etiquetaFecha(fecha)}
           </p>
           {plato ? (
             <p
@@ -137,7 +147,7 @@ function FilaDia({
             </p>
           ) : (
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted)' }}>
-              Sin plato del dia
+              Por definirse
             </p>
           )}
         </div>
@@ -146,7 +156,7 @@ function FilaDia({
           {plato ? (
             <>
               <form action={togglePlatoDelDia}>
-                <input type="hidden" name="dia_semana" value={dia} />
+                <input type="hidden" name="fecha" value={fecha} />
                 <input type="hidden" name="activo" value={(!plato.activo).toString()} />
                 <button
                   type="submit"
@@ -171,12 +181,12 @@ function FilaDia({
                 Editar
               </button>
               <form action={eliminarPlatoDelDia}>
-                <input type="hidden" name="dia_semana" value={dia} />
+                <input type="hidden" name="fecha" value={fecha} />
                 <button
                   type="submit"
                   aria-label="Quitar"
                   onClick={(e) => {
-                    if (!window.confirm(`Quitar el plato del dia del ${NOMBRES[dia]}?`)) {
+                    if (!window.confirm(`Quitar el plato del ${etiquetaFecha(fecha)}?`)) {
                       e.preventDefault();
                     }
                   }}
@@ -209,8 +219,8 @@ function FilaDia({
       </div>
 
       {editando ? (
-        <EditorDia
-          dia={dia}
+        <EditorFecha
+          fecha={fecha}
           plato={plato}
           productos={productos}
           onListo={onCerrarEditor}
@@ -221,14 +231,14 @@ function FilaDia({
   );
 }
 
-function EditorDia({
-  dia,
+function EditorFecha({
+  fecha,
   plato,
   productos,
   onListo,
   onCancelar,
 }: {
-  dia: number;
+  fecha: string;
   plato: PlatoDia | null;
   productos: ProductoOpcion[];
   onListo: () => void;
@@ -256,7 +266,7 @@ function EditorDia({
   function guardar() {
     setError(null);
     const fd = new FormData();
-    fd.set('dia_semana', String(dia));
+    fd.set('fecha', fecha);
     fd.set('producto_id', modo === 'menu' ? productoId : '');
     fd.set('nombre', nombre.trim());
     fd.set('precio', precio.trim());

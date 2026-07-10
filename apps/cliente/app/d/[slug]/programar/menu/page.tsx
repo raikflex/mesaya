@@ -62,7 +62,6 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
     nombre: d.nombre,
     corte: d.corte,
     esHoy: d.esHoy,
-    platoVigente: d.platoVigente,
   }));
 
   // Si no quedo ningun dia valido, de vuelta a elegir dias.
@@ -89,7 +88,7 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
         .order('nombre', { ascending: true }),
       supabase
         .from('platos_del_dia')
-        .select('id, dia_semana, producto_id, nombre, descripcion, precio, imagen_path, activo')
+        .select('id, fecha, producto_id, nombre, descripcion, precio, imagen_path, activo')
         .eq('restaurante_id', restauranteId)
         .eq('activo', true),
       supabase
@@ -158,24 +157,19 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
     gruposPorFecha[d.fecha] = gruposParaDia(d.diaSemana);
   }
 
-  // Plato del dia por dia de la semana (activos), mapeado a cada fecha elegida.
-  const platoPorDiaSemana = new Map<number, PlatoDelDiaCliente>();
+  // Plato del dia por FECHA (activos).
+  const platosPorFecha: Record<string, PlatoDelDiaCliente> = {};
   for (const p of platosRaw ?? []) {
-    platoPorDiaSemana.set(p.dia_semana as number, {
+    platosPorFecha[p.fecha as string] = {
       id: p.id as string,
       producto_id: (p.producto_id as string | null) ?? null,
       nombre: p.nombre as string,
       descripcion: (p.descripcion as string | null) ?? null,
       precio: p.precio as number,
       imagen_path: (p.imagen_path as string | null) ?? null,
-    });
+    };
   }
-  const platosPorFecha: Record<string, PlatoDelDiaCliente> = {};
-  for (const d of seleccionadosDisp) {
-    if (!d.platoVigente) continue; // dias posteriores al viernes: "Por definirse"
-    const plato = platoPorDiaSemana.get(d.diaSemana);
-    if (plato) platosPorFecha[d.fecha] = plato;
-  }
+  const hayPlatos = (platosRaw ?? []).length > 0;
 
   return (
     <MenuProgramarCliente
@@ -186,6 +180,7 @@ export default async function MenuProgramarPage({ params, searchParams }: PagePr
       dias={diasSeleccionados}
       gruposPorFecha={gruposPorFecha}
       platosPorFecha={platosPorFecha}
+      usaPlatoDelDia={hayPlatos}
     />
   );
 }

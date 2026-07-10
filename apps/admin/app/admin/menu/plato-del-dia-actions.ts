@@ -21,7 +21,7 @@ async function getRestauranteId() {
 }
 
 const platoSchema = z.object({
-  dia_semana: z.coerce.number().int().min(0).max(6),
+  fecha: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha invalida'),
   producto_id: z.preprocess(
     (v) => (typeof v === 'string' && v.length > 0 ? v : null),
     z.string().uuid('Producto invalido').nullable(),
@@ -40,10 +40,10 @@ export type PlatoDelDiaState = {
   fieldErrors?: Partial<Record<'nombre' | 'precio' | 'descripcion', string>>;
 };
 
-/** Crea o actualiza el plato del dia de un dia de la semana (upsert por dia). */
+/** Crea o actualiza el plato del dia de una FECHA (upsert por fecha). */
 export async function guardarPlatoDelDia(formData: FormData): Promise<PlatoDelDiaState> {
   const parsed = platoSchema.safeParse({
-    dia_semana: formData.get('dia_semana'),
+    fecha: formData.get('fecha'),
     producto_id: formData.get('producto_id'),
     nombre: formData.get('nombre'),
     precio: formData.get('precio'),
@@ -62,7 +62,6 @@ export async function guardarPlatoDelDia(formData: FormData): Promise<PlatoDelDi
   const { supabase, restauranteId } = await getRestauranteId();
   if (!restauranteId) return { ok: false, error: 'Tu sesion expiro.' };
 
-  // Si es un plato basado en un producto, validar que sea de este restaurante.
   if (parsed.data.producto_id) {
     const { data: prod } = await supabase
       .from('productos')
@@ -77,7 +76,7 @@ export async function guardarPlatoDelDia(formData: FormData): Promise<PlatoDelDi
   const { error } = await admin.from('platos_del_dia').upsert(
     {
       restaurante_id: restauranteId,
-      dia_semana: parsed.data.dia_semana,
+      fecha: parsed.data.fecha,
       producto_id: parsed.data.producto_id,
       nombre: parsed.data.nombre,
       descripcion: parsed.data.descripcion,
@@ -85,7 +84,7 @@ export async function guardarPlatoDelDia(formData: FormData): Promise<PlatoDelDi
       activo: true,
       actualizado_en: new Date().toISOString(),
     },
-    { onConflict: 'restaurante_id,dia_semana' },
+    { onConflict: 'restaurante_id,fecha' },
   );
 
   if (error) return { ok: false, error: 'No se pudo guardar: ' + error.message };
@@ -94,11 +93,11 @@ export async function guardarPlatoDelDia(formData: FormData): Promise<PlatoDelDi
   return { ok: true };
 }
 
-/** Muestra u oculta el plato del dia de un dia sin borrarlo. */
+/** Muestra u oculta el plato del dia de una fecha sin borrarlo. */
 export async function togglePlatoDelDia(formData: FormData) {
-  const dia = Number(formData.get('dia_semana'));
+  const fecha = String(formData.get('fecha') ?? '');
   const activo = String(formData.get('activo') ?? '') === 'true';
-  if (Number.isNaN(dia) || dia < 0 || dia > 6) return;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
 
   const { restauranteId } = await getRestauranteId();
   if (!restauranteId) return;
@@ -108,15 +107,15 @@ export async function togglePlatoDelDia(formData: FormData) {
     .from('platos_del_dia')
     .update({ activo, actualizado_en: new Date().toISOString() })
     .eq('restaurante_id', restauranteId)
-    .eq('dia_semana', dia);
+    .eq('fecha', fecha);
 
   revalidatePath('/admin/menu');
 }
 
-/** Elimina por completo el plato del dia de un dia. */
+/** Elimina por completo el plato del dia de una fecha. */
 export async function eliminarPlatoDelDia(formData: FormData) {
-  const dia = Number(formData.get('dia_semana'));
-  if (Number.isNaN(dia) || dia < 0 || dia > 6) return;
+  const fecha = String(formData.get('fecha') ?? '');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
 
   const { restauranteId } = await getRestauranteId();
   if (!restauranteId) return;
@@ -126,7 +125,7 @@ export async function eliminarPlatoDelDia(formData: FormData) {
     .from('platos_del_dia')
     .delete()
     .eq('restaurante_id', restauranteId)
-    .eq('dia_semana', dia);
+    .eq('fecha', fecha);
 
   revalidatePath('/admin/menu');
 }

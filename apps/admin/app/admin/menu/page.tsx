@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@mesaya/database/server';
 import { PanelShell } from '../../_components/panel-shell';
 import { MenuManager } from './menu-manager';
-import { PlatoDelDiaManager, type PlatoDia } from './plato-del-dia-manager';
+import { PlatoDelDiaManager, type PlatoDia, type DiaConPlato } from './plato-del-dia-manager';
 import { MenusPregrabadosManager, type MenuPregrabado } from './menus-pregrabados-manager';
 import { MenuPorDia } from './menu-por-dia';
 
@@ -30,7 +30,7 @@ export type Producto = {
 };
 
 type PlatoRaw = {
-  dia_semana: number;
+  fecha: string;
   producto_id: string | null;
   nombre: string;
   descripcion: string | null;
@@ -45,6 +45,24 @@ type MenuRaw = {
   activo: boolean;
   menu_pregrabado_productos: { producto_id: string }[] | null;
 };
+
+// Ventana del plato del dia: hoy hasta el domingo de la proxima semana (hora
+// Bogota), igual que la ventana del cliente. Las fechas pasadas se caen solas.
+function fechasVentana(): string[] {
+  const bogota = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Bogota' }));
+  const dow = bogota.getDay();
+  const offsetFinal = (dow === 0 ? 0 : 7 - dow) + 7;
+  const fechas: string[] = [];
+  for (let i = 0; i <= offsetFinal; i++) {
+    const d = new Date(bogota);
+    d.setDate(d.getDate() + i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    fechas.push(`${y}-${m}-${dd}`);
+  }
+  return fechas;
+}
 
 export default async function MenuPage({
   searchParams,
@@ -64,6 +82,7 @@ export default async function MenuPage({
   if (!perfil?.restaurante_id) redirect('/admin/onboarding/paso-1');
   if (perfil.rol !== 'dueno') redirect('/login?error=acceso-denegado');
   const restauranteId = perfil.restaurante_id as string;
+  const fechas = fechasVentana();
   const [
     { data: categorias },
     { data: productos },
@@ -88,8 +107,10 @@ export default async function MenuPage({
       supabase.from('restaurantes').select('nombre_publico').eq('id', restauranteId).single(),
       supabase
         .from('platos_del_dia')
-        .select('dia_semana, producto_id, nombre, descripcion, precio, activo')
-        .eq('restaurante_id', restauranteId),
+        .select('fecha, producto_id, nombre, descripcion, precio, activo')
+        .eq('restaurante_id', restauranteId)
+        .gte('fecha', fechas[0])
+        .lte('fecha', fechas[fechas.length - 1]),
       supabase
         .from('menus_pregrabados')
         .select('id, nombre, canal, activo, menu_pregrabado_productos(producto_id)')
@@ -106,13 +127,19 @@ export default async function MenuPage({
   const nombreNegocio = (restaurante?.nombre_publico as string) ?? 'Tu negocio';
 
   const listaProductos = (productos ?? []) as Producto[];
-  const platosDelDia: PlatoDia[] = ((platosRaw ?? []) as PlatoRaw[]).map((p) => ({
-    dia_semana: p.dia_semana,
-    producto_id: p.producto_id,
-    nombre: p.nombre,
-    descripcion: p.descripcion,
-    precio: p.precio,
-    activo: p.activo,
+  const platoPorFecha = new Map<string, PlatoDia>();
+  for (const p of (platosRaw ?? []) as PlatoRaw[]) {
+    platoPorFecha.set(p.fecha, {
+      producto_id: p.producto_id,
+      nombre: p.nombre,
+      descripcion: p.descripcion,
+      precio: p.precio,
+      activo: p.activo,
+    });
+  }
+  const diasPlato: DiaConPlato[] = fechas.map((f) => ({
+    fecha: f,
+    plato: platoPorFecha.get(f) ?? null,
   }));
 
   const menusPregrabados: MenuPregrabado[] = ((menusRaw ?? []) as MenuRaw[]).map((m) => ({
@@ -157,7 +184,7 @@ export default async function MenuPage({
 
         <PlatoDelDiaManager
           productos={listaProductos.map((p) => ({ id: p.id, nombre: p.nombre, precio: p.precio }))}
-          platosIniciales={platosDelDia}
+          dias={diasPlato}
         />
 
         <MenusPregrabadosManager

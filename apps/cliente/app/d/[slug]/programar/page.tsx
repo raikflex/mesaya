@@ -40,7 +40,7 @@ export default async function ProgramarPage({ params }: PageProps) {
       .order('dia_semana', { ascending: true }),
     supabase
       .from('platos_del_dia')
-      .select('dia_semana, nombre, precio, activo')
+      .select('fecha, nombre, precio, activo')
       .eq('restaurante_id', restauranteId)
       .eq('activo', true),
   ]);
@@ -54,19 +54,15 @@ export default async function ProgramarPage({ params }: PageProps) {
 
   const dias = diasDomicilioDisponibles(horariosDom);
 
-  // Plato del dia por dia de la semana (solo activos), mapeado a cada fecha.
-  const platoPorDiaSemana = new Map<number, { nombre: string; precio: number }>();
+  // Plato del dia por FECHA (solo activos).
+  const platosPorFecha: Record<string, { nombre: string; precio: number }> = {};
   for (const p of platosRaw ?? []) {
-    platoPorDiaSemana.set(p.dia_semana as number, {
+    platosPorFecha[p.fecha as string] = {
       nombre: p.nombre as string,
       precio: p.precio as number,
-    });
+    };
   }
-  const platosPorFecha: Record<string, { nombre: string; precio: number }> = {};
-  for (const d of dias) {
-    const plato = platoPorDiaSemana.get(d.diaSemana);
-    if (plato) platosPorFecha[d.fecha] = plato;
-  }
+  const hayPlatos = (platosRaw ?? []).length > 0;
 
   return (
     <ProgramarCliente
@@ -76,6 +72,7 @@ export default async function ProgramarPage({ params }: PageProps) {
       logoUrl={(restaurante.logo_url as string | null) ?? null}
       dias={dias}
       platosPorFecha={platosPorFecha}
+      usaPlatoDelDia={hayPlatos}
     />
   );
 }
